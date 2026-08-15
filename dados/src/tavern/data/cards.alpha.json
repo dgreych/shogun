@@ -1,0 +1,519 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "GY-001",
+    "name": "Sentinela de Pedra",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 2,
+    "attack": 2,
+    "health": 3,
+    "keywords": ["GUARD"],
+    "text": "Aparição: ganhe +1 Armadura.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "GAIN_ARMOR", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-014",
+    "name": "Bruxa do Véu",
+    "type": "MINION",
+    "rarity": "RARE",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: compre 1 carta.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DRAW", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-027",
+    "name": "Lobo da Bruma",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 2,
+    "attack": 3,
+    "health": 2,
+    "keywords": ["RUSH"],
+    "text": "Ímpeto: pode atacar no turno em que entra.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-042",
+    "name": "Guardião do Abismo",
+    "type": "MINION",
+    "rarity": "EPIC",
+    "cost": 4,
+    "attack": 5,
+    "health": 6,
+    "keywords": ["DEATHRATTLE"],
+    "text": "Último Suspiro: cause 2 de dano ao herói inimigo.",
+    "effects": [
+      { "trigger": "ON_DEATH", "effect": "DAMAGE_HERO", "target": "ENEMY_HERO", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-061",
+    "name": "Oráculo Lunar",
+    "type": "MINION",
+    "rarity": "RARE",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: olhe a próxima carta e escolha se ela vai para o fundo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "PEEK_TOP", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-088",
+    "name": "Carrasco Exilado",
+    "type": "MINION",
+    "rarity": "EPIC",
+    "cost": 5,
+    "attack": 6,
+    "health": 4,
+    "keywords": ["FRENZY"],
+    "text": "Frenesi: ao sobreviver a dano, ganha +2 ATQ neste turno.",
+    "effects": [
+      { "trigger": "ON_DAMAGE", "effect": "BUFF_ATTACK", "target": "SELF", "value": 2, "duration": "TURN" }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-103",
+    "name": "Xamã das Raízes",
+    "type": "MINION",
+    "rarity": "RARE",
+    "cost": 4,
+    "attack": 3,
+    "health": 5,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: invoque um Espírito 1/1.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "SUMMON", "target": "FRIENDLY_BOARD", "cardId": "GY-TOKEN-SPIRIT-001", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-148",
+    "name": "Dragão Carmesim",
+    "type": "MINION",
+    "rarity": "LEGENDARY",
+    "cost": 7,
+    "attack": 7,
+    "health": 7,
+    "keywords": ["RUSH"],
+    "text": "Após atacar, cause 1 de dano aos outros inimigos.",
+    "effects": [
+      { "trigger": "AFTER_ATTACK", "effect": "DAMAGE", "target": "ALL_OTHER_ENEMIES", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-002",
+    "name": "Vigilante da Ponte",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 1,
+    "attack": 1,
+    "health": 2,
+    "keywords": [],
+    "text": "Mantém a passagem segura durante a noite.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-003",
+    "name": "Corvo das Ruínas",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 1,
+    "attack": 2,
+    "health": 1,
+    "keywords": [],
+    "text": "Um presságio veloz entre as pedras antigas.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-004",
+    "name": "Escudeira do Limiar",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "keywords": [],
+    "text": "Treinada para sustentar a linha da Taverna.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-005",
+    "name": "Caçador de Brasas",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "keywords": [],
+    "text": "Segue rastros que ainda queimam no chão.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-006",
+    "name": "Muralha Rúnica",
+    "type": "MINION",
+    "rarity": "RARE",
+    "cost": 4,
+    "attack": 3,
+    "health": 6,
+    "keywords": ["GUARD"],
+    "text": "Guarda.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-007",
+    "name": "Adepto do Trovão",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 4,
+    "attack": 4,
+    "health": 4,
+    "keywords": [],
+    "text": "Canaliza a tempestade sem perder o equilíbrio.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-008",
+    "name": "Gigante da Estalagem",
+    "type": "MINION",
+    "rarity": "RARE",
+    "cost": 6,
+    "attack": 6,
+    "health": 7,
+    "keywords": [],
+    "text": "Quando ele chega, todas as mesas ficam pequenas.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-009",
+    "name": "Sopro Restaurador",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "cost": 2,
+    "keywords": [],
+    "text": "Restaure 3 de vida do seu herói.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "HEAL", "target": "FRIENDLY_HERO", "value": 3 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-201",
+    "name": "Porteiro do Lampião",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "classId": "GUARDIAN",
+    "cost": 1,
+    "attack": 1,
+    "health": 3,
+    "keywords": ["GUARD"],
+    "text": "Guarda. Segura a entrada da taverna sozinho, se precisar.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-202",
+    "name": "Cervejeira do Bastião",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "classId": "GUARDIAN",
+    "cost": 2,
+    "attack": 2,
+    "health": 2,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: ganhe 2 de Armadura.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "GAIN_ARMOR", "target": "FRIENDLY_HERO", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-203",
+    "name": "Juramento da Pedra",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "classId": "GUARDIAN",
+    "cost": 2,
+    "keywords": [],
+    "text": "Ganhe 4 de Armadura.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "GAIN_ARMOR", "target": "FRIENDLY_HERO", "value": 4 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-204",
+    "name": "Vigia da Última Porta",
+    "type": "MINION",
+    "rarity": "RARE",
+    "classId": "GUARDIAN",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": ["GUARD"],
+    "text": "Guarda. Ninguém passa pela última porta sem ser visto.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-205",
+    "name": "Reerguer as Defesas",
+    "type": "SPELL",
+    "rarity": "RARE",
+    "classId": "GUARDIAN",
+    "cost": 3,
+    "keywords": [],
+    "text": "Restaure 3 de vida e ganhe 3 de Armadura.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "HEAL", "target": "FRIENDLY_HERO", "value": 3 },
+      { "trigger": "ON_PLAY", "effect": "GAIN_ARMOR", "target": "FRIENDLY_HERO", "value": 3 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-GD-206",
+    "name": "Capitão da Muralha",
+    "type": "MINION",
+    "rarity": "EPIC",
+    "classId": "GUARDIAN",
+    "cost": 5,
+    "attack": 4,
+    "health": 6,
+    "keywords": ["GUARD"],
+    "text": "Guarda. Aparição: dê +1 de vida a todas as suas criaturas.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "BUFF_HEALTH", "target": "ALL_FRIENDLY_MINIONS", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-201",
+    "name": "Batedor da Cinza",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "classId": "EXILE",
+    "cost": 1,
+    "attack": 2,
+    "health": 1,
+    "keywords": ["RUSH"],
+    "text": "Ímpeto: pode atacar no turno em que entra.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-202",
+    "name": "Hiena das Vielas",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "classId": "EXILE",
+    "cost": 2,
+    "attack": 3,
+    "health": 2,
+    "keywords": [],
+    "text": "Caça em bando pelas vielas mais escuras da cidade.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-203",
+    "name": "Golpe de Oportunidade",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "classId": "EXILE",
+    "cost": 2,
+    "keywords": [],
+    "text": "Cause 2 de dano a um alvo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DAMAGE", "target": "TARGET", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-204",
+    "name": "Lâmina Sem Casa",
+    "type": "MINION",
+    "rarity": "RARE",
+    "classId": "EXILE",
+    "cost": 3,
+    "attack": 3,
+    "health": 3,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: cause 1 de dano ao herói inimigo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DAMAGE_HERO", "target": "ENEMY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-205",
+    "name": "Flecha na Penumbra",
+    "type": "SPELL",
+    "rarity": "RARE",
+    "classId": "EXILE",
+    "cost": 3,
+    "keywords": [],
+    "text": "Cause 3 de dano a um alvo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DAMAGE", "target": "TARGET", "value": 3 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-EX-206",
+    "name": "Carrasco do Caminho",
+    "type": "MINION",
+    "rarity": "EPIC",
+    "classId": "EXILE",
+    "cost": 5,
+    "attack": 5,
+    "health": 4,
+    "keywords": ["DEATHRATTLE"],
+    "text": "Último Suspiro: cause 2 de dano ao herói inimigo.",
+    "effects": [
+      { "trigger": "ON_DEATH", "effect": "DAMAGE_HERO", "target": "ENEMY_HERO", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-201",
+    "name": "Faísca Engarrafada",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "classId": "STORM",
+    "cost": 1,
+    "keywords": [],
+    "text": "Compre 1 carta.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DRAW", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-202",
+    "name": "Aprendiz do Salão Azul",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "classId": "STORM",
+    "cost": 2,
+    "attack": 3,
+    "health": 3,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: sua próxima magia custa 1 a menos.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DISCOUNT_NEXT_SPELL", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-203",
+    "name": "Arco Voltaico",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "classId": "STORM",
+    "cost": 2,
+    "keywords": [],
+    "text": "Cause 2 de dano a um alvo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DAMAGE", "target": "TARGET", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-204",
+    "name": "Escriba da Tempestade",
+    "type": "MINION",
+    "rarity": "RARE",
+    "classId": "STORM",
+    "cost": 3,
+    "attack": 2,
+    "health": 4,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: compre 1 carta.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DRAW", "target": "FRIENDLY_HERO", "value": 1 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-205",
+    "name": "Descarga Errante",
+    "type": "SPELL",
+    "rarity": "RARE",
+    "classId": "STORM",
+    "cost": 3,
+    "keywords": [],
+    "text": "Cause 3 de dano ao herói inimigo.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DAMAGE_HERO", "target": "ENEMY_HERO", "value": 3 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-ST-206",
+    "name": "Mago do Último Brinde",
+    "type": "MINION",
+    "rarity": "EPIC",
+    "classId": "STORM",
+    "cost": 5,
+    "attack": 4,
+    "health": 5,
+    "keywords": ["ON_PLAY"],
+    "text": "Aparição: sua próxima magia custa 2 a menos.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "DISCOUNT_NEXT_SPELL", "target": "FRIENDLY_HERO", "value": 2 }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-TOKEN-SPIRIT-001",
+    "name": "Espírito da Raiz",
+    "type": "MINION",
+    "rarity": "COMMON",
+    "cost": 1,
+    "attack": 1,
+    "health": 1,
+    "collectible": false,
+    "keywords": [],
+    "text": "Um espírito convocado pelas raízes da Taverna.",
+    "effects": []
+  },
+  {
+    "schemaVersion": 1,
+    "id": "GY-TOKEN-SPARK-001",
+    "name": "Centelha de Iniciativa",
+    "type": "SPELL",
+    "rarity": "COMMON",
+    "cost": 0,
+    "collectible": false,
+    "keywords": [],
+    "text": "Ganhe 1 mana temporária neste turno.",
+    "effects": [
+      { "trigger": "ON_PLAY", "effect": "GAIN_MANA", "target": "FRIENDLY_HERO", "value": 1, "temporary": true }
+    ]
+  }
+]

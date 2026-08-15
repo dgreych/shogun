@@ -1,0 +1,62 @@
+{
+  "name": "nazuna-gyomei",
+  "version": "1.0.0",
+  "description": "NAZUNA BOT - versão modificada GYOMEI, baseada na Nazuna 9.0 com novos comandos, automações, IA e deploy controlado",
+  "type": "module",
+  "main": "dados/src/connect.js",
+  "scripts": {
+    "start": "node dados/src/.scripts/start-v9-fixed.js",
+    "start:validated": "npm run validate:local && npm start",
+    "dev": "nodemon dados/src/.scripts/start-v9-fixed.js",
+    "validate:ci": "node dados/src/.scripts/validate-local.js --ci && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "validate:local": "node dados/src/.scripts/validate-local.js --local && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "validate:deploy": "node dados/src/.scripts/validate-local.js --deploy && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "validate:public": "npm run validate:ci && node dados/src/.scripts/audit-public.js",
+    "build:server": "node dados/src/.scripts/build-server.js --private && node dados/src/.scripts/sanitize-server-build.js --private",
+    "build:server:artifact": "node dados/src/.scripts/build-server.js --public && node dados/src/.scripts/sanitize-server-build.js --public",
+    "config": "node dados/src/.scripts/config.js",
+    "config:install": "node dados/src/.scripts/config.js --install",
+    "update": "node dados/src/.scripts/update.js",
+    "test:regressions": "node dados/src/.scripts/test-regressions.js",
+    "test:bunnyfy": "node --test dados/src/services/bunnyfy/*.test.js",
+    "test:tavern": "node --test dados/src/tavern/tests/*.test.js",
+    "tavern:balance-report": "node dados/src/tavern/tools/runBalanceReport.mjs",
+    "test:security": "node --test dados/src/security/*.test.js",
+    "diagnose:tavern-db": "node dados/src/.scripts/checkServerDatabaseConnection.mjs",
+    "diagnose:nvidia": "node dados/src/.scripts/diagnose-nvidia.js",
+    "test:nvidia:live": "node dados/src/.scripts/diagnose-nvidia.js",
+    "test:assistant:live": "node dados/src/.scripts/test-assistant-live.js",
+    "verify:server:bunnyfy": "node dados/src/.scripts/verifyBunnyFyServerRuntime.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_.git"
+  },
+  "homepage": "https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_",
+  "author": "Hiudy (criação original), DevTokyo (continuidade da Nazuna) e Alaska_dev (aprimoramentos da versão modificada GYOMEI)",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "axios": "^1.13.2",
+    "baileys": "npm:baileys-mod",
+    "cheerio": "^1.2.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "jimp": "^0.16.13",
+    "linkedom": "^0.18.12",
+    "mysql2": "^3.23.2",
+    "node-cache": "^5.1.2",
+    "node-cron": "^4.2.1",
+    "node-webpmux": "^3.2.1",
+    "pino": "^10.1.0",
+    "qrcode-terminal": "^0.12.0",
+    "sql.js": "^1.14.1",
+    "yt-search": "^2.13.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  }
+}

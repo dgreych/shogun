@@ -1,0 +1,76 @@
+[
+  {
+    "id": "GUARDIAN",
+    "name": "Guardião",
+    "focus": "defesa",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "GAIN_ARMOR", "target": "FRIENDLY_HERO", "value": 2 }
+      ]
+    }
+  },
+  {
+    "id": "EXILE",
+    "name": "Exilado",
+    "focus": "agressão",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "DAMAGE_HERO", "target": "ENEMY_HERO", "value": 1 },
+        { "effect": "APPLY_STATUS", "target": "FRIENDLY_HERO", "status": "TEMP_ATTACK", "value": 1, "duration": "TURN" }
+      ]
+    }
+  },
+  {
+    "id": "ORACLE",
+    "name": "Oráculo",
+    "focus": "controle e informação",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "PEEK_TOP", "target": "FRIENDLY_HERO", "value": 1 }
+      ]
+    }
+  },
+  {
+    "id": "SHAMAN",
+    "name": "Xamã",
+    "focus": "invocação",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "SUMMON_RANDOM", "target": "FRIENDLY_BOARD", "pool": ["GY-TOKEN-SPIRIT-001"], "value": 1 }
+      ]
+    }
+  },
+  {
+    "id": "PROFANE",
+    "name": "Profano",
+    "focus": "vida como recurso",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "DAMAGE_HERO", "target": "FRIENDLY_HERO", "value": 2 },
+        { "effect": "DRAW", "target": "FRIENDLY_HERO", "value": 1 }
+      ]
+    }
+  },
+  {
+    "id": "STORM",
+    "name": "Tempestade",
+    "focus": "magia e controle",
+    "power": {
+      "cost": 2,
+      "requiresTarget": false,
+      "effects": [
+        { "effect": "DISCOUNT_NEXT_SPELL", "target": "FRIENDLY_HERO", "value": 1 }
+      ]
+    }
+  }
+]

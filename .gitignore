@@ -1,0 +1,72 @@
+# Dependências são instaladas de forma reproduzível e não ficam no histórico.
+node_modules/
+
+# Credenciais e ambiente local. Nunca versionar.
+CREDENCIAIS-DEV.md
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Sessão e credenciais do WhatsApp. Nunca versionar.
+dados/database/qr-code/
+**/creds.json
+**/app-state-sync-key-*.json
+**/sender-key-*.json
+**/session-*.json
+**/pre-key-*.json
+
+# Dados privados ou gerados por grupos e usuários.
+dados/database/grupos/
+dados/database/users/
+dados/database/usuarios/
+dados/database/economy.json
+dados/database/leveling.json
+dados/database/commandStats.json
+dados/database/jidLidCache.json
+dados/database/reminders.json
+dados/database/cmduserlimits.json
+dados/database/tavern.mysql*.json
+dados/database/dono/alugueis.json
+dados/database/dono/codigos_aluguel.json
+dados/database/dono/globalBlacklist.json
+dados/database/dono/msgboton.json
+dados/database/dono/premium.json
+dados/database/dono/subdonos.json
+dados/database/dono/divulgacao_dono.json
+
+# Arquivos gerados em tempo de execução pelas automações.
+dados/src/.runtime-*.js
+dados/src/.scripts/.runtime-*.js
+dados/src/menus/.runtime-*.js
+dados/src/funcs/private/.runtime-*.js
+dados/database/dono/automacoes-v9.json
+dados/database/dono/deleted-messages-v9.json
+dados/database/dono/command-media/
+
+# Logs, caches, temporários e dumps.
+*.log
+logs/
+tmp/
+.temp/
+.cache/
+*.dump
+*.sqlite
+*.sqlite3
+
+# Backups locais e artefatos de implantação.
+backups/
+dist/
+*.local-backup
+*.tar.gz
+*.zip
+
+# Editor e sistema operacional.
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

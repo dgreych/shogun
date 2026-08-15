@@ -1,0 +1,25 @@
+[Unit]
+Description=NAZUNA BOT - versão modificada GYOMEI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gyomei
+Group=gyomei
+WorkingDirectory=/opt/gyomei
+Environment=NODE_ENV=production
+EnvironmentFile=-/opt/gyomei/.env.local
+ExecStartPre=/usr/bin/env npm run validate:deploy
+ExecStart=/usr/bin/env npm start
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

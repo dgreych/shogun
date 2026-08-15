@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "defaults": {
+    "enabled": false,
+    "turnMode": "NORMAL",
+    "mulliganEnabled": true,
+    "activityXp": true,
+    "eventFrequency": "LOW",
+    "bossEnabled": true,
+    "rankedEnabled": true,
+    "arenaEnabled": true,
+    "brawlEnabled": true
+  },
+  "limits": {
+    "heroHp": 30,
+    "maxMana": 10,
+    "deckSize": 30,
+    "handSize": 10,
+    "boardSize": 7,
+    "normalCopies": 2,
+    "legendaryCopies": 1,
+    "maxEffectChain": 64
+  },
+  "turnSeconds": {
+    "BLITZ": 60,
+    "NORMAL": 180,
+    "ASYNC": 1800,
+    "CORRESPONDENCE": 43200
+  }
+}

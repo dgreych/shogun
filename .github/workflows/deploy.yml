@@ -1,0 +1,22 @@
+name: Deploy em produção
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Publicar no servidor
+        env:
+          PTERODACTYL_PANEL: ${{ secrets.PTERODACTYL_PANEL }}
+          PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+          PTERODACTYL_SERVER_ID: "d56f3096"
+        run: python3 scripts/deploy-pterodactyl.py

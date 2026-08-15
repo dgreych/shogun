@@ -1,0 +1,6 @@
+{
+  "driver": "mysql",
+  "connectionString": "jdbc:mysql://USUARIO:SENHA@127.0.0.1:3306/BANCO",
+  "connectionLimit": 4,
+  "connectTimeoutMs": 10000
+}
