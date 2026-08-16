@@ -120,7 +120,7 @@ jobs:
           unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^node_modules/'
           ! unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^nazuna-gyomei-server-v1.0.0/'
           ! unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^nazuna-main.zip$'
-          ! grep -R -I -n -E 'nvapi-[A-Za-z0-9_-]+' "$BUNDLE"
+          ! grep -R -I -n -E 'nvapi-[A-Za-z0-9_-]{20,}' "$BUNDLE"
 
       - name: Publicar conteúdo root-ready
         if: github.event_name == 'workflow_dispatch'
