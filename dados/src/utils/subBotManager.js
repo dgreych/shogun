@@ -389,7 +389,7 @@ async function addSubBot(phoneNumber, ownerNumber, subBotLid) {
         }
 
         // Salva as informações do sub-bot SEM inicializar ainda
-        // ownerNumber here should already be normalized to LID (index.js will pass LID).
+        // ownerNumber aqui já deve estar normalizado para LID (index.js vai passar LID).
         subbots[botId] = {
             id: botId,
             phoneNumber,

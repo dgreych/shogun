@@ -96,6 +96,12 @@ function readConfig() {
 function validateConfig(config) {
   const strict = mode === 'local' || mode === 'deploy';
 
+  config = {
+    ...config,
+    nomedono: process.env.GYOMEI_OWNER_NAME || process.env.NOMEDONO || config.nomedono,
+    numerodono: process.env.GYOMEI_OWNER_NUMBER || process.env.NUMERODONO || config.numerodono,
+  };
+
   for (const field of ['nomebot', 'prefixo', 'nomedono', 'numerodono']) {
     if (isPlaceholder(config[field])) {
       const message = `Campo ${field} não está configurado.`;
@@ -105,8 +111,10 @@ function validateConfig(config) {
     }
   }
 
-  if (config.nomebot && String(config.nomebot).trim().toUpperCase() !== 'GYOMEI') {
-    warn(`nomebot está como "${config.nomebot}"; a identidade recomendada é GYOMEI.`);
+  if (String(config.nomebot || '').trim() === 'NAZUNA BOT • GYOMEI') {
+    ok('nomebot preservado como NAZUNA BOT • GYOMEI');
+  } else if (config.nomebot) {
+    warn(`nomebot atual é "${config.nomebot}"; este release não altera identidade automaticamente.`);
   }
 
   const ownerDigits = String(config.numerodono || '').replace(/\D/g, '');
@@ -114,9 +122,9 @@ function validateConfig(config) {
     fail('numerodono deve conter entre 10 e 15 dígitos, incluindo código do país.');
   }
 
-  const nvidiaKey = String(
-    process.env.NVIDIA_API_KEY || config.nvidia_api_key || ''
-  ).trim();
+  const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || config.BUNNYFY_BASE_URL || config.bunnyfy_base_url || '').trim();
+  const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || config.BUNNYFY_API_TOKEN || config.bunnyfy_api_token || config.bunnyfy_token || '').trim();
+  const bunnyfyAiMode = String(process.env.BUNNYFY_AI_MODE || config.BUNNYFY_AI_MODE || config.bunnyfy_ai_mode || '').trim();
   const vexKey = String(
     process.env.VEX_API_KEY || config.apikey_vex || ''
   ).trim();
@@ -124,11 +132,11 @@ function validateConfig(config) {
     process.env.VEX_SITE || config.site_vex || ''
   ).trim();
 
-  if (isPlaceholder(nvidiaKey)) {
-    const message = 'NVIDIA_API_KEY não foi definida em .env.local, no ambiente ou em nvidia_api_key.';
+  if (bunnyfyAiMode === 'exclusive' && (isPlaceholder(bunnyfyBase) || isPlaceholder(bunnyfyToken))) {
+    const message = 'BunnyFy AI exclusive está ativo, mas BUNNYFY_BASE_URL/BUNNYFY_API_TOKEN não estão completos neste ambiente local.';
     mode === 'deploy' ? fail(message) : warn(message);
-  } else {
-    ok('Credencial NVIDIA disponível sem ser exibida');
+  } else if (bunnyfyAiMode === 'exclusive') {
+    ok('Configuração BunnyFy AI disponível sem ser exibida');
   }
 
   if (isPlaceholder(vexKey) || isPlaceholder(vexSite)) {
@@ -190,11 +198,11 @@ function validateRuntime() {
       [runtimeIndex.includes("case 'return1'"), 'Comandos return presentes'],
       [runtimeIndex.includes('downloadQuotedCommandMedia'), 'setmidia usa downloader independente'],
       [!runtimeIndex.match(/case 'setmidia'[\s\S]{0,2500}\b(foto1|video1)\b/), 'setmidia não usa variáveis legadas'],
-      [runtimeIa.includes('meta/llama-3.3-70b-instruct') || runtimeIa.includes('DEFAULT_NVIDIA_MODEL'), 'Modelo NVIDIA padrão (3.3) configurado na assistente'],
-      [runtimeIndex.includes('meta/llama-3.3-70b-instruct') || runtimeIndex.includes('DEFAULT_NVIDIA_MODEL'), 'Modelo NVIDIA padrão (3.3) configurado nas chamadas auxiliares'],
+      [runtimeIa.includes('createBunnyFyAiClient'), 'Runtime usa BunnyFy como gateway de IA'],
+      [!runtimeIndex.includes('requestNvidiaChat'), 'Runtime principal não chama NVIDIA diretamente'],
       [!runtimeIa.includes('moonshotai/kimi-k2-instruct') && !runtimeIndex.includes('moonshotai/kimi-k2-instruct'), 'Runtime sem referências ao modelo Kimi'],
       [runtimeIa.includes('buildAssistantSystemPrompt'), 'Prompt do GYOMEI composto'],
-      [runtimeIa.includes('process.env.NVIDIA_API_KEY'), 'Chave NVIDIA externalizada no runtime'],
+      [!runtimeIa.includes('process.env.NVIDIA_API_KEY'), 'Runtime não lê NVIDIA_API_KEY diretamente'],
       [!runtimeIa.includes("const IA_API_KEY = 'nvapi-"), 'Runtime sem chave NVIDIA hardcoded'],
       [runtimeStart.includes('GYOMEI'), 'Inicialização com identidade GYOMEI']
     ];
@@ -285,9 +293,9 @@ console.log(`\n🪨 Validação GYOMEI — modo ${mode.toUpperCase()}\n`);
 
 const envResult = loadLocalEnv();
 if (envResult.exists) {
-  ok(`.env.local carregado (${envResult.loaded.length} variável(is) nova(s))`);
+  ok(`.env.local opcional carregado (${envResult.loaded.length} variável(is) nova(s))`);
 } else if (mode === 'local' || mode === 'deploy') {
-  warn('.env.local não encontrado; serão usadas apenas variáveis já exportadas e config.json.');
+  ok('config.json é a fonte canônica de configuração; .env.local é opcional.');
 }
 
 const majorNode = Number(process.versions.node.split('.')[0]);

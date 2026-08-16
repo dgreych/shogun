@@ -188,6 +188,35 @@ test('falha do renderer mantém a mão no privado em fallback textual', async ()
   assert.doesNotMatch(transport.groupTexts[0].text, /Sentinela de Pedra|Dragão Carmesim/);
 });
 
+test('mão paginada é enviada no privado em ordem com página na legenda', async () => {
+  const state = makeState();
+  state.players[PLAYER].hand = Array.from({ length: 10 }, (_, index) => ({
+    ...state.players[PLAYER].hand[index % 2],
+    instanceId: `card-${index + 1}`,
+    cardId: `GY-${String(index + 1).padStart(3, '0')}`,
+    name: `Carta ${index + 1}`
+  }));
+  const renderCalls = [];
+  const controller = makeController({
+    handRenderer: {
+      async renderPages(receivedState, playerId) {
+        renderCalls.push({ receivedState, playerId });
+        return [Buffer.from('pagina-1'), Buffer.from('pagina-2')];
+      }
+    }
+  });
+  const transport = makeTransport();
+
+  const delivered = await controller.sendPrivateHand(state, PLAYER, transport, '!');
+
+  assert.equal(delivered, true);
+  assert.equal(renderCalls.length, 1);
+  assert.deepEqual(transport.privateImages.map(item => item.buffer.toString()), ['pagina-1', 'pagina-2']);
+  assert.match(transport.privateImages[0].options.caption, /Página 1\/2/);
+  assert.match(transport.privateImages[1].options.caption, /Página 2\/2/);
+  assert.equal(transport.privateTexts.length, 0);
+});
+
 test('regra visual de jogabilidade acompanha turno, mana e espaço de campo', () => {
   const state = makeState();
   const player = state.players[PLAYER];

@@ -27,11 +27,13 @@ const checks = [
   [runtimeIndex.includes('const messagePreview = buildSafeMessagePreview({'), 'logger usa preview seguro no runtime'],
   [!runtimeIndex.includes('const messagePreview = isCmd ?'), 'runtime não monta preview diretamente da consulta'],
   [runtimeIndex.includes('reply(respAssist.message)'), 'erro da IA chega ao usuário'],
-  [runtimeIa.includes('requestNvidiaChat'), 'cliente NVIDIA robusto carregado'],
-  [runtimeIa.includes('function getNvidiaApiKey()'), 'chave NVIDIA lida dinamicamente'],
-  [runtimeIa.includes('[NVIDIA] Erro na assistente'), 'log identifica NVIDIA corretamente'],
+  [!runtimeIa.includes('requestNvidiaChat'), 'runtime não usa cliente NVIDIA direto'],
+  [!runtimeIa.includes('function getNvidiaApiKey()'), 'runtime não lê chave NVIDIA diretamente'],
+  [runtimeIa.includes('[BUNNYFY_AI] Erro na assistente') || runtimeIa.includes('BUNNYFY_AI'), 'log identifica gateway BunnyFy AI'],
   [!runtimeIa.includes('Erro na API Cognima'), 'log legado da Cognima removido'],
-  [!runtimeIa.includes('Tentativa ${attempt + 1} falhou'), 'repetição legada removida']
+  [!runtimeIa.includes('Tentativa ${attempt + 1} falhou'), 'repetição legada removida'],
+  [runtimeIa.includes('createBunnyFyAiClient'), 'cliente BunnyFy AI carregado'],
+  [!runtimeIa.includes('resolveEmbeddedNvidiaKey'), 'fallback embutido NVIDIA removido']
 ];
 
 let failures = 0;

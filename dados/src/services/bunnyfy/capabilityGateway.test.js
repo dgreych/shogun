@@ -37,6 +37,53 @@ const BASE_ENV = {
   BUNNYFY_KWAI_MODE: 'exclusive'
 };
 
+const BOARD_VIEW = {
+  schemaVersion: 1,
+  kind: 'board',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  turn: { number: 1, activeSlot: 'bottom', deadlineAt: null },
+  terrain: null,
+  players: [
+    {
+      slot: 'bottom', displayName: 'Um', classId: 'GUARDIAN',
+      hero: { hp: 30, armor: 0 }, mana: { current: 1, max: 1 },
+      handCount: 3, deckCount: 27, board: []
+    },
+    {
+      slot: 'top', displayName: 'Dois', classId: 'EXILE',
+      hero: { hp: 30, armor: 0 }, mana: { current: 0, max: 0 },
+      handCount: 5, deckCount: 25, board: []
+    }
+  ]
+};
+
+const HAND_VIEW = {
+  schemaVersion: 1,
+  kind: 'hand',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  isActive: true,
+  viewer: {
+    classId: 'GUARDIAN', mana: { current: 1, max: 1 }, nextSpellDiscount: 0, boardCount: 0
+  },
+  cards: []
+};
+
+const INVITE_VIEW = {
+  schemaVersion: 1,
+  kind: 'scene',
+  sceneKind: 'invite',
+  payload: {
+    challengerName: 'Um',
+    challengedName: 'Dois',
+    challengerClassId: 'GUARDIAN',
+    challengedClassId: 'EXILE',
+    modeLabel: 'NORMAL',
+    expiresLabel: '5 MIN'
+  }
+};
+
 test('master flag e modos independentes mantêm rollback granular', () => {
   assert.equal(resolveCapabilityMode('BUNNYFY_IMAGES_MODE', { ...BASE_ENV, BUNNYFY_ENABLED: 'false' }), 'off');
   assert.equal(resolveCapabilityMode('BUNNYFY_CANVAS_MODE', BASE_ENV), 'exclusive');
@@ -375,8 +422,8 @@ test('cards sociais adicionais usam apenas método allowlisted', async () => {
 test('render do board da Tavern usa a BunnyFy e devolve o Buffer PNG diretamente, sem envelope', async () => {
   const calls = [];
   const clientFactory = () => ({
-    async renderTavernBoard(state, playerNames) {
-      calls.push(['render', state.matchId, playerNames]);
+    async renderTavernBoard(view) {
+      calls.push(['render', view]);
       return { width: 1200, height: 675, media: { mediaId: 'board-1234567890' } };
     },
     async downloadMedia(media) {
@@ -385,27 +432,34 @@ test('render do board da Tavern usa a BunnyFy e devolve o Buffer PNG diretamente
     }
   });
 
-  const buffer = await tavernBoardWithBunnyFy({ matchId: 'm1' }, { p1: 'Um' }, { env: BASE_ENV, clientFactory });
+  const buffer = await tavernBoardWithBunnyFy(BOARD_VIEW, { env: BASE_ENV, clientFactory });
   assert.equal(buffer.toString(), 'png-board');
   assert.deepEqual(calls.map(call => call[0]), ['render', 'download']);
+  assert.equal(calls[0][1], BOARD_VIEW);
 });
 
 test('render da mão da Tavern cai no Jimp local só em falha transitória e modo primary', async () => {
   let fallbackCalls = 0;
-  const buffer = await tavernHandWithBunnyFy({ matchId: 'm1' }, 'p1', {
+  let receivedPage = null;
+  const buffer = await tavernHandWithBunnyFy(HAND_VIEW, {
+    page: 2,
     env: { ...BASE_ENV, BUNNYFY_TAVERN_RENDER_MODE: 'primary' },
     clientFactory: () => ({
-      async renderTavernHand() { throw new BunnyFyError('BUNNYFY_UNAVAILABLE'); }
+      async renderTavernHand(_view, options) {
+        receivedPage = options.page;
+        throw new BunnyFyError('BUNNYFY_UNAVAILABLE');
+      }
     }),
     legacyFallback: async () => { fallbackCalls += 1; return Buffer.from('png-hand-local'); }
   });
   assert.equal(buffer.toString(), 'png-hand-local');
   assert.equal(fallbackCalls, 1);
+  assert.equal(receivedPage, 2);
 });
 
 test('render de cena da Tavern (modo off) nunca chama a BunnyFy, só o Jimp local', async () => {
   let bunnyfyCalls = 0;
-  const buffer = await tavernSceneWithBunnyFy('invite', { challengerName: 'Um' }, {
+  const buffer = await tavernSceneWithBunnyFy(INVITE_VIEW, {
     env: { ...BASE_ENV, BUNNYFY_TAVERN_RENDER_MODE: 'off' },
     clientFactory: () => ({
       async renderTavernScene() { bunnyfyCalls += 1; return { media: {} }; }

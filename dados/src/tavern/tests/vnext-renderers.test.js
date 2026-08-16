@@ -78,14 +78,14 @@ function state() {
   };
 }
 
-test('mão vNext gera PNG 1200x820 e consulta arte específica da carta', async () => {
+test('mão vNext gera PNG retrato 720x960 e consulta arte específica da carta', async () => {
   const assets = new TrackingAssets();
   const renderer = new VNextHandRenderer({ assets });
   const buffer = await renderer.render(state(), PLAYER);
   const image = await Jimp.read(buffer);
 
-  assert.equal(image.bitmap.width, 1200);
-  assert.equal(image.bitmap.height, 820);
+  assert.equal(image.bitmap.width, 720);
+  assert.equal(image.bitmap.height, 960);
   assert.ok(assets.requested.includes('card.GY-001'));
   assert.ok(assets.requested.includes('frame.COMMON'));
   assert.ok(assets.requested.includes('keyword.GUARD'));

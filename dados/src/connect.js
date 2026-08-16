@@ -700,12 +700,12 @@ const isValidLid = (str) => /^[a-zA-Z0-9_]+@lid$/.test(str);
 const isValidUserId = (str) => isValidJid(str) || isValidLid(str);
 
 /**
- * Validates if a participant object has a valid ID and extracts the ID
- * @param {object|string} participant - The participant object or string to validate
- * @returns {string|boolean} - The participant ID if valid, false otherwise
+ * Valida se um objeto participant tem um ID válido e extrai o ID
+ * @param {object|string} participant - O objeto participant ou string a validar
+ * @returns {string|boolean} - O ID do participant se válido, false caso contrário
  */
 function isValidParticipant(participant) {
-    // If participant is already a string, validate it directly
+    // Se participant já é uma string, valida diretamente
     if (typeof participant === 'string') {
     if (participant.trim().length === 0) return false;
     return participant;
@@ -1179,10 +1179,30 @@ async function createBotSocket(authDir) {
     // não mandar aviso de erro em cima de mensagem de conversa comum.
     const extractBodyForErrorReport = message => {
     if (!message) return '';
+    const wrapped = message.ephemeralMessage?.message
+        || message.viewOnceMessage?.message
+        || message.viewOnceMessageV2?.message
+        || message.viewOnceMessageV2Extension?.message
+        || message.documentWithCaptionMessage?.message;
+    if (wrapped) return extractBodyForErrorReport(wrapped);
+    let nativeFlowCommand = '';
+    const nativeFlowParams = message.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
+    if (typeof nativeFlowParams === 'string' && nativeFlowParams.length <= 10_000) {
+      try {
+        const parsed = JSON.parse(nativeFlowParams);
+        nativeFlowCommand = String(parsed?.id || parsed?.command || parsed?.selectedId || '');
+      } catch {}
+    }
     return message.conversation
         || message.extendedTextMessage?.text
         || message.imageMessage?.caption
         || message.videoMessage?.caption
+        || message.documentMessage?.caption
+        || message.buttonsResponseMessage?.selectedButtonId
+        || message.listResponseMessage?.singleSelectReply?.selectedRowId
+        || message.templateButtonReplyMessage?.selectedId
+        || message.interactiveResponseMessage?.body?.text
+        || nativeFlowCommand
         || '';
     };
 
@@ -1218,7 +1238,8 @@ async function createBotSocket(authDir) {
     const info = item.message;
     const remoteJid = info?.key?.remoteJid;
     const body = extractBodyForErrorReport(info?.message).trim();
-    const looksLikeCommand = /^\S/.test(body) && !/^[a-zA-Z0-9À-ÿ]/.test(body);
+    const looksLikeCommand = error?.isCommandFailure === true
+        || (/^\S/.test(body) && !/^[a-zA-Z0-9À-ÿ]/.test(body));
     if (remoteJid && looksLikeCommand && !info?.key?.fromMe) {
         await NazunaSock.sendMessage(
         remoteJid,

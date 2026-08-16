@@ -22,6 +22,20 @@ const TAVERN_COMMANDS = new Set([
   'desistir'
 ]);
 
+const PRIVATE_MATCH_COMMANDS = new Set([
+  'mao',
+  'mão',
+  'campo',
+  'render',
+  'partida',
+  'mulligan',
+  'jogar',
+  'atacar',
+  'poder',
+  'fim',
+  'desistir'
+]);
+
 const MODE_LABELS = Object.freeze({
   BLITZ: 'Blitz (60 s)',
   NORMAL: 'Normal (3 min)',
@@ -160,57 +174,57 @@ class TavernCommandController {
       // telefone cru no lugar do nome nos renders. COALESCE no repositório
       // garante que isso nunca apaga um nome já salvo com um valor vazio.
       if (playerId) await this.game.tavern.repository.ensurePlayer(playerId, pushName ?? null);
-      if (!context.isGroup) {
-        await transport.sendCurrentText('A Gyomei Tavern é controlada pela mesa do grupo. Use este comando no grupo da partida.');
+      const commandContext = await this.resolveCommandContext(normalizedCommand, context);
+      if (!commandContext) {
         return true;
       }
       if (normalizedCommand !== 'tavern') {
-        await this.game.assertGroupEnabled(context.chatId);
+        await this.game.assertGroupEnabled(commandContext.chatId);
       }
 
       switch (normalizedCommand) {
         case 'tavern':
-          await this.handleTavern(context);
+          await this.handleTavern(commandContext);
           break;
         case 'duelo':
-          await this.handleDuel(context);
+          await this.handleDuel(commandContext);
           break;
         case 'aceitar':
-          await this.handleAccept(context);
+          await this.handleAccept(commandContext);
           break;
         case 'recusar':
-          await this.handleDecline(context);
+          await this.handleDecline(commandContext);
           break;
         case 'mao':
         case 'mão':
-          await this.sendHandForCurrentMatch(context);
+          await this.sendHandForCurrentMatch(commandContext);
           break;
         case 'campo':
         case 'render':
         case 'partida':
-          await this.sendCurrentBoard(context);
+          await this.sendCurrentBoard(commandContext);
           break;
         case 'renderizar':
-          if (!context.isAdmin) throw new TavernRuleError('Somente administradores podem forçar uma renderização.');
-          await this.sendCurrentBoard(context);
+          if (!commandContext.isAdmin) throw new TavernRuleError('Somente administradores podem forçar uma renderização.');
+          await this.sendCurrentBoard(commandContext);
           break;
         case 'mulligan':
-          await this.handleMulligan(context);
+          await this.handleMulligan(commandContext);
           break;
         case 'jogar':
-          await this.handlePlay(context);
+          await this.handlePlay(commandContext);
           break;
         case 'atacar':
-          await this.handleAttack(context);
+          await this.handleAttack(commandContext);
           break;
         case 'poder':
-          await this.handleHeroPower(context);
+          await this.handleHeroPower(commandContext);
           break;
         case 'fim':
-          await this.handleEndTurn(context);
+          await this.handleEndTurn(commandContext);
           break;
         case 'desistir':
-          await this.handleConcede(context);
+          await this.handleConcede(commandContext);
           break;
         default:
           return false;
@@ -225,6 +239,27 @@ class TavernCommandController {
       await transport.sendCurrentText('❌ A Taverna encontrou um erro inesperado. Tente novamente em instantes.');
       return true;
     }
+  }
+
+  async resolveCommandContext(command, context) {
+    if (context.isGroup) return context;
+    if (!PRIVATE_MATCH_COMMANDS.has(command)) {
+      await context.transport.sendCurrentText(
+        '🍺 Este comando começa no grupo da Tavern. Durante uma partida, sua mão e suas ações podem ser usadas aqui no privado.'
+      );
+      return null;
+    }
+
+    const match = await this.game.resolvePrivateActiveMatch(context.playerId);
+    const groupTransport = typeof context.transport.withGroupChat === 'function'
+      ? context.transport.withGroupChat(match.groupId)
+      : context.transport;
+    return {
+      ...context,
+      chatId: match.groupId,
+      match,
+      transport: groupTransport
+    };
   }
 
   async reportTavernError(error, context) {
@@ -352,7 +387,7 @@ class TavernCommandController {
     await this.game.dispatchForPlayer(chatId, TAVERN_BOT_PLAYER_ID, {
       type: 'MULLIGAN',
       cards: chooseMulliganDiscards(botHand)
-    });
+    }, { matchId: created.matchId });
     const refreshed = await this.game.getActiveMatch(chatId, playerId);
     const state = refreshed.state;
     await Promise.all([
@@ -424,16 +459,36 @@ class TavernCommandController {
     await this.game.assertGroupEnabled(context.chatId);
     const match = await this.game.getActiveMatch(context.chatId, context.playerId);
     await this.sendPrivateHand(match.state, context.playerId, context.transport, context.prefix, {
-      confirmDelivery: true
+      confirmDelivery: context.isGroup
     });
+  }
+
+  async renderPrivateHandPages(state, playerId) {
+    const rendered = await this.renderQueue.run(() => (
+      typeof this.handRenderer.renderPages === 'function'
+        ? this.handRenderer.renderPages(state, playerId)
+        : this.handRenderer.render(state, playerId)
+    ));
+    const pages = Array.isArray(rendered) ? rendered : [rendered];
+    if (pages.length === 0 || pages.some(page => !Buffer.isBuffer(page) || page.length === 0)) {
+      throw new TavernValidationError('A renderização da mão não devolveu páginas válidas.');
+    }
+    return pages;
+  }
+
+  handPageCaption(caption, page, totalPages) {
+    return `${caption}\n\n📄 Página ${page}/${totalPages}`;
   }
 
   async sendPrivateHand(state, playerId, transport, prefix, { confirmDelivery = false } = {}) {
     try {
-      const buffer = await this.renderQueue.run(() => this.handRenderer.render(state, playerId));
-      await transport.sendPrivateImage(playerId, buffer, {
-        caption: formatHandCaption(state, playerId, prefix)
-      });
+      const pages = await this.renderPrivateHandPages(state, playerId);
+      const caption = formatHandCaption(state, playerId, prefix);
+      for (let index = 0; index < pages.length; index += 1) {
+        await transport.sendPrivateImage(playerId, pages[index], {
+          caption: this.handPageCaption(caption, index + 1, pages.length)
+        });
+      }
       if (confirmDelivery) {
         await transport.sendGroupText(`📬 Mão enviada no privado para ${mention(playerId)}.`, {
           mentions: [playerId]
@@ -609,4 +664,10 @@ class TavernCommandController {
   }
 }
 
-export { MODE_LABELS, TAVERN_COMMANDS, TavernCommandController, isTavernCommand };
+export {
+  MODE_LABELS,
+  PRIVATE_MATCH_COMMANDS,
+  TAVERN_COMMANDS,
+  TavernCommandController,
+  isTavernCommand
+};

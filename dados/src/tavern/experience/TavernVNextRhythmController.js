@@ -169,11 +169,17 @@ class TavernVNextRhythmController extends TavernVNextCommandController {
       return;
     }
     let state = match.state;
+    const matchId = match.matchId;
     let guard = 0;
     while (state.status === 'ACTIVE' && state.turn?.activePlayerId === TAVERN_BOT_PLAYER_ID && guard < 200) {
       guard += 1;
       const action = chooseAction(state, TAVERN_BOT_PLAYER_ID);
-      const result = await this.game.dispatchForPlayer(context.chatId, TAVERN_BOT_PLAYER_ID, action, {});
+      const result = await this.game.dispatchForPlayer(
+        context.chatId,
+        TAVERN_BOT_PLAYER_ID,
+        action,
+        { matchId }
+      );
       const nextActive = result.state.status === 'ACTIVE' ? result.state.turn?.activePlayerId : null;
       await this.afterAction(result, context, {
         privateHands: nextActive && nextActive !== TAVERN_BOT_PLAYER_ID ? [nextActive] : []

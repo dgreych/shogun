@@ -1,29 +1,47 @@
 import { TAVERN_BOT_DISPLAY_NAME, TAVERN_BOT_PLAYER_ID } from '../domain/TavernBotPlayer.js';
 
 class WhatsAppTavernTransport {
-  constructor({ socket, chatId, quoted = null }) {
+  constructor({ socket, chatId, groupChatId = chatId, quoted = null }) {
     this.socket = socket;
     this.chatId = chatId;
+    this.groupChatId = groupChatId;
     this.quoted = quoted;
+  }
+
+  withGroupChat(groupChatId) {
+    return new WhatsAppTavernTransport({
+      socket: this.socket,
+      chatId: this.chatId,
+      groupChatId,
+      quoted: this.quoted
+    });
+  }
+
+  sendOptionsFor(targetChatId) {
+    return this.quoted && targetChatId === this.chatId ? { quoted: this.quoted } : undefined;
   }
 
   sendCurrentText(text, { mentions = [] } = {}) {
     return this.socket.sendMessage(
       this.chatId,
       { text, mentions },
-      this.quoted ? { quoted: this.quoted } : undefined
+      this.sendOptionsFor(this.chatId)
     );
   }
 
   sendGroupText(text, { mentions = [] } = {}) {
-    return this.sendCurrentText(text, { mentions });
+    return this.socket.sendMessage(
+      this.groupChatId,
+      { text, mentions },
+      this.sendOptionsFor(this.groupChatId)
+    );
   }
 
   sendGroupImage(buffer, { caption = '', mentions = [] } = {}) {
     return this.socket.sendMessage(
-      this.chatId,
+      this.groupChatId,
       { image: buffer, caption, mentions },
-      this.quoted ? { quoted: this.quoted } : undefined
+      this.sendOptionsFor(this.groupChatId)
     );
   }
 

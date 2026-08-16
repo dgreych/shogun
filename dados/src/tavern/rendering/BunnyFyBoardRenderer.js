@@ -1,4 +1,5 @@
 import { tavernBoardWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
+import { buildTavernBoardRenderView } from './TavernRenderView.js';
 import { VNextBoardRenderer } from './VNextBoardRenderer.js';
 
 /**
@@ -11,14 +12,17 @@ import { VNextBoardRenderer } from './VNextBoardRenderer.js';
  * qualquer lugar que já o use.
  */
 class BunnyFyBoardRenderer {
-  constructor({ assets, now, env = process.env } = {}) {
-    this.local = new VNextBoardRenderer({ assets, now });
+  constructor({ assets, now, env = process.env, clientFactory, localRenderer } = {}) {
+    this.local = localRenderer || new VNextBoardRenderer({ assets, now });
     this.env = env;
+    this.clientFactory = clientFactory;
   }
 
   async render(state, options = {}) {
-    return tavernBoardWithBunnyFy(state, options.playerNames || {}, {
+    const view = buildTavernBoardRenderView(state, options.playerNames || {});
+    return tavernBoardWithBunnyFy(view, {
       env: this.env,
+      clientFactory: this.clientFactory,
       legacyFallback: () => this.local.render(state, options)
     });
   }

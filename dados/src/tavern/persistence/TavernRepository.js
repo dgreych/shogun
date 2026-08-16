@@ -375,6 +375,17 @@ class TavernRepository {
     )));
   }
 
+  async listActiveMatchesForPlayer(playerId) {
+    const normalizedPlayerId = assertIdentifier(playerId, 'playerId');
+    return this.store.read(async session => (await session.all(
+      `SELECT * FROM tavern_matches
+       WHERE status = 'ACTIVE'
+         AND (player_one_id = ? OR player_two_id = ?)
+       ORDER BY created_at DESC`,
+      [normalizedPlayerId, normalizedPlayerId]
+    )).map(mapMatch));
+  }
+
   async listActiveMatches(groupId = null) {
     const normalizedGroupId = groupId === null ? null : assertIdentifier(groupId, 'groupId');
     return this.store.read(async session => {

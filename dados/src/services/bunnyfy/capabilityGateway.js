@@ -162,7 +162,7 @@ async function imageGenerateWithBunnyFy(prompt, {
 // deixa os wrappers em rendering/BunnyFy*Renderer.js um substituto
 // transparente dos renderers locais, sem precisar tocar em nenhum
 // controlador que já os chama.
-async function tavernBoardWithBunnyFy(state, playerNames, {
+async function tavernBoardWithBunnyFy(view, {
   env = process.env,
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
@@ -173,7 +173,7 @@ async function tavernBoardWithBunnyFy(state, playerNames, {
     legacyFallback,
     operation: async () => {
       const client = clientFactory(env);
-      const result = await client.renderTavernBoard(state, playerNames, {
+      const result = await client.renderTavernBoard(view, {
         idempotencyKey: crypto.randomUUID()
       });
       const downloaded = await client.downloadMedia(result.media, { maxBytes: 20 * 1024 * 1024 });
@@ -182,7 +182,8 @@ async function tavernBoardWithBunnyFy(state, playerNames, {
   });
 }
 
-async function tavernHandWithBunnyFy(state, playerId, {
+async function tavernHandWithBunnyFy(view, {
+  page = 1,
   env = process.env,
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
@@ -193,7 +194,8 @@ async function tavernHandWithBunnyFy(state, playerId, {
     legacyFallback,
     operation: async () => {
       const client = clientFactory(env);
-      const result = await client.renderTavernHand(state, playerId, {
+      const result = await client.renderTavernHand(view, {
+        page,
         idempotencyKey: crypto.randomUUID()
       });
       const downloaded = await client.downloadMedia(result.media, { maxBytes: 20 * 1024 * 1024 });
@@ -202,7 +204,7 @@ async function tavernHandWithBunnyFy(state, playerId, {
   });
 }
 
-async function tavernSceneWithBunnyFy(kind, payload, {
+async function tavernSceneWithBunnyFy(view, {
   env = process.env,
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
@@ -213,7 +215,7 @@ async function tavernSceneWithBunnyFy(kind, payload, {
     legacyFallback,
     operation: async () => {
       const client = clientFactory(env);
-      const result = await client.renderTavernScene(kind, payload, {
+      const result = await client.renderTavernScene(view, {
         idempotencyKey: crypto.randomUUID()
       });
       const downloaded = await client.downloadMedia(result.media, { maxBytes: 20 * 1024 * 1024 });

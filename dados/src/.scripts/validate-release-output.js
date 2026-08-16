@@ -54,17 +54,17 @@ if (fs.existsSync(runtimeIndexPath)) {
   assert(runtimeIndex.includes('Talvez você procurasse'), 'sugestões de similaridade presentes');
   assert(runtimeIndex.includes('comandos disponíveis'), 'total de comandos aparece de forma discreta');
   assert(runtimeIndex.includes('downloadQuotedCommandMedia'), 'setmidia usa download independente');
-  assert(runtimeIndex.includes('meta/llama-3.3-70b-instruct') || runtimeIndex.includes('DEFAULT_NVIDIA_MODEL'), 'chamadas auxiliares usam o modelo NVIDIA padrão (3.3)');
+  assert(!runtimeIndex.includes('requestNvidiaChat'), 'runtime principal não chama NVIDIA diretamente');
   assert(!runtimeIndex.includes('moonshotai/kimi-k2-instruct'), 'runtime principal não contém modelo Kimi');
   assert(runtimeIndex.includes("case 'return5'"), 'return1 a return5 presentes');
 }
 
 if (fs.existsSync(runtimeIaPath)) {
   const runtimeIa = fs.readFileSync(runtimeIaPath, 'utf8');
-  assert(runtimeIa.includes('meta/llama-3.3-70b-instruct') || runtimeIa.includes('DEFAULT_NVIDIA_MODEL'), 'modelo NVIDIA padrão (3.3) configurado');
+  assert(runtimeIa.includes('createBunnyFyAiClient'), 'assistente usa BunnyFy como gateway de IA');
   assert(!runtimeIa.includes('moonshotai/kimi-k2-instruct'), 'assistente não contém modelo Kimi');
   assert(runtimeIa.includes('buildAssistantSystemPrompt'), 'prompt protegido do GYOMEI composto');
-  assert(runtimeIa.includes('process.env.NVIDIA_API_KEY'), 'chave NVIDIA vem do ambiente');
+  assert(!runtimeIa.includes('process.env.NVIDIA_API_KEY'), 'runtime não lê NVIDIA_API_KEY diretamente');
   assert(!/const IA_API_KEY = ['"]nvapi-/.test(runtimeIa), 'runtime não contém chave NVIDIA hardcoded');
 }
 

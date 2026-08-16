@@ -250,20 +250,20 @@ async function downloadUpdate() {
           return;
         }
 
-        // Verify the clone was successful
+        // Confirma se o clone foi bem-sucedido
         if (!fsSync.existsSync(TEMP_DIR)) {
           reject(new Error('Diretório temporário não foi criado após o clone'));
           return;
         }
 
-        // Check if it's a valid git repository
+        // Verifica se é um repositório git válido
         const gitDir = path.join(TEMP_DIR, '.git');
         if (!fsSync.existsSync(gitDir)) {
           reject(new Error('Clone do repositório Git inválido'));
           return;
         }
 
-        // Remove README.md as in the original code
+        // Remove README.md, igual no código original
         try {
           const readmePath = path.join(TEMP_DIR, 'README.md');
           if (fsSync.existsSync(readmePath)) {
@@ -271,7 +271,7 @@ async function downloadUpdate() {
           }
         } catch (unlinkError) {
           printWarning(`⚠️ Não foi possível remover README.md: ${unlinkError.message}`);
-          // Don't fail the entire process for this
+          // Não falha o processo inteiro por causa disso
         }
 
         printMessage('✅ Download concluído com sucesso.');
@@ -337,7 +337,7 @@ async function cleanOldFiles(options = {}) {
     if (fsSync.existsSync(dadosDir)) {
       printDetail('📂 Preservando diretório de dados...');
       
-      // Only remove specific files that need updating, not the entire dados directory
+      // Remove só os arquivos específicos que precisam de atualização, não a pasta dados inteira
       const filesToClean = [
         'src/config.json',  // This will be restored from backup
         'src/.scripts',     // Old scripts that will be replaced
@@ -464,7 +464,7 @@ async function checkDependencyChanges() {
   }
 }
 
-// Helper function to check Node.js version compatibility
+// Função auxiliar para checar a compatibilidade da versão do Node.js
 function satisfiesNodeVersion(currentVersion, requiredVersion) {
   // Simple version comparison - in a real implementation, you might want to use a proper semver library
   const current = currentVersion.replace('v', '').split('.').map(Number);
@@ -585,7 +585,7 @@ async function main() {
     printSeparator();
     printWarning(`❌ Erro durante a atualização: ${error.message}`);
     
-    // Enhanced error recovery
+    // Recuperação de erro reforçada
     if (backupCreated && !updateApplied) {
       try {
         await restoreBackup();
@@ -604,7 +604,7 @@ async function main() {
     printInfo('📝 Para restaurar manualmente, copie os arquivos do backup para os diretórios correspondentes.');
     printInfo('📩 Em caso de dúvidas, contate o desenvolvedor.');
     
-    // Exit with error code
+    // Encerra com código de erro
     process.exit(1);
   }
 }

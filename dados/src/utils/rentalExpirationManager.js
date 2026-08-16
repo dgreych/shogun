@@ -39,7 +39,7 @@ class RentalExpirationManager {
       const logDir = path.dirname(this.config.logFile);
       await fs.mkdir(logDir, { recursive: true });
       
-      // Start the scheduler
+      // Inicia o agendador
       this.startScheduler();
       
       // Log initialization
@@ -107,7 +107,7 @@ class RentalExpirationManager {
 
       for (const [groupId, groupInfo] of Object.entries(rentalData.groups)) {
         try {
-          // Skip permanent rentals (check all possible permanent indicators)
+          // Pula aluguéis permanentes (checa todos os indicadores possíveis de permanente)
           if (groupInfo.expiresAt === 'permanent' || groupInfo.duration === 'permanent' || groupInfo.durationDays === 'permanent') continue;
 
           const expiresAt = new Date(groupInfo.expiresAt);
@@ -303,7 +303,7 @@ O aluguel deste grupo expirou e o bot está saindo agora. Para voltar a usar o b
         text: goodbyeMessage
       });
 
-      // Leave the group
+      // Sai do grupo
       await this.nazu.groupLeave(groupId);
       
       // Remove from rental data
@@ -375,7 +375,7 @@ O aluguel deste grupo expirou e o bot está saindo agora. Para voltar a usar o b
       const DONO_DIR = path.join(__dirname, '../../database/dono');
       const ALUGUEIS_FILE = path.join(DONO_DIR, 'alugueis.json');
       
-      // Check if file exists
+      // Verifica se o arquivo existe
       try {
         await fs.access(ALUGUEIS_FILE);
       } catch {

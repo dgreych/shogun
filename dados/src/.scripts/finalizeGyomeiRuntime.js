@@ -60,20 +60,13 @@ function buildCommandNotFoundCard() {
   ].join('\n');
 }
 
-function externalizeIaKey(source) {
-  const declaration = `const IA_API_KEY = String(\n  process.env.NVIDIA_API_KEY\n  || automacoesV9.getConfig()?.nvidia_api_key\n  || ''\n).trim();`;
-
-  const literalPattern = /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/;
-  if (literalPattern.test(source)) return source.replace(literalPattern, declaration);
-
-  const envOnly = "const IA_API_KEY = String(process.env.NVIDIA_API_KEY || '').trim();";
-  if (source.includes(envOnly)) return source.replace(envOnly, declaration);
-
-  if (source.includes('process.env.NVIDIA_API_KEY') && source.includes('automacoesV9.getConfig()?.nvidia_api_key')) {
-    return source;
+function assertNoDirectNvidiaTransport(source) {
+  const forbidden = ['requestNvidiaChat', 'resolveEmbeddedNvidiaKey', 'getNvidiaApiKey'];
+  const found = forbidden.filter(item => source.includes(item));
+  if (found.length) {
+    throw new Error(`Transporte NVIDIA direto proibido no runtime: ${found.join(', ')}`);
   }
-
-  throw new Error('Patch final obrigatório não encontrado: externalização da chave NVIDIA');
+  return source;
 }
 
 export function finalizeGyomeiRuntime() {
@@ -121,7 +114,7 @@ export function finalizeGyomeiRuntime() {
     'cartão de comandos similares'
   );
 
-  runtimeIa = externalizeIaKey(runtimeIa);
+  runtimeIa = assertNoDirectNvidiaTransport(runtimeIa);
 
   fs.writeFileSync(RUNTIME_INDEX, runtimeIndex);
   fs.writeFileSync(RUNTIME_IA, runtimeIa);

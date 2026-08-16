@@ -55,7 +55,7 @@ async function getLyrics(topic) {
       const spans = p.querySelectorAll('span.verse');
       
       if (spans.length) {
-        // Handle romanization (e.g., for songs with alternate scripts)
+        // Trata a romanização (ex.: para músicas com escritas alternativas)
         return Array.from(spans)
           .map(span => span.querySelector('span.romanization')?.textContent || '')
           .filter(line => line)

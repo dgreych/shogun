@@ -957,8 +957,8 @@ export {
 };
 
 /**
- * Parse custom command meta tokens provided as tokens array (e.g., ['[admin]','[param:name:required]','rest','of','response'])
- * Returns an object with settings and the remaining tokens
+ * Interpreta os tokens de meta de comando customizado fornecidos como array (ex.: ['[admin]','[param:name:required]','rest','of','response'])
+ * Retorna um objeto com as configurações e os tokens restantes
  */
 function parseCustomCommandMeta(tokens) {
   const settings = {
@@ -974,7 +974,7 @@ function parseCustomCommandMeta(tokens) {
   const metaRegex = /^\[(.*)\]$/;
   const angleRegex = /^<(.*)>$/;
 
-  // consume meta tokens from the start
+  // consome os tokens de meta a partir do início
   let idx = 0;
   while (idx < tokens.length) {
     const t = tokens[idx];
@@ -1047,7 +1047,7 @@ function parseCustomCommandMeta(tokens) {
             restFlag = true;
             continue;
           }
-          // key=value
+          // chave=valor
           if (tok.includes('=')) {
             const [k, ...restParts2] = tok.split('=');
             const v = restParts2.join('=');
@@ -1061,13 +1061,13 @@ function parseCustomCommandMeta(tokens) {
             }
             continue;
           }
-          // if recognized types
+          // se for um tipo reconhecido
           const recognizedTypes = ['number', 'int', 'float', 'string', 'boolean', 'regex', 'enum'];
           if (recognizedTypes.includes(tl)) {
             type = tl;
             continue;
           }
-          // fallback: treat as name
+          // alternativa: trata como nome
           if (!name) name = tok;
         }
         if (!name && parts2.length > 0) name = parts2[0];
@@ -1084,7 +1084,7 @@ function parseCustomCommandMeta(tokens) {
         break;
       }
       case 'placeholder': {
-        // syntax: placeholder:key=value
+        // sintaxe: placeholder:chave=valor
         const restParts = content.split(':').slice(1).join(':');
         const eqIndex = restParts.indexOf('=');
         if (eqIndex > -1) {
@@ -1095,26 +1095,26 @@ function parseCustomCommandMeta(tokens) {
         break;
       }
       default: {
-        // unknown token -> fallback to param parsing if it looks like a param
-        // Accept patterns like: name:required OR type:name:required OR name:type:required OR name
+        // token desconhecido -> tenta interpretar como parâmetro se parecer um
+        // Aceita padrões como: nome:required OU tipo:nome:required OU nome:tipo:required OU nome
         const fallbackParts = parts;
-        // Determine required by last part
+        // Determina se é obrigatório pela última parte
         const last = fallbackParts[fallbackParts.length - 1].toLowerCase();
         const required = last === 'required' || last === 'optional' ? last === 'required' : false;
-        // find type if any
+        // procura o tipo, se houver
         let type = 'string';
         let name = null;
-        // remove last if it's required/optional
+        // remove a última parte se for required/optional
         const coreParts = required ? fallbackParts.slice(0, -1) : fallbackParts.slice();
-        // find a recognized type token
+        // procura um token de tipo reconhecido
         const recognizedTypes = ['number', 'int', 'float', 'string'];
         let idxType = coreParts.findIndex(p => recognizedTypes.includes(p.toLowerCase()));
         if (idxType !== -1) {
           type = coreParts[idxType].toLowerCase();
-          // remove type from coreParts
+          // remove o tipo de coreParts
           coreParts.splice(idxType, 1);
         }
-        // the remaining part(s) likely hold the name; prefer the first non-empty
+        // a(s) parte(s) restante(s) provavelmente contém o nome; prefere a primeira não vazia
         for (const p2 of coreParts) {
           if (p2 && !recognizedTypes.includes(p2.toLowerCase())) {
             name = p2;
@@ -1194,7 +1194,7 @@ function normalizeParamName(name) {
   return n.replace(/[^a-z0-9_]/g, '_');
 }
 
-// Validate a parameter value against its definition
+// Valida o valor de um parâmetro contra sua definição
 function validateParamValue(value, def = {}) {
   if (typeof def !== 'object') return { ok: true };
   const t = def.type || 'string';

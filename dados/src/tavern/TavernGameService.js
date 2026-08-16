@@ -216,8 +216,36 @@ class TavernGameService {
     return match;
   }
 
-  async dispatchForPlayer(groupId, playerId, action, { messageId = null } = {}) {
-    const match = await this.getActiveMatch(groupId, playerId);
+  async resolvePrivateActiveMatch(playerId) {
+    const matches = await this.tavern.repository.listActiveMatchesForPlayer(playerId);
+    if (matches.length === 0) {
+      throw new TavernNotFoundError(
+        'Não encontrei uma partida ativa sua. Comece ou retome a mesa pelo grupo da Tavern.'
+      );
+    }
+    if (matches.length > 1) {
+      throw new TavernConflictError(
+        'Você participa de mais de uma partida ativa. Envie a ação no grupo da mesa que deseja controlar.'
+      );
+    }
+    return matches[0];
+  }
+
+  async getActiveMatchById(groupId, matchId, playerId) {
+    const match = await this.tavern.repository.getMatch(matchId);
+    if (!match || match.status !== 'ACTIVE') {
+      throw new TavernNotFoundError('A partida ativa não foi encontrada');
+    }
+    if (match.groupId !== groupId || !match.state.players[playerId]) {
+      throw new TavernConflictError('A partida não corresponde a esta mesa ou jogador');
+    }
+    return match;
+  }
+
+  async dispatchForPlayer(groupId, playerId, action, { messageId = null, matchId = null } = {}) {
+    const match = matchId
+      ? await this.getActiveMatchById(groupId, matchId, playerId)
+      : await this.getActiveMatch(groupId, playerId);
     if (!match.state.players[playerId]) {
       throw new TavernConflictError('O identificador do jogador não corresponde à partida');
     }

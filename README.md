@@ -19,6 +19,8 @@
   <a href="https://chat.whatsapp.com/Ju0zjLiBLe28eNGUu2gapY"><strong>Grupo oficial</strong></a>
   ·
   <a href="https://wa.me/5522997028553"><strong>Contato</strong></a>
+  ·
+  <a href="DEPLOY.md"><strong>Deploy</strong></a>
 </p>
 
 ---
@@ -84,8 +86,8 @@ A **NAZUNA BOT - versão modificada GYOMEI** preserva a base da Nazuna 9.0 e acr
 ### Linux
 
 ```bash
-git clone https://github.com/dgreych/nazuna9.0-com-automa-es.git
-cd nazuna9.0-com-automa-es
+git clone https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_.git
+cd _Nazuna_bot_vs.Gyomei_
 cp -n .env.example .env.local
 chmod 600 .env.local
 npm ci
@@ -95,8 +97,8 @@ npm start
 ### Windows PowerShell
 
 ```powershell
-git clone https://github.com/dgreych/nazuna9.0-com-automa-es.git
-cd nazuna9.0-com-automa-es
+git clone https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_.git
+cd _Nazuna_bot_vs.Gyomei_
 Copy-Item .env.example .env.local
 npm ci
 npm start
@@ -107,8 +109,8 @@ npm start
 ```bash
 pkg update -y
 pkg install git nodejs-lts ffmpeg -y
-git clone https://github.com/dgreych/nazuna9.0-com-automa-es.git
-cd nazuna9.0-com-automa-es
+git clone https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_.git
+cd _Nazuna_bot_vs.Gyomei_
 cp -n .env.example .env.local
 npm ci
 npm start
@@ -295,6 +297,8 @@ A build privada pode transportar, por lista controlada:
 
 Sessão do WhatsApp, logs, caches e históricos pessoais continuam excluídos por padrão.
 
+Leia [DEPLOY.md](DEPLOY.md) antes de substituir uma instalação em produção.
+
 ## Créditos
 
 ### Criação original
@@ -324,7 +328,7 @@ Sessão do WhatsApp, logs, caches e históricos pessoais continuam excluídos po
 - documentação e deploy.
 
 - [WhatsApp](https://wa.me/5522997028553)
-- [Repositório desta versão](https://github.com/dgreych/nazuna9.0-com-automa-es)
+- [Repositório desta versão](https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_)
 
 ## Hospedagem
 
@@ -336,7 +340,10 @@ Atendimento a partir de **R$ 16,99/mês**.
 
 ## Direção futura
 
-A migração gradual de downloads e serviços externos usa a **API BunnyFy** como destino. Integrações funcionais não são removidas antes de uma substituição validada.
+Downloads e outras funcionalidades externas estão migrando gradualmente para
+a API própria BunnyFy, substituindo integrações herdadas e serviços de
+terceiros. Integrações funcionais não são removidas antes de uma substituição
+validada.
 
 ## Responsabilidade
 

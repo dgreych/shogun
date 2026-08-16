@@ -1,6 +1,5 @@
-// Nenhuma credencial embutida neste repositório público. Configure
-// NVIDIA_API_KEY (variável de ambiente) ou "!setnvidia SUA_CHAVE" (ver
-// gyomeiStore.js) no seu próprio deploy.
+// Tombstone de compatibilidade. Credenciais de provedor pertencem somente à
+// BunnyFy e nunca são reconstruídas ou lidas pelo Gyomei.
 export function resolveEmbeddedNvidiaKey() {
   return '';
 }

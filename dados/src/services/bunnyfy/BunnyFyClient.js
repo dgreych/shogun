@@ -3,6 +3,9 @@ import crypto from 'node:crypto';
 import { BunnyFyError } from './BunnyFyError.js';
 import {
   BUNNYFY_ROUTES,
+  assertTavernBoardRenderView,
+  assertTavernHandRenderView,
+  assertTavernSceneRenderView,
   parseAnimatedLogo,
   parseAiChat,
   parseEnvelope,
@@ -304,6 +307,8 @@ class BunnyFyClient {
           }
           const responseRequestId = readRequestId(response, errorEnvelope, requestId);
           const error = BunnyFyError.fromStatus(response.status, {
+            code: errorEnvelope?.error?.code,
+            retryable: errorEnvelope?.error?.retryable,
             requestId: responseRequestId
           });
           if (attempt < attempts && (error.retryable || TRANSIENT_STATUS.has(response.status))) {
@@ -408,37 +413,36 @@ class BunnyFyClient {
     return { ...result, media: this.resolveMediaDescriptor(result.media) };
   }
 
-  async renderTavernBoard(state, playerNames = {}, { idempotencyKey = crypto.randomUUID() } = {}) {
-    if (!state || typeof state !== 'object') throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
+  async renderTavernBoard(view, { idempotencyKey = crypto.randomUUID() } = {}) {
+    assertTavernBoardRenderView(view);
     const response = await this.request(BUNNYFY_ROUTES.tavernBoard, {
       method: 'POST',
-      json: { state, playerNames },
+      json: { view },
       idempotencyKey
     });
     const result = parseImageProcess(response.data);
     return { ...result, media: this.resolveMediaDescriptor(result.media) };
   }
 
-  async renderTavernHand(state, playerId, { idempotencyKey = crypto.randomUUID() } = {}) {
-    if (!state || typeof state !== 'object' || typeof playerId !== 'string' || !playerId.trim()) {
+  async renderTavernHand(view, { page = 1, idempotencyKey = crypto.randomUUID() } = {}) {
+    assertTavernHandRenderView(view);
+    if (!Number.isInteger(page) || page < 1 || page > 2) {
       throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
     }
-    const response = await this.request(BUNNYFY_ROUTES.tavernHand, {
+    const response = await this.request(`${BUNNYFY_ROUTES.tavernHand}?page=${page}`, {
       method: 'POST',
-      json: { state, playerId },
+      json: { view },
       idempotencyKey
     });
     const result = parseImageProcess(response.data);
     return { ...result, media: this.resolveMediaDescriptor(result.media) };
   }
 
-  async renderTavernScene(kind, payload = {}, { idempotencyKey = crypto.randomUUID() } = {}) {
-    if (!['invite', 'mulligan', 'turn', 'victory'].includes(kind)) {
-      throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
-    }
+  async renderTavernScene(view, { idempotencyKey = crypto.randomUUID() } = {}) {
+    assertTavernSceneRenderView(view);
     const response = await this.request(BUNNYFY_ROUTES.tavernScene, {
       method: 'POST',
-      json: { kind, payload },
+      json: { view },
       idempotencyKey
     });
     const result = parseImageProcess(response.data);

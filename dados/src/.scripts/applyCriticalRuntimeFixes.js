@@ -111,99 +111,20 @@ case 'd': {
 function patchRuntimeIa(source) {
   let output = source;
 
-  output = output.replace(`import axios from 'axios';\n`, '');
+  output = output.replace(`import axios from 'axios';
+`, '');
 
-  const nvidiaImportPattern = /import \{([^}\n]+)\} from '\.\.\/\.\.\/utils\/nvidiaApi\.js';/;
-  const existingNvidiaImport = nvidiaImportPattern.exec(output);
-  if (existingNvidiaImport) {
-    const importedNames = new Set(existingNvidiaImport[1].split(',').map(name => name.trim()).filter(Boolean));
-    importedNames.add('DEFAULT_NVIDIA_MODEL');
-    importedNames.add('requestNvidiaChat');
-    output = output.replace(
-      nvidiaImportPattern,
-      `import { ${[...importedNames].join(', ')} } from '../../utils/nvidiaApi.js';`
-    );
-  } else {
-    output = replaceRequired(
-      output,
-      `import * as automacoesV9 from '../../utils/gyomeiRuntime.js';`,
-      `import * as automacoesV9 from '../../utils/gyomeiRuntime.js';\nimport { DEFAULT_NVIDIA_MODEL, requestNvidiaChat } from '../../utils/nvidiaApi.js';`,
-      'cliente NVIDIA'
-    );
+  if (output.includes('requestNvidiaChat') || output.includes('resolveEmbeddedNvidiaKey') || output.includes('getNvidiaApiKey')) {
+    throw new Error('Transporte NVIDIA direto proibido no runtime de IA; use BunnyFy.');
   }
 
-  output = replacePatternRequired(
-    output,
-    /\/\/ Chave de IA hardcoded\nconst IA_API_KEY = String\([\s\S]*?\n\)\.trim\(\);/,
-    `function getNvidiaApiKey() {
-  return String(
-    process.env.NVIDIA_API_KEY
-    || automacoesV9.getConfig()?.nvidia_api_key
-    || resolveEmbeddedNvidiaKey()
-    || ''
-  ).trim();
-}`,
-    'leitura dinâmica da chave NVIDIA'
-  );
-
-  if (!output.includes('createBunnyFyAiClient().createChatCompletion')) {
-    output = replacePatternRequired(
-      output,
-      /async function (?:makeCognimaRequest|makeNvidiaRequest)\(modelo, texto, systemPrompt = null, historico = \[\], retries = 3\) \{[\s\S]*?\n\}(?:\n\n\/\/ Compatibilidade temporária[\s\S]*?const makeCognimaRequest = makeNvidiaRequest;)?\n\nfunction cleanWhatsAppFormatting/,
-      `async function makeNvidiaRequest(modelo, texto, systemPrompt = null, historico = [], retries = 3) {
-  if (!texto) {
-    throw new Error('Parâmetro obrigatório ausente: texto');
+  if (!output.includes('createBunnyFyAiClient')) {
+    throw new Error('Runtime de IA não usa BunnyFy como gateway obrigatório.');
   }
 
-  const messages = [];
-  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-  if (Array.isArray(historico) && historico.length > 0) messages.push(...historico);
-  messages.push({ role: 'user', content: texto });
-
-  // O nome antigo é preservado apenas para não quebrar os comandos legados.
-  return requestNvidiaChat({
-    apiKey: getNvidiaApiKey(),
-    model: modelo || DEFAULT_NVIDIA_MODEL,
-    messages,
-    temperature: 0.7,
-    maxTokens: 2000,
-    retries
-  });
-}
-
-// Compatibilidade temporária com comandos legados que ainda usam o nome antigo.
-const makeCognimaRequest = makeNvidiaRequest;
-
-function cleanWhatsAppFormatting`,
-      'requisição NVIDIA com política correta de repetição'
-    );
-  }
-
-  output = output.replace(
-    'throw new Error("Resposta da API Cognima foi inválida ou vazia.");',
-    'throw new Error("Resposta da API NVIDIA foi inválida ou vazia.");'
-  );
-
-  if (!output.includes("[NVIDIA] Erro na assistente:")) {
-    output = replaceRequired(
-      output,
-      `        console.error('Erro na API Cognima:', apiError.message);`,
-      `        console.error('[NVIDIA] Erro na assistente:', { code: apiError.code, status: apiError.status, message: apiError.message });`,
-      'identificação correta da API nos logs'
-    );
-  }
-
-  output = replacePatternRequired(
-    output,
-    /        return \{\n          resp: \[\],\n          erro: 'Erro temporário',\n          message: '🌙 \*Ops![\s\S]*?\n        \};/,
-    `        return {
-          resp: [],
-          erro: apiError.code || 'NVIDIA_REQUEST_FAILED',
-          status: apiError.status || null,
-          message: apiError.userMessage || '🤖 A assistente está temporariamente indisponível. Tente novamente em alguns instantes.'
-        };`,
-    'erro NVIDIA propagado ao usuário'
-  );
+  output = output.replaceAll('[NVIDIA] Erro na assistente', '[BUNNYFY_AI] Erro na assistente');
+  output = output.replaceAll('Erro na API NVIDIA', 'Erro no gateway BunnyFy AI');
+  output = output.replaceAll('NVIDIA_REQUEST_FAILED', 'BUNNYFY_AI_FAILED');
 
   return output;
 }

@@ -7,11 +7,14 @@ import { loadLocalEnv, ROOT_DIR } from './envLoader.js';
 
 loadLocalEnv();
 
-const apiKey = String(process.env.NVIDIA_API_KEY || '').trim();
-if (!apiKey) {
-  console.error('❌ Defina NVIDIA_API_KEY somente no ambiente antes de executar este teste.');
+const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || '').trim();
+const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || '').trim();
+if (!bunnyfyToken || !bunnyfyBase) {
+  console.error('❌ Defina BUNNYFY_API_TOKEN e BUNNYFY_BASE_URL antes de executar este teste.');
   process.exit(1);
 }
+process.env.BUNNYFY_ENABLED = 'true';
+process.env.BUNNYFY_AI_MODE = 'exclusive';
 
 const contextFile = path.join(ROOT_DIR, 'dados', 'database', 'userContext.json');
 const contextExisted = fs.existsSync(contextFile);
@@ -33,7 +36,7 @@ function restoreContext() {
 
 try {
   const { makeAssistentRequest } = await import('../funcs/private/ia.js');
-  console.log('🔎 Testando o fluxo completo da assistente com NVIDIA/Llama 3.1 70B...');
+  console.log('🔎 Testando o fluxo completo da assistente via BunnyFy AI...');
 
   const result = await makeAssistentRequest(
     {
@@ -70,7 +73,7 @@ try {
   console.log('✅ Fluxo completo aprovado.');
   console.log(`🤖 Resposta recebida: ${texts.join(' | ')}`);
 } catch (error) {
-  console.error('❌ Fluxo completo da assistente reprovado:', {
+  console.error('❌ Fluxo completo da assistente via BunnyFy reprovado:', {
     name: error.name,
     code: error.code,
     status: error.status || error.response?.status,

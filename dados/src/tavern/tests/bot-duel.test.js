@@ -145,6 +145,89 @@ test('limite de 3 partidas simultâneas contra o bot por grupo', async t => {
   assert.match(lastText, /Já existem 3 partidas/);
 });
 
+test('duas partidas PvE no mesmo grupo nunca despacham o bot para a mesa errada', async t => {
+  const fixture = await createFixture(t);
+  const transport = makeTransport();
+  const groupId = 'group-bot@g.us';
+  const firstHuman = 'human-one@s.whatsapp.net';
+  const secondHuman = 'human-two@s.whatsapp.net';
+  await fixture.game.setGroupEnabled(groupId, true);
+
+  await fixture.controller.handle('duelo', ctx({ transport, playerId: firstHuman, args: ['bot'] }));
+  await fixture.controller.handle('mulligan', ctx({ transport, playerId: firstHuman, args: ['manter'] }));
+  await fixture.controller.handle('duelo', ctx({ transport, playerId: secondHuman, args: ['bot'] }));
+  await fixture.controller.handle('mulligan', ctx({ transport, playerId: secondHuman, args: ['manter'] }));
+
+  const firstBefore = await fixture.game.getActiveMatch(groupId, firstHuman);
+  const secondBefore = await fixture.game.getActiveMatch(groupId, secondHuman);
+  assert.notEqual(firstBefore.matchId, secondBefore.matchId);
+  assert.equal(firstBefore.state.turn.activePlayerId, firstHuman);
+  assert.equal(secondBefore.state.turn.activePlayerId, secondHuman);
+
+  await fixture.controller.handle('fim', ctx({ transport, playerId: firstHuman }));
+
+  const firstAfter = await fixture.game.getActiveMatch(groupId, firstHuman);
+  const secondAfter = await fixture.game.getActiveMatch(groupId, secondHuman);
+  assert.notEqual(firstAfter.state.turn.activePlayerId, TAVERN_BOT_PLAYER_ID);
+  assert.equal(firstAfter.version > firstBefore.version, true, 'a primeira mesa precisa avançar');
+  assert.equal(secondAfter.version, secondBefore.version, 'a segunda mesa não pode receber ações do bot alheio');
+  assert.deepEqual(secondAfter.state, secondBefore.state);
+});
+
+test('matchId explícito recusa outro grupo ou ator antes de mutar a partida', async t => {
+  const fixture = await createFixture(t);
+  const transport = makeTransport();
+  const groupId = 'group-bot@g.us';
+  const humanId = 'human-security@s.whatsapp.net';
+  await fixture.game.setGroupEnabled(groupId, true);
+  await fixture.controller.handle('duelo', ctx({ transport, playerId: humanId, args: ['bot'] }));
+  const match = await fixture.game.getActiveMatch(groupId, humanId);
+
+  await assert.rejects(
+    fixture.game.dispatchForPlayer('other-group@g.us', TAVERN_BOT_PLAYER_ID, { type: 'MULLIGAN', cards: [] }, {
+      matchId: match.matchId
+    }),
+    /não corresponde a esta mesa ou jogador/
+  );
+  await assert.rejects(
+    fixture.game.dispatchForPlayer(groupId, 'outsider@s.whatsapp.net', { type: 'MULLIGAN', cards: [] }, {
+      matchId: match.matchId
+    }),
+    /não corresponde a esta mesa ou jogador/
+  );
+
+  const after = await fixture.tavern.repository.getMatch(match.matchId);
+  assert.equal(after.version, match.version);
+  assert.deepEqual(after.state, match.state);
+});
+
+test('recupera duas partidas PvE simultaneamente paradas no turno do bot', async t => {
+  const fixture = await createFixture(t);
+  const transport = makeTransport();
+  const groupId = 'group-bot@g.us';
+  const humans = ['human-stuck-one@s.whatsapp.net', 'human-stuck-two@s.whatsapp.net'];
+  await fixture.game.setGroupEnabled(groupId, true);
+
+  for (const humanId of humans) {
+    await fixture.controller.handle('duelo', ctx({ transport, playerId: humanId, args: ['bot'] }));
+    await fixture.controller.handle('mulligan', ctx({ transport, playerId: humanId, args: ['manter'] }));
+    const match = await fixture.game.getActiveMatch(groupId, humanId);
+    await fixture.game.dispatchForPlayer(groupId, humanId, { type: 'END_TURN' }, { matchId: match.matchId });
+  }
+
+  for (const humanId of humans) {
+    const stuck = await fixture.game.getActiveMatch(groupId, humanId);
+    assert.equal(stuck.state.turn.activePlayerId, TAVERN_BOT_PLAYER_ID);
+  }
+
+  await fixture.controller.resumeStuckBotMatches(() => transport, '!');
+
+  for (const humanId of humans) {
+    const recovered = await fixture.game.getActiveMatch(groupId, humanId);
+    assert.notEqual(recovered.state.turn.activePlayerId, TAVERN_BOT_PLAYER_ID);
+  }
+});
+
 test('resumeStuckBotMatches retoma um turno do bot que ficou preso (ex: reinício no meio do laço)', async t => {
   const fixture = await createFixture(t);
   const transport = makeTransport();

@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, resolveCommandInput } from '../utils/commandResolver.js';
-import { requestNvidiaChat } from '../utils/nvidiaApi.js';
 import { extractJSON } from '../funcs/private/ia.js';
+import { buildBoundedChatMessages, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
 import { getQuotedMediaSource } from '../utils/gyomeiCore.js';
 import { normalizeVipCommandsData } from '../utils/vipCommandsManager.js';
@@ -154,11 +154,23 @@ await test('diagnóstico Vex do YouTube não inclui consulta, URL ou conteúdo d
 });
 
 
-await test('fontes usam o modelo NVIDIA padrão (3.3) sem depender de patch no startup', () => {
+await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto', () => {
   const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-  assert.ok(iaSource.includes('meta/llama-3.3-70b-instruct') || iaSource.includes('DEFAULT_NVIDIA_MODEL'));
-  assert.ok(indexSource.includes('meta/llama-3.3-70b-instruct') || indexSource.includes('DEFAULT_NVIDIA_MODEL'));
+  const legacyApiSource = fs.readFileSync(new URL('../utils/nvidiaApi.js', import.meta.url), 'utf8');
+  const embeddedSource = fs.readFileSync(new URL('../utils/nvidiaEmbedded.js', import.meta.url), 'utf8');
+  const storeSource = fs.readFileSync(new URL('../utils/gyomeiStore.js', import.meta.url), 'utf8');
+  assert.ok(iaSource.includes('createBunnyFyAiClient'));
+  assert.ok(iaSource.includes('toLegacyChatResponse'));
+  assert.ok(!iaSource.includes('requestNvidiaChat'));
+  assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
+  assert.ok(!legacyApiSource.includes('integrate.api.nvidia.com'));
+  assert.ok(!legacyApiSource.includes("import axios from 'axios'"));
+  assert.ok(!legacyApiSource.includes('requestNvidiaChat'));
+  assert.ok(!embeddedSource.includes('CIPHER_BYTES'));
+  assert.ok(!embeddedSource.includes('createHash'));
+  assert.ok(!storeSource.includes('process.env.NVIDIA_API_KEY'));
+  assert.ok(!storeSource.includes('stored.nvidia_api_key'));
   assert.ok(!iaSource.includes('moonshotai/kimi-k2-instruct'));
   assert.ok(!indexSource.includes('moonshotai/kimi-k2-instruct'));
 });
@@ -169,8 +181,11 @@ await test('fonte principal já contém as correções críticas, sem depender d
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
   const prepareSource = fs.readFileSync(new URL('./prepareRuntimeSources.js', import.meta.url), 'utf8');
 
-  assert.ok(iaSource.includes('requestNvidiaChat'));
+  assert.ok(iaSource.includes('createBunnyFyAiClient'));
   assert.ok(iaSource.includes('makeNvidiaRequest'));
+  assert.ok(!iaSource.includes('requestNvidiaChat'));
+  assert.ok(!iaSource.includes('resolveEmbeddedNvidiaKey'));
+  assert.ok(!iaSource.includes('getNvidiaApiKey'));
   assert.ok(!iaSource.includes("import axios from 'axios'"));
   assert.ok(!iaSource.includes('Erro na API Cognima'));
   assert.ok(!iaSource.includes('Resposta da API Cognima'));
@@ -187,7 +202,7 @@ await test('fonte principal já contém as correções críticas, sem depender d
   assert.ok(!indexSource.includes('consultando o Mistral'));
   assert.ok(!indexSource.includes('consultando o Magistral'));
   assert.ok((indexSource.match(/isKnownNvidiaModel\(groupData\.aiModel\)/g) || []).length >= 3);
-  assert.ok(iaSource.includes('outputTokens: result.usage?.outputTokens ?? null'));
+  assert.ok(iaSource.includes('toLegacyChatResponse'));
   assert.ok(!iaSource.includes('Resultado extraído:'));
   assert.ok(!iaSource.includes('antes: __antesOverrideFinal'));
   assert.ok(!iaSource.includes('JSON.stringify(result).substring'));
@@ -224,7 +239,7 @@ await test('rollout do YouTube permanece isolado e sem segredo no código', () =
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_CONCURRENCY=1'));
 });
 
-await test('resposta textual da NVIDIA é normalizada sem perder conteúdo', () => {
+await test('resposta textual da assistente é normalizada sem perder conteúdo', () => {
   assert.deepEqual(extractJSON('FLUXO NAZUNA OK'), {
     resp: [{ resp: 'FLUXO NAZUNA OK' }]
   });
@@ -254,67 +269,67 @@ await test('setmidia reconhece imagem e GIF citados', () => {
   );
 });
 
-await test('HTTP 410 da NVIDIA não é repetido três vezes', async () => {
-  let calls = 0;
-  const httpClient = {
-    async post() {
-      calls += 1;
-      const error = new Error('Gone');
-      error.response = { status: 410, data: { message: 'Gone' } };
-      throw error;
-    }
-  };
-
-  await assert.rejects(
-    requestNvidiaChat({
-      apiKey: 'test-key',
-      messages: [{ role: 'user', content: 'teste' }],
-      retries: 3,
-      httpClient,
-      retryDelay: async () => {}
-    }),
-    error => error.code === 'NVIDIA_ACCESS_GONE' && error.retryable === false
+await test('modo BunnyFy exclusive exige ativação global explícita', () => {
+  assert.equal(
+    resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_AI_MODE: 'exclusive' }),
+    'exclusive'
   );
-  assert.equal(calls, 1);
+  assert.equal(
+    resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'false', BUNNYFY_AI_MODE: 'exclusive' }),
+    'off'
+  );
 });
 
-await test('falha transitória da NVIDIA é repetida e pode recuperar', async () => {
-  let calls = 0;
-  const httpClient = {
-    async post() {
-      calls += 1;
-      if (calls === 1) {
-        const error = new Error('temporário');
-        error.response = { status: 503, data: { message: 'temporário' } };
-        throw error;
-      }
-      return { data: { choices: [{ message: { content: 'ok' } }] } };
-    }
-  };
-
-  const response = await requestNvidiaChat({
-    apiKey: 'test-key',
-    messages: [{ role: 'user', content: 'teste' }],
-    retries: 3,
-    httpClient,
-    retryDelay: async () => {}
+await test('resposta canônica BunnyFy mantém o envelope legado da assistente', () => {
+  const response = toLegacyChatResponse({
+    text: 'ok',
+    finishReason: 'stop',
+    usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 }
   });
+  assert.equal(response.success, true);
   assert.equal(response.data.choices[0].message.content, 'ok');
-  assert.equal(calls, 2);
+  assert.equal(response.data.usage.total_tokens, 3);
 });
 
-await test('chave NVIDIA ausente falha antes da rede', async () => {
-  let calls = 0;
-  const httpClient = { async post() { calls += 1; } };
-  await assert.rejects(
-    requestNvidiaChat({
-      apiKey: '',
-      messages: [{ role: 'user', content: 'teste' }],
-      httpClient
-    }),
-    error => error.code === 'NVIDIA_KEY_MISSING'
-  );
-  assert.equal(calls, 0);
+await test('gateway BunnyFy limita mensagens antes de qualquer transporte', () => {
+  const messages = buildBoundedChatMessages({
+    systemPrompt: 's'.repeat(20000),
+    history: Array.from({ length: 40 }, (_, index) => ({
+      role: index % 2 ? 'assistant' : 'user',
+      content: `h-${index}-${'x'.repeat(4000)}`
+    })),
+    text: 'u'.repeat(20000)
+  });
+  assert.equal(messages[0].role, 'system');
+  assert.equal(messages.at(-1).role, 'user');
+  assert.ok(messages.length > 0);
+  assert.ok(messages.every(message => typeof message.content === 'string' && message.content.length > 0));
+});
+
+await test('feedback de comando não reage cedo, não cruza chats e nunca silencia comando desconhecido', () => {
+  const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  const connectSource = fs.readFileSync(new URL('../connect.js', import.meta.url), 'utf8');
+
+  assert.ok(indexSource.includes("tavern: '🍺'"));
+  assert.ok(indexSource.includes("mao: '🃏'"));
+  assert.ok(indexSource.includes("fim: '⏭️'"));
+  assert.ok(indexSource.includes('const pendingCommandReaction ='));
+  assert.ok(indexSource.indexOf('if (pendingCommandReaction)') > indexSource.indexOf("botState.status === 'off'"));
+  assert.ok(!indexSource.includes('nazu.react = reagir'));
+  assert.ok(!indexSource.includes('nazu.react('));
+  assert.ok(!indexSource.includes('nazu.reply = reply'));
+  assert.ok(indexSource.includes('Não reconheci *${groupPrefix}${command || \'\'}*'));
+  assert.ok(indexSource.includes('const rejectInLiteMode = async () =>'));
+  assert.equal((indexSource.match(/somente administradores podem usar comandos/g) || []).length, 2);
+  assert.ok(indexSource.includes('Não consegui enviar a resposta completa'));
+  assert.ok(indexSource.includes('commandError.isCommandFailure = Boolean(isCmd)'));
+  assert.match(indexSource, /ERRO NO PROCESSAMENTO DA MENSAGEM[\s\S]*?throw commandError;/);
+
+  assert.ok(connectSource.includes('message.viewOnceMessageV2?.message'));
+  assert.ok(connectSource.includes('message.buttonsResponseMessage?.selectedButtonId'));
+  assert.ok(connectSource.includes('message.listResponseMessage?.singleSelectReply?.selectedRowId'));
+  assert.ok(connectSource.includes('nativeFlowResponseMessage?.paramsJson'));
+  assert.ok(connectSource.includes('error?.isCommandFailure === true'));
 });
 
 const failures = results.filter(item => !item.ok);

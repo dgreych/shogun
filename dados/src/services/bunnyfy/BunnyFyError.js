@@ -19,6 +19,7 @@ const PUBLIC_MESSAGES = Object.freeze({
   BUNNYFY_BAD_RESPONSE: 'A BunnyFy retornou uma resposta inválida.',
   BUNNYFY_CONFIG_INVALID: 'A configuração da BunnyFy é inválida.',
   BUNNYFY_CONFLICT: 'A operação entrou em conflito com outra solicitação.',
+  BUNNYFY_CONTENT_BLOCKED: 'Esse pedido não pode ser atendido: este serviço não gera conteúdo sexual explícito, nem qualquer conteúdo que sexualize menores de idade.',
   BUNNYFY_FORBIDDEN: 'A operação não foi autorizada pela BunnyFy.',
   BUNNYFY_NETWORK_ERROR: 'Não foi possível conectar à BunnyFy.',
   BUNNYFY_NOT_FOUND: 'O recurso solicitado não foi encontrado.',

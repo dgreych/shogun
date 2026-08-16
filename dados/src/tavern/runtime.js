@@ -1,4 +1,4 @@
-import { isTavernCommand } from './commands/index.js';
+import { PRIVATE_MATCH_COMMANDS, isTavernCommand } from './commands/TavernCommandController.js';
 import { TavernVNextRhythmController } from './experience/TavernVNextRhythmController.js';
 import { TavernGameService } from './TavernGameService.js';
 import { TavernAssetRegistry } from './rendering/index.js';
@@ -9,6 +9,8 @@ import { TavernService } from './TavernService.js';
 import { WhatsAppTavernTransport } from './transport/index.js';
 
 const TIMEOUT_CHECK_INTERVAL_MS = 15_000;
+const ROUTING_CONFLICTS = new Set(['duelo', 'aceitar', 'recusar', 'mao', 'jogar']);
+const PRIVATE_SHARED_COMMANDS = new Set(['mao', 'mão', 'jogar']);
 
 let runtimePromise = null;
 let latestSocket = null;
@@ -104,12 +106,26 @@ async function handleTavernCommand({ socket, info, ...context }) {
   return runtime.controller.handle(context.command, { ...context, transport });
 }
 
+function shouldRoutePrivateTavernCommand(command, activeMatchCount = 0) {
+  const normalized = String(command || '').toLowerCase();
+  if (!isTavernCommand(normalized)) return false;
+  if (!PRIVATE_MATCH_COMMANDS.has(normalized)) return !ROUTING_CONFLICTS.has(normalized);
+  if (!PRIVATE_SHARED_COMMANDS.has(normalized)) return true;
+  return activeMatchCount > 0;
+}
+
 async function shouldHandleTavernCommand({ command, chatId, playerId, isGroup, messageId = null }) {
   if (!isTavernCommand(command)) return false;
   const normalized = String(command || '').toLowerCase();
-  const conflicting = new Set(['duelo', 'aceitar', 'recusar', 'mao', 'jogar']);
-  if (!conflicting.has(normalized)) return true;
-  if (!isGroup) return false;
+  if (!isGroup) {
+    if (!PRIVATE_SHARED_COMMANDS.has(normalized)) {
+      return shouldRoutePrivateTavernCommand(normalized);
+    }
+    const runtime = await getTavernRuntime();
+    const matches = await runtime.tavern.repository.listActiveMatchesForPlayer(playerId);
+    return shouldRoutePrivateTavernCommand(normalized, matches.length);
+  }
+  if (!ROUTING_CONFLICTS.has(normalized)) return true;
 
   const runtime = await getTavernRuntime();
   const group = await runtime.game.getGroup(chatId);
@@ -140,6 +156,7 @@ export {
   createTavernRuntime,
   handleTavernCommand,
   isTavernCommand,
+  shouldRoutePrivateTavernCommand,
   shouldHandleTavernCommand,
   warmupTavernRuntime
 };

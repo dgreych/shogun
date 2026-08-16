@@ -210,6 +210,8 @@ import {
   setGroupCustomPhoto,
   removeGroupCustomName,
   removeGroupCustomPhoto,
+  setGroupCustomPersona,
+  removeGroupCustomPersona,
   // Sistema de Áudio do Menu
   loadMenuAudio,
   isMenuAudioEnabled,
@@ -503,7 +505,10 @@ const COMMAND_EMOJI_OVERRIDES = {
   gemma: '🧠', gemma2: '🧠', codegemma: '🧠', phi: '🧠', phi3: '🧠', falcon: '🧠',
   yi: '🧠', rakutenai: '🧠', rocket: '🧠', baichuan: '🧠', baichuan2: '🧠', marin: '🧠',
   kimi: '🧠', kimik2: '🧠', llama: '🧠', llama3: '🧠', swallow: '🧠',
-  msgboton: '💬', msgprefix: '💬'
+  msgboton: '💬', msgprefix: '💬',
+  tavern: '🍺', campo: '🗺️', render: '🗺️', renderizar: '🗺️', partida: '🗺️',
+  mao: '🃏', 'mão': '🃏', mulligan: '🔄', jogar: '🃏', duelo: '⚔️', aceitar: '✅',
+  recusar: '❌', atacar: '⚔️', poder: '✨', fim: '⏭️', desistir: '🏳️'
 };
 
 const COMMAND_EMOJI_PATTERNS = [
@@ -2095,10 +2100,12 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
       q = newArgs.join(' ');
     }
 
-    // Reage na mensagem de quem pediu o comando com um emoji equivalente ao assunto
-    if (isCmd && command && getValidCommandSet().has(command)) {
-      nazu.sendMessage(from, { react: { text: pickCommandEmoji(command), key: info.key } }).catch(() => {});
-    }
+    // A reação é preparada aqui, mas enviada somente depois dos gates de
+    // acesso/moderação. Isso impede o padrão enganoso "reagiu e sumiu" em
+    // comandos que seriam deliberadamente ignorados antes do dispatcher.
+    const pendingCommandReaction = isCmd && command && getValidCommandSet().has(command)
+      ? pickCommandEmoji(command)
+      : null;
 
     const isPremium = premiumListaZinha[sender] || premiumListaZinha[from] || isOwner;
     
@@ -2377,9 +2384,11 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     const isOnlyAdmin = groupData.soadm;
     const soadmBypassCommands = ['suporte', 'ticketsuporte', 'suporteticket', 'ticket'];
     
-    // Se modo soadm ativo e não é admin, ignorar aliases silenciosamente
+    // Se o modo só-admin estiver ativo, aliases recebem o mesmo retorno
+    // explícito dos comandos diretos; reação sem texto não é resposta.
     if (isGroup && isOnlyAdmin && !isGroupAdmin && !isOwner && matchedAlias) {
-      return; // Ignora silenciosamente o alias para não-admins
+      await reply('🛡️ Neste grupo, somente administradores podem usar comandos.');
+      return;
     }
     
     const isAntiPorn = groupData.antiporn;
@@ -2465,6 +2474,7 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
       }
     }
     if (isGroup && isCmd && isOnlyAdmin && !isGroupAdmin && !soadmBypassCommands.includes(command)) {
+      await reply('🛡️ Neste grupo, somente administradores podem usar comandos.');
       return;
     }
     if (isGroup && info.message.protocolMessage && info.message.protocolMessage.type === 0 && isAntiDel) {
@@ -2737,7 +2747,6 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
       }
     }
     async function reply(text, options = {}) {
-      try {
     const {
     mentions = [],
     noForward = false,
@@ -2762,14 +2771,49 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     if  (!noQuote) {
     sendOptions.quoted = info;
     }
+    // Uma falha isolada de envio (rede, sessão, instabilidade momentânea do
+    // WhatsApp) engolida em silêncio era exatamente o sintoma "reação sem
+    // resposta nenhuma" — o comando roda até o fim, chama reply(), o envio
+    // falha uma vez, e o usuário não vê absolutamente nada. Uma retentativa
+    // curta resolve a maioria dos casos transitórios sem mascarar uma falha
+    // persistente real (essa ainda vira null + log, como antes).
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        try {
     const result = await nazu.sendMessage(from, messageContent, sendOptions);
     return result;
-      } catch (error) {
-    console.error("Erro ao enviar mensagem:", error);
+        } catch (error) {
+          // Log sanitizado: comando, tentativa e classe/mensagem do erro,
+          // nunca o objeto de erro cru (pode carregar JID, texto privado ou
+          // payload da mensagem dependendo da forma que o Baileys lança) e
+          // nunca o JID (from/sender) diretamente — só o id da mensagem,
+          // que é uma correlação opaca, não dado pessoal.
+          const feedbackLogContext = {
+            comando: command || null,
+            tentativa: attempt,
+            messageId: info?.key?.id || null,
+            falhaClasse: error?.name || error?.constructor?.name || 'Error',
+            falhaMsg: error?.message || String(error)
+          };
+          if (attempt === 2) {
+    console.error('[FEEDBACK] Falha ao enviar resposta apos retentativa:', feedbackLogContext);
+    try {
+      return await nazu.sendMessage(from, {
+        text: '⚠️ Não consegui enviar a resposta completa. Tente o comando novamente em instantes.'
+      });
+    } catch (fallbackError) {
+      console.error('[FEEDBACK] Falha tambem no aviso minimo:', {
+        ...feedbackLogContext,
+        falhaClasse: fallbackError?.name || fallbackError?.constructor?.name || 'Error',
+        falhaMsg: fallbackError?.message || String(fallbackError)
+      });
     return null;
+    }
+          }
+          console.warn('[FEEDBACK] Falha ao enviar mensagem, tentando novamente:', feedbackLogContext);
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
       }
     }
-    nazu.reply = reply;
     void warmupTavernRuntime(nazu).catch(error => {
       console.error('[TAVERN] Falha ao iniciar o módulo:', error?.message || error);
     });
@@ -2817,9 +2861,10 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     return false;
       }
     };
-    nazu.react = reagir;
-
-    
+    const rejectInLiteMode = async () => {
+      await reagir('⚠️', { key: info.key });
+      return reply('⚠️ Este comando fica indisponível enquanto o modo lite está ativo neste grupo.');
+    };
     async function processReactionMessage() {
       try {
     if  (!isGroup) {
@@ -2949,30 +2994,30 @@ Código: *${roleCode}*`,
       return h * 60 + mi;
     };
     
-    // Enhanced time validation function
+    // Função de validação de horário reforçada
     const validateTimeFormat = (timeStr) => {
       if (!timeStr || typeof timeStr !== 'string') {
     return { valid: false, error: 'Horário inválido. O horário não pode ser vazio.' };
       }
-      
-      // Check for valid format
+
+      // Verifica se o formato é válido
       const isValidFormat = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(timeStr);
       if (!isValidFormat) {
     return { valid: false, error: 'Formato inválido. Use HH:MM (24 horas).' };
       }
-      
-      // Parse and validate components
+
+      // Separa e valida os componentes
       const [hours, minutes] = timeStr.split(':').map(Number);
-      
+
       if (hours < 0 || hours > 23) {
     return { valid: false, error: 'Hora inválida. Use entre 00 e 23.' };
       }
-      
+
       if (minutes < 0 || minutes > 59) {
     return { valid: false, error: 'Minuto inválido. Use entre 00 e 59.' };
       }
-      
-      // Check for edge cases
+
+      // Verifica casos-limite
       if (timeStr === '24:00') {
     return { valid: false, error: 'Use 23:59 como horário máximo.' };
       }
@@ -4202,6 +4247,11 @@ Código: *${roleCode}*`,
     }
   const botStateFile = pathz.join(DATABASE_DIR, 'botState.json');
     if (botState.status === 'off' && !isOwner) return;
+    if (pendingCommandReaction) {
+      await nazu.sendMessage(from, {
+        react: { text: pendingCommandReaction, key: info.key }
+      }).catch(error => console.warn('[FEEDBACK] Não foi possível reagir ao comando:', error?.message || error));
+    }
     if (botState.viewMessages) nazu.readMessages([info.key]);
     try {
       if (budy2 && budy2.length > 1) {
@@ -4546,17 +4596,23 @@ Código: *${roleCode}*`,
     jSoNzIn.id_enviou_marcada = jsonO.participant;
     }
     
-    // Add null check for ia object
+    // Verifica se o objeto ia existe antes de usar
     if  (!ia || typeof ia.makeAssistentRequest !== 'function') {
     console.warn('[IA] makeAssistentRequest not available');
     reply('🤖 Sistema de IA temporariamente indisponível. Tente novamente em alguns minutos.');
     return;
     }
     
-    // Obter a personalidade atual do grupo: o grupo pode escolher a sua
-    // própria via !set-personalidade; sem isso, cai na identidade global
-    // do bot (!changeperso), que por sua vez cai em Gyomei por padrão.
-    const personality = groupData.assistentePersonality || automacoesV9.getActivePersona();
+    // !changeperso agora é por grupo (a pedido do dono): cada grupo pode
+    // ter sua própria identidade completa (tema do menu, nome exibido,
+    // foto E a persona da assistente), igual já funcionava pra nome/foto
+    // no sistema de personalização de grupo. Sem personalização nesse
+    // grupo (ou fora de grupo, ex: DM), cai na identidade global padrão
+    // (Gyomei), a mesma pra todo mundo.
+    const groupPersonaOverride = isGroup && isGroupCustomizationEnabled()
+      ? getGroupCustomization(from)?.customPersona
+      : null;
+    const personality = groupPersonaOverride || automacoesV9.getActivePersona();
     
     ia.makeAssistentRequest({
     mensagens: [jSoNzIn],
@@ -4759,7 +4815,7 @@ Código: *${roleCode}*`,
       fakeMessage.message = { conversation: simulatedBody };
     }
         
-    nazu.react('🫟', {
+    reagir('🫟', {
       key: info.key
     }).then(() => {
       // Emitir novamente o evento de mensagem com o objeto completo
@@ -4789,7 +4845,7 @@ Código: *${roleCode}*`,
     const processNext = () => processResponses(index + 1);
 
     if  (msgza && msgza.react) {
-      nazu.react(msgza.react.replaceAll(' ', '').replaceAll('\n', ''), {
+      reagir(msgza.react.replaceAll(' ', '').replaceAll('\n', ''), {
     key: info.key
       }).then(() => {
     if  (msgza.resp && typeof msgza.resp === 'string' && msgza.resp.length > 0) {
@@ -5014,7 +5070,7 @@ Código: *${roleCode}*`,
     const allArgsCheck = q || '';
     let argsListCheck = parseArgsFromString(allArgsCheck);
       if  (Array.isArray(settings.params) && settings.params.length) {
-      // Handle rest params: if last param has rest: true, capture remainder
+      // Trata parâmetros "rest": se o último parâmetro tiver rest: true, captura o restante
       const restIndex = settings.params.findIndex(p => p.rest);
     if  (restIndex !== -1 && restIndex < settings.params.length) {
     if  (argsListCheck.length > restIndex) {
@@ -5049,7 +5105,7 @@ Código: *${roleCode}*`,
     let processedResponse = responseData;
     const allArgs = q || '';
     let argsList = typeof argsListCheck !== 'undefined' ? argsListCheck : parseArgsFromString(allArgs);
-    // Support named args like key=value
+    // Suporta argumentos nomeados como chave=valor
       if  (Array.isArray(argsList) && argsList.some(t => t.includes('='))) {
       const namedMap = {};
       const remainingPositional = [];
@@ -5075,10 +5131,10 @@ Código: *${roleCode}*`,
       }
     }
       } else {
-    // no param meta, just keep positional
+    // sem metadado de parâmetro, só mantém os posicionais
     remArgs.push(...remainingPositional);
       }
-      // handle rest param capturing: if rest param found as last
+      // captura o parâmetro "rest" se encontrado como último
       const restIndexLocal = (settings.params || []).findIndex(p => p.rest);
     if  (restIndexLocal !== -1 && restIndexLocal < remArgs.length) {
     const restVal = remArgs.slice(restIndexLocal).join(' ');
@@ -18338,7 +18394,7 @@ case 'testarcmd':
       argsListTest[restIndexTest] = restVal;
     }
       }
-      // Support named args in test mode (key=value)
+      // Suporta argumentos nomeados no modo de teste (chave=valor)
     if  (Array.isArray(argsListTest) && argsListTest.some(t => t.includes('='))) {
     const namedMapTest = {};
     const remainingPos = [];
@@ -18724,7 +18780,8 @@ case 'encurtalink':
 case 'tinyurl':
   try  {
       if  (!q) return reply(`❌️ *Forma incorreta, use está como exemplo:* ${prefix + command} https://instagram.com/hiudyyy_`);
-    const shortResponse = await axios.post("https://spoo.me/api/v1/shorten", { 
+    await reply(pickLoadingMessage());
+    const shortResponse = await axios.post("https://spoo.me/api/v1/shorten", {
       long_url: q, 
       alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
     });
@@ -19039,6 +19096,7 @@ case 'previsao2':
 case 'mcplugin':
 case 'mcplugins':
     if  (!q) return reply('Cadê o nome do plugin para eu pesquisar? 🤔');
+    reply(pickLoadingMessage());
     mcPlugin(q).then((datz) => {
       if  (!datz.ok) return reply(datz.msg);
     return axios.post("https://spoo.me/api/v1/shorten", { 
@@ -20010,6 +20068,7 @@ case 'pinterest':
 case 'pin':
   try  {
       if  (!q) return reply('Digite o termo para pesquisar no Pinterest. Exemplo: ' + prefix + 'pinterest gatinhos /3');
+    await reply(pickLoadingMessage());
 
     // Detecta se é URL de Pinterest antes de qualquer split
     const PIN_URL_REGEX = /^(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?pinterest\.\w{2,6}(?:\.\w{2})?\/pin\/([0-9a-zA-Z]+)|^https?:\/\/pin\.it\/[a-zA-Z0-9]+/i;
@@ -20194,7 +20253,8 @@ case 'commands':
     // Verifica se o grupo tem personalização
     let customBotName = nomebot;
     let customMediaPath = null;
-    
+    let customPersonaDesign = null;
+
       if  (isGroup && isGroupCustomizationEnabled()) {
       const groupCustom = getGroupCustomization(from);
     if  (groupCustom) {
@@ -20203,6 +20263,9 @@ case 'commands':
     }
     if  (groupCustom.customPhoto && fs.existsSync(groupCustom.customPhoto)) {
       customMediaPath = groupCustom.customPhoto;
+    }
+    if  (groupCustom.customPersona) {
+      customPersonaDesign = automacoesV9.PERSONA_MENU_DESIGNS[groupCustom.customPersona] || null;
     }
       }
     }
@@ -20236,7 +20299,7 @@ case 'commands':
       mediaBuffer = fs.readFileSync(mediaPath);
     }
 
-    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix);
+    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign);
     const menuText = automacoesV9.highlightMenuCommands(await menu(prefix, customBotName, pushname, customDesign), prefix);
     const lerMaisPrefix = getMenuLerMaisText();
     
@@ -20442,7 +20505,7 @@ case 'setcmdmsg':
       prefix + 'configcmdnotfound set O comando {command} não existe! Tente {prefix}menu');
       }
       
-      // Validate the message template
+      // Valida o modelo de mensagem
       const validation = validateMessageTemplate(newMessage);
     if  (!validation.valid) {
     return reply('❌ A mensagem contém problemas:\n\n• ' + validation.issues.join('\n• ') + '\n\nCorrija esses problemas e tente novamente.');
@@ -21146,7 +21209,8 @@ case 'menufig':
     // Verifica se o grupo tem personalização
     let customBotName = nomebot;
     let customMediaPath = null;
-    
+    let customPersonaDesign = null;
+
       if  (isGroup && isGroupCustomizationEnabled()) {
       const groupCustom = getGroupCustomization(from);
     if  (groupCustom) {
@@ -21155,6 +21219,9 @@ case 'menufig':
     }
     if  (groupCustom.customPhoto && fs.existsSync(groupCustom.customPhoto)) {
       customMediaPath = groupCustom.customPhoto;
+    }
+    if  (groupCustom.customPersona) {
+      customPersonaDesign = automacoesV9.PERSONA_MENU_DESIGNS[groupCustom.customPersona] || null;
     }
       }
     }
@@ -21189,7 +21256,7 @@ case 'menufig':
     }
 
     // Obtém o design personalizado do menu
-    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix);
+    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign);
     
     // Aplica o design personalizado ao menu
     const menuTextRaw = typeof menuFunction === 'function' ?
@@ -21201,7 +21268,10 @@ case 'menufig':
 
     const lerMaisPrefix = getMenuLerMaisText();
     
-    await nazu.sendMessage(from, {
+    // audiomenu é universal (não depende de persona/grupo) e agora toca
+    // junto de qualquer submenu, não só do !menu principal — mesmo padrão
+    // de envio (áudio primeiro, depois a mídia do menu) usado lá.
+    const submenuSendMedia = () => nazu.sendMessage(from, {
       [useVideo ? 'video' : 'image']: mediaBuffer,
       caption: lerMaisPrefix + menuText,
       gifPlayback: useVideo,
@@ -21209,6 +21279,24 @@ case 'menufig':
     }, {
       quoted: info
     });
+
+    if (isMenuAudioEnabled()) {
+      const audioPath = getMenuAudioPath();
+      if (audioPath && fs.existsSync(audioPath)) {
+        const audioBuffer = fs.readFileSync(audioPath);
+        await nazu.sendMessage(from, {
+          audio: audioBuffer,
+          mimetype: 'audio/mpeg',
+          ptt: false
+        }, {
+          quoted: info
+        }).then(submenuSendMedia);
+      } else {
+        await submenuSendMedia();
+      }
+    } else {
+      await submenuSendMedia();
+    }
     }
 case 'antipv3':
   try  {
@@ -23386,7 +23474,7 @@ case 'limparrank':
     let removedUsers = [];
     let invalidUsers = [];
     
-    // Enhanced filtering with better error handling
+    // Filtragem reforçada com melhor tratamento de erro
     groupData.contador = oldContador.filter(user => {
       try  {
     if  (!user || !user.id) {
@@ -23394,7 +23482,7 @@ case 'limparrank':
       return false;
     }
     
-    // Check if user is still in the group
+    // Verifica se o usuário ainda está no grupo
     const isMember = currentMembers.includes(user.id);
     
     if  (!isMember) {
@@ -23413,7 +23501,7 @@ case 'limparrank':
       }
     });
     
-    // Save the updated data
+    // Salva os dados atualizados
     writeJsonFile(groupFile, groupData);
   // Otimização: Invalida cache quando groupData é salvo
   if (isGroup) {
@@ -23434,7 +23522,7 @@ case 'limparrank':
       mentions: removedUsers.map(name => buildUserId(name, config))
     });
     
-    // Log the action
+    // Registra a ação
     console.log(`[LIMPAR RANK] Action completed in group ${from}. Removed ${removedCount} users, ${invalidUsers.length} invalid entries.`);
     } catch (e) {
     console.error('[LIMPAR RANK] Error:', e);
@@ -23486,7 +23574,7 @@ case 'limparrankg':
       continue;
     }
     
-    // Get group metadata with error handling
+    // Busca os metadados do grupo com tratamento de erro
     let metadata;
     try  {
       metadata = await getCachedGroupMetadata(groupId).catch(() => null);
@@ -23520,7 +23608,7 @@ case 'limparrankg':
       return false;
     }
     
-    // Check if user is still in the group
+    // Verifica se o usuário ainda está no grupo
     const isMember = currentMembers.includes(user.id);
     
       if  (!isMember) {
@@ -23594,7 +23682,7 @@ case 'limparrankg':
     
     await reply(responseMessage);
     
-    // Log the action
+    // Registra a ação
     console.log(`[LIMPAR RANK GLOBAL] Cleanup completed. Total removed: ${totalRemoved}, Invalid: ${totalInvalid}, Failed: ${failedGroups.length}`);
     
     } catch (e) {
@@ -23614,7 +23702,7 @@ case 'rankativo':
     let currentMembers = AllgroupMembers;
     let validUsers = [];
     
-    // Filter out users who have left the group (apenas se preservação não estiver ativada)
+    // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
       if  (!preservarContadorRankativo) {
       groupData.contador = groupData.contador.filter(user => {
     const userId = user.id;
@@ -23694,7 +23782,7 @@ case 'rankinativo':
     let currentMembers = AllgroupMembers;
     let validUsers = [];
     
-    // Filter out users who have left the group (apenas se preservação não estiver ativada)
+    // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
       if  (!preservarContador) {
       groupData.contador = groupData.contador.filter(user => {
     const userId = user.id;
@@ -24468,7 +24556,7 @@ case 'fixdb': {
 case 'testpersonalidade':
   try {
     if (!isOwner) return reply(OWNER_ONLY_MESSAGE);
-    const personalidadeTeste = q.trim() || (groupData.assistentePersonality || automacoesV9.getActivePersona());
+    const personalidadeTeste = q.trim() || automacoesV9.getActivePersona();
     let resultadoTeste;
     let erroTeste = null;
     try {
@@ -24489,7 +24577,7 @@ case 'testpersonalidade':
 case 'testia':
   try {
     if (!isOwner) return reply(OWNER_ONLY_MESSAGE);
-    const personalidadeTesteIa = q.trim() || (groupData.assistentePersonality || automacoesV9.getActivePersona());
+    const personalidadeTesteIa = q.trim() || automacoesV9.getActivePersona();
     const msgTeste = {
       data_atual: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
       data_mensagem: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
@@ -24718,9 +24806,22 @@ case 'imagem':
       console.warn('[IMAGEM] Falha ao traduzir prompt, usando texto original:', translateError?.message || translateError);
     }
 
-    const generated = await imageGenerateWithBunnyFy(imagePrompt, {
-      legacyFallback: async () => null
-    });
+    let generated;
+    try {
+      generated = await imageGenerateWithBunnyFy(imagePrompt, {
+        legacyFallback: async () => null
+      });
+    } catch (generateError) {
+      // Recusa deliberada de política (ex: conteúdo sexual explícito ou
+      // envolvendo menor) não é uma falha transitória — tentar de novo
+      // nunca vai funcionar, então a mensagem não pode sugerir isso. Outros
+      // erros da BunnyFy (rede, indisponibilidade) continuam caindo no
+      // catch genérico abaixo, que já orienta tentar mais tarde.
+      if (generateError?.code === 'BUNNYFY_CONTENT_BLOCKED') {
+        return reply(`🚫 ${generateError.message}`);
+      }
+      throw generateError;
+    }
     if (!generated?.ok || !Buffer.isBuffer(generated.buffer)) {
       return reply('❌ Geração de imagem indisponível no momento. Tente novamente mais tarde.');
     }
@@ -24787,6 +24888,7 @@ case 'upscale':
 case 'qc':
   try  {
       if  (!q) return reply('Falta o texto.');
+    reply(pickLoadingMessage());
     let ppimg = "";
     try  {
       ppimg = await nazu.profilePictureUrl(sender, 'image');
@@ -26205,7 +26307,7 @@ case  'abrirgp':
     let data = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath, 'utf-8')) : {};
     data.schedule = data.schedule || {};
     
-    // Handle disabling the schedule
+    // Trata a desativação do agendamento
       if  (argLower === 'off' || argLower === 'desativar' || argLower === 'remove' || argLower === 'rm') {
       delete data.schedule.openTime;
     if  (data.schedule?.lastRun) {
@@ -26230,7 +26332,7 @@ case  'abrirgp':
       return reply(`⏰ Não consegui entender o horário informado. Use o formato HH:MM, por exemplo ${prefix}opengp 07:30`);
     }
     
-    // Save the schedule
+    // Salva o agendamento
     data.schedule.openTime = normalizedTime;
       if  (data.schedule.lastRun && typeof data.schedule.lastRun === 'object') {
       delete data.schedule.lastRun.open;
@@ -26263,7 +26365,7 @@ case 'fechargp':
     let data = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath, 'utf-8')) : {};
     data.schedule = data.schedule || {};
     
-    // Handle disabling the schedule
+    // Trata a desativação do agendamento
       if  (argLower === 'off' || argLower === 'desativar' || argLower === 'remove' || argLower === 'rm') {
       delete data.schedule.closeTime;
     if  (data.schedule?.lastRun) {
@@ -26288,7 +26390,7 @@ case 'fechargp':
       return reply(`⏰ Não consegui entender o horário informado. Use o formato HH:MM, por exemplo ${prefix}closegp 22:30`);
     }
     
-    // Save the schedule
+    // Salva o agendamento
     data.schedule.closeTime = normalizedTime;
       if  (data.schedule.lastRun && typeof data.schedule.lastRun === 'object') {
       delete data.schedule.lastRun.close;
@@ -28527,6 +28629,18 @@ case 'personalidade':
       if  (!isGroup) return reply("Isso só pode ser usado em grupo 💔");
       if  (!isGroupAdmin) return reply("Você precisa ser administrador 💔");
 
+    // set-personalidade/setpersonalidade/personalidade existiam só pra
+    // escolher persona por grupo — descontinuado a pedido do dono. Duas
+    // formas de mudar persona (isso e !changeperso) podiam divergir e
+    // confundir; agora só existe uma: !changeperso, que muda a
+    // identidade inteira do bot (tema do menu, nome, foto e a persona da
+    // assistente) só dentro do grupo onde foi usado — cada grupo define
+    // a sua, sem afetar os outros.
+      if  (['set-personalidade', 'setpersonalidade', 'personalidade'].includes(command)) {
+      return reply(`❌ Esse comando foi descontinuado.\n\n` +
+    `A personalidade da assistente agora é definida junto com toda a identidade do bot neste grupo — use ${prefix}changeperso <nome>.`);
+    }
+
     const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
     let groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {};
     const isAssistenteOn = groupData.assistente !== false;
@@ -28541,10 +28655,11 @@ case 'personalidade':
       ia: '🤖 IA Normal',
       pro: '⚡ Pro (Comandos)'
     };
-    const currentPersonalityKey = groupData.assistentePersonality || automacoesV9.getActivePersona();
+    const currentPersonalityKey = (isGroupCustomizationEnabled() && getGroupCustomization(from)?.customPersona)
+      || automacoesV9.getActivePersona();
     const currentPersonalityLabel = personalityLabels[currentPersonalityKey] || currentPersonalityKey;
 
-    // Sem argumento: mostra o menu de status/seleção, nunca alterna sozinho
+    // Sem argumento: mostra o menu de status, nunca alterna sozinho
       if  (!q) {
       return reply(`╭━━━⊱ 🪨 *ASSISTENTE* 🪨 ⊱━━━╮\n` +
     `│\n` +
@@ -28555,16 +28670,7 @@ case 'personalidade':
     `│ ${prefix}assistente on\n` +
     `│ ${prefix}assistente off\n` +
     `│\n` +
-    `│ *Escolher personalidade (${prefix}set-personalidade <nome>):*\n` +
-    `│ gyomei - Guardião sereno e protetor (padrão)\n` +
-    `│ nazuna - Vampira tsundere, debochada\n` +
-    `│ tanjiro - Gentil, empático e protetor\n` +
-    `│ zenitsu - Dramático, mas focado quando importa\n` +
-    `│ inosuke - Selvagem, competitivo, direto\n` +
-    `│ shinobu - Doce por fora, afiada por dentro\n` +
-    `│ humana - Age 100% como uma pessoa real\n` +
-    `│ ia - IA normal e objetiva\n` +
-    `│ pro - Interpreta comandos em linguagem natural\n` +
+    `│ Pra trocar de personalidade (e de toda a identidade do bot NESTE grupo), use ${prefix}changeperso <nome>.\n` +
     `│\n` +
     `│ Mencione o bot ou responda a uma mensagem dele pra conversar.\n` +
     `╰━━━━━━━━━━━━━━━━━━━━━━━━╯`);
@@ -28574,7 +28680,6 @@ case 'personalidade':
 
       if  (arg === 'on' || arg === 'ligar' || arg === 'ativar') {
       groupData.assistente = true;
-      groupData.assistentePersonality = groupData.assistentePersonality || automacoesV9.getActivePersona();
       fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
       return reply(`✅ *Assistente ativada!* Personalidade atual: ${currentPersonalityLabel}.`);
     }
@@ -28585,22 +28690,9 @@ case 'personalidade':
       return reply(`❌ *Assistente desativada!*`);
     }
 
-    // Qualquer outro argumento define a personalidade (e liga a assistente)
-    const personality = arg;
-
-      if  (!Object.prototype.hasOwnProperty.call(personalityLabels, personality)) {
-      return reply(`❌ *Opção inválida!*\n\n` +
-    `Use ${prefix}assistente sem argumento pra ver o menu completo.`);
-    }
-
-    groupData.assistente = true;
-    groupData.assistentePersonality = personality;
-    fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
-
-    reply(`✅ *Personalidade alterada!*\n\n` +
-      `${personalityLabels[personality]}\n\n` +
-      `💬 A assistente agora responderá com essa personalidade.\n` +
-      `🧠 Cada personalidade mantém memórias separadas.`);
+    return reply(`❌ *Opção inválida!*\n\n` +
+    `Use ${prefix}assistente on ou ${prefix}assistente off.\n` +
+    `Pra trocar de personalidade, use ${prefix}changeperso <nome>.`);
 
     } catch (e) {
     console.error(e);
@@ -30894,9 +30986,7 @@ case 'curiosidade':
 case 'surubao':
 case 'suruba':
   try  {
-      if  (isModoLite) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite) return rejectInLiteMode();
       if  (!isGroup) return reply(`Apenas em grupos`);
       if  (!isModoBn) return reply('O modo brincadeira nao esta ativo no grupo');
       if  (!q) return reply(`Eita, coloque o número de pessoas após o comando.`);
@@ -31095,9 +31185,7 @@ case 'viaja nte':
 case 'responsavel':
 case 'irresponsavel':
   try  {
-      if  (isModoLite && ['pirocudo', 'pirokudo', 'gostoso', 'machista', 'homofobico', 'racista'].includes(command)) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite && ['pirocudo', 'pirokudo', 'gostoso', 'machista', 'homofobico', 'racista'].includes(command)) return rejectInLiteMode();
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
       if  (!isModoBn) return reply('❌ O modo brincadeira não esta ativo nesse grupo');
     let gamesData = fs.existsSync(__dirname + '/funcs/json/games.json') ? JSON.parse(fs.readFileSync(__dirname + '/funcs/json/games.json')) : {
@@ -31219,9 +31307,7 @@ case 'insegura':
 case 'madura':
 case 'seria':
   try  {
-      if  (isModoLite && ['bucetuda', 'cachorra', 'vagabunda', 'racista', 'gostosa', 'machista', 'homofobica'].includes(command)) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite && ['bucetuda', 'cachorra', 'vagabunda', 'racista', 'gostosa', 'machista', 'homofobica'].includes(command)) return rejectInLiteMode();
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
       if  (!isModoBn) return reply('❌ O modo brincadeira não esta ativo nesse grupo');
     let gamesData = fs.existsSync(__dirname + '/funcs/json/games.json') ? JSON.parse(fs.readFileSync(__dirname + '/funcs/json/games.json')) : {
@@ -31306,9 +31392,7 @@ case 'rankvisionarios':
 case 'rankpoderosos':
 case 'rankvencedores':
   try  {
-      if  (isModoLite && ['rankgostoso', 'rankgostosos'].includes(command)) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite && ['rankgostoso', 'rankgostosos'].includes(command)) return rejectInLiteMode();
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
       if  (!isModoBn) return reply('❌ O modo brincadeira não está ativo nesse grupo.');
     let path = buildGroupFilePath(from);
@@ -31388,9 +31472,7 @@ case 'rankvisionarias':
 case 'rankpoderosas':
 case 'rankvencedoras':
   try  {
-      if  (isModoLite && ['rankgostosa', 'rankgostosas'].includes(command)) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite && ['rankgostosa', 'rankgostosas'].includes(command)) return rejectInLiteMode();
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
       if  (!isModoBn) return reply('❌ O modo brincadeira não está ativo nesse grupo.');
     let path = buildGroupFilePath(from);
@@ -31465,9 +31547,7 @@ case 'sexo':
 case 'tomate':
   try  {
     const comandosImpróprios = ['sexo', 'surubao', 'goza', 'gozar', 'mamar', 'mamada', 'beijob', 'beijarb', 'tapar'];
-      if  (isModoLite && comandosImpróprios.includes(command)) return nazu.react('❌', {
-      key: info.key
-    });
+      if  (isModoLite && comandosImpróprios.includes(command)) return rejectInLiteMode();
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
       if  (!isModoBn) return reply('❌ O modo brincadeira não está ativo nesse grupo.');
       if  (!menc_os2) return reply('Marque um usuário.');
@@ -32413,22 +32493,23 @@ case 'rentalclean':
       await reply(notFoundMessage);
       
       if (topSimilar.length > 0 && topSimilar[0].similarity > 60) {
-        await nazu.react('💡', { key: info.key });
+        await reagir('💡', { key: info.key });
       } else if (topSimilar.length > 0) {
-        await nazu.react('🔍', { key: info.key });
+        await reagir('🔍', { key: info.key });
       } else {
-        await nazu.react('❌', { key: info.key });
+        await reagir('❌', { key: info.key });
       }
       
       console.log(`🔍 Comando não encontrado: "${commandName}" por ${userName}`);
       
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error);
-      await nazu.react('⚠️', { key: info.key });
+      await reagir('⚠️', { key: info.key });
     }
     
   } else {
-    await nazu.react('❌', { key: info.key });
+    await reply(`❓ Não reconheci *${groupPrefix}${command || ''}*. Use *${groupPrefix}menu* para ver os comandos disponíveis.`);
+    await reagir('❓', { key: info.key });
   }
  }
     
@@ -32439,7 +32520,7 @@ case 'rentalclean':
     const customReacts = loadCustomReacts();
     for (const react of customReacts) {
       if  (budy2.includes(react.trigger)) {
-      await nazu.react(react.emoji, { key: info.key });
+      await reagir(react.emoji, { key: info.key });
      break;
     }
     }
@@ -32449,10 +32530,13 @@ case 'rentalclean':
     };
     
   } catch (error) {
+    const commandError = error instanceof Error ? error : new Error(String(error));
+    commandError.isCommandFailure = Boolean(isCmd);
     console.error(`❌ [${msgId}] ERRO NO PROCESSAMENTO DA MENSAGEM`);
-    console.error('Tipo de erro:', error.name);
-    console.error('Mensagem:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('Tipo de erro:', commandError.name);
+    console.error('Mensagem:', commandError.message);
+    console.error('Stack trace:', commandError.stack);
+    throw commandError;
   };
 };
 

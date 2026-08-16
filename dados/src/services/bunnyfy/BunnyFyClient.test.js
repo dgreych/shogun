@@ -6,6 +6,54 @@ import { BunnyFyError } from './BunnyFyError.js';
 
 const TOKEN = 'token-local-de-teste';
 
+const BOARD_VIEW = {
+  schemaVersion: 1,
+  kind: 'board',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  turn: { number: 2, activeSlot: 'bottom', deadlineAt: '2026-08-15T20:00:00.000Z' },
+  terrain: { name: 'Salão da Tavern' },
+  players: [
+    {
+      slot: 'bottom', displayName: 'Aventureiro', classId: 'GUARDIAN',
+      hero: { hp: 29, armor: 2 }, mana: { current: 3, max: 3 },
+      handCount: 4, deckCount: 25, board: []
+    },
+    {
+      slot: 'top', displayName: 'Oponente', classId: 'EXILE',
+      hero: { hp: 25, armor: 0 }, mana: { current: 0, max: 2 },
+      handCount: 5, deckCount: 24, board: []
+    }
+  ]
+};
+
+const HAND_VIEW = {
+  schemaVersion: 1,
+  kind: 'hand',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  isActive: true,
+  viewer: {
+    classId: 'GUARDIAN', mana: { current: 3, max: 3 }, nextSpellDiscount: 0, boardCount: 1
+  },
+  cards: [{
+    cardId: 'GY-001', name: 'Sentinela', type: 'MINION', rarity: 'COMMON', cost: 2,
+    attack: 2, health: 3, keywords: ['GUARD'], classId: 'GUARDIAN', text: 'Protege a mesa.'
+  }]
+};
+
+const TURN_SCENE_VIEW = {
+  schemaVersion: 1,
+  kind: 'scene',
+  sceneKind: 'turn',
+  payload: {
+    playerName: 'Aventureiro',
+    classId: 'GUARDIAN',
+    turnNumber: 2,
+    deadlineLabel: '2min'
+  }
+};
+
 function envelope(data, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -36,6 +84,67 @@ function makeClient(fetchImpl, options = {}) {
     ...options
   });
 }
+
+test('renders da Tavern enviam somente Render View v1 em {view}', async () => {
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return success({
+      width: url.includes('/hand?') ? 720 : 1200,
+      height: url.includes('/hand?') ? 960 : url.endsWith('/board') ? 940 : 675,
+      media: { mediaId: 'tavern-render-12345', mediaUrl: '/v1/media/tavern-render-12345' }
+    });
+  });
+
+  await client.renderTavernBoard(BOARD_VIEW, { idempotencyKey: 'board-view-1' });
+  await client.renderTavernHand(HAND_VIEW, { page: 2, idempotencyKey: 'hand-view-1' });
+  await client.renderTavernScene(TURN_SCENE_VIEW, { idempotencyKey: 'scene-view-1' });
+
+  assert.deepEqual(requests.map(request => request.body), [
+    { view: BOARD_VIEW },
+    { view: HAND_VIEW },
+    { view: TURN_SCENE_VIEW }
+  ]);
+  assert.equal(JSON.stringify(requests).includes('playerId'), false);
+  assert.equal(JSON.stringify(requests).includes('playerNames'), false);
+  assert.equal(JSON.stringify(requests).includes('state'), false);
+  assert.equal(requests[1].url, 'https://api.bunnyfy.test/v1/games/tavern/hand?page=2');
+});
+
+test('Render View v1 recusa campos extras, identidade crua e contrato legado antes da rede', async () => {
+  let fetchCalls = 0;
+  const client = makeClient(async () => {
+    fetchCalls += 1;
+    return success({});
+  });
+
+  const jidBoard = structuredClone(BOARD_VIEW);
+  jidBoard.players[0].displayName = 'Nome 5511999999999@s.whatsapp.net (privado)';
+  const phoneBoard = structuredClone(BOARD_VIEW);
+  phoneBoard.players[0].displayName = '+55 (11) 99999-9999';
+  const invalidCompactIdBoard = structuredClone(BOARD_VIEW);
+  invalidCompactIdBoard.players[0].classId = 'GUARDIAN/fora-do-contrato';
+  const oversizedTurnBoard = structuredClone(BOARD_VIEW);
+  oversizedTurnBoard.turn.number = 100_000;
+  for (const operation of [
+    () => client.renderTavernBoard({ ...BOARD_VIEW, seed: 'SEGREDO' }),
+    () => client.renderTavernBoard(jidBoard),
+    () => client.renderTavernBoard(phoneBoard),
+    () => client.renderTavernBoard(invalidCompactIdBoard),
+    () => client.renderTavernBoard(oversizedTurnBoard),
+    () => client.renderTavernHand({ ...HAND_VIEW, opponent: { hand: ['SEGREDO'] } }),
+    () => client.renderTavernHand(HAND_VIEW, { page: 0 }),
+    () => client.renderTavernHand(HAND_VIEW, { page: 3 }),
+    () => client.renderTavernScene({
+      ...TURN_SCENE_VIEW,
+      payload: { ...TURN_SCENE_VIEW.payload, playerId: '5511999999999@s.whatsapp.net' }
+    }),
+    () => client.renderTavernHand({ state: {}, playerId: 'p1' })
+  ]) {
+    await assert.rejects(operation, error => error.code === 'BUNNYFY_BAD_REQUEST');
+  }
+  assert.equal(fetchCalls, 0);
+});
 
 test('Bearer exige HTTPS fora do loopback, salvo exceção temporária VexHost exata', () => {
   assert.throws(
@@ -246,6 +355,24 @@ test('status HTTP não-ok prevalece quando o corpo é HTML, vazio ou inválido',
       }
     );
   }
+});
+
+test('status não-ok com corpo de erro legível preserva o código real do envelope, não só o status HTTP', async () => {
+  // BUNNYFY_CONTENT_BLOCKED e BUNNYFY_BAD_REQUEST são ambos status 400 —
+  // sem ler o código do envelope, os dois ficariam indistinguíveis pro
+  // consumidor (ex: Gyomei precisa diferenciar recusa de política de
+  // qualquer outro 400 pra não sugerir "tente de novo" pra algo que
+  // nenhuma tentativa nova vai resolver).
+  const client = makeClient(async () => failure(400, 'BUNNYFY_CONTENT_BLOCKED', false), { retries: 0 });
+  await assert.rejects(
+    () => client.request('/v1/test'),
+    error => {
+      assert.ok(error instanceof BunnyFyError);
+      assert.equal(error.code, 'BUNNYFY_CONTENT_BLOCKED');
+      assert.equal(error.retryable, false);
+      return true;
+    }
+  );
 });
 
 test('falha ao ler body de resposta não-ok continua mapeada pelo status HTTP', async () => {

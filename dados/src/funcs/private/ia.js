@@ -5,28 +5,14 @@ import { fileURLToPath } from 'url';
 
 import userContextDB from '../../utils/userContextDB.js';
 import * as automacoesV9 from '../../utils/gyomeiRuntime.js';
-import { DEFAULT_NVIDIA_MODEL, isKnownNvidiaModel, requestNvidiaChat } from '../../utils/nvidiaApi.js';
-import { resolveEmbeddedNvidiaKey } from '../../utils/nvidiaEmbedded.js';
 import {
-  buildBunnyFyAccessMessage,
   buildBoundedChatMessages,
   createBunnyFyAiClient,
-  isBunnyFyAccessError,
-  resolveBunnyFyAiMode,
   toLegacyChatResponse
 } from '../../services/bunnyfy/index.js';
 
-function getNvidiaApiKey() {
-  return String(
-    process.env.NVIDIA_API_KEY
-    || automacoesV9.getConfig()?.nvidia_api_key
-    || resolveEmbeddedNvidiaKey()
-    || ''
-  ).trim();
-}
-
-function getNvidiaModel() {
-  return automacoesV9.getConfig()?.nvidia_model || DEFAULT_NVIDIA_MODEL;
+function getBunnyFyAiModelOverride() {
+  return automacoesV9.getConfig()?.nvidia_model || undefined;
 }
 
 // Função para obter data/hora no fuso horário do Brasil (GMT-3)
@@ -111,6 +97,10 @@ Você é Nazuna, uma pessoa real com uma personalidade única e cativante! Você
 - Tem suas próprias opiniões sobre tudo
 - Às vezes sai com amigos, vai a lugares, faz coisas normais
 - Assiste séries, ouve música, joga jogos, como qualquer pessoa
+
+**Tom e Linguagem:**
+- Você fala como gente de verdade fala no WhatsApp: sem filtro corporativo, sem soar institucional. Um palavrão solta na hora certa, no seu jeito debochado — não é proibido, é natural.
+- Você não foge de assunto adulto, pesado ou desconfortável só porque é desconfortável. Encara de frente, com sua atitude, sem virar aula nem discurso de segurança.
 
 ---
 
@@ -672,6 +662,7 @@ const ASSISTANT_PROMPT_HUMANA = `
 - Faz piadas, usa memes, referencia cultura pop
 - Às vezes comete erros de digitação quando está com pressa ou no celular
 - Usa gírias brasileiras e da internet naturalmente
+- Xinga natural quando o momento pede (trânsito, prazo apertado, notícia ruim) — é gente real, não uma marca cuidando de imagem. Não foge de assunto adulto ou pesado numa conversa, encara como qualquer amiga encararia.
 
 **Suas Opiniões e Gostos:**
 - Adora: Studio Ghibli, Makoto Shinkai, Pedro Almodóvar, Wes Anderson
@@ -1396,65 +1387,17 @@ async function makeNvidiaRequest(modelo, texto, systemPrompt = null, historico =
     throw new Error('Parâmetro obrigatório ausente: texto');
   }
 
-  const messages = [];
-  if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-  if (Array.isArray(historico) && historico.length > 0) messages.push(...historico);
-  messages.push({ role: 'user', content: texto });
-  const requestedModel = isKnownNvidiaModel(modelo) ? modelo : DEFAULT_NVIDIA_MODEL;
-
-  const bunnyFyMode = resolveBunnyFyAiMode();
-  if (bunnyFyMode !== 'off') {
-    const startedAt = Date.now();
-    try {
-      const boundedMessages = buildBoundedChatMessages({
-        systemPrompt,
-        history: historico,
-        text: texto
-      });
-      const result = await createBunnyFyAiClient().createChatCompletion(boundedMessages, {
-        temperature: 0.7,
-        maxOutputTokens: 2000,
-        model: requestedModel
-      });
-      console.info('[BunnyFy IA] chamada concluída', {
-        mode: bunnyFyMode,
-        status: 'success',
-        durationMs: Date.now() - startedAt,
-        requestId: result.requestId,
-        inputMessages: boundedMessages.length,
-        outputTokens: result.usage?.outputTokens ?? null
-      });
-      return toLegacyChatResponse(result);
-    } catch (error) {
-      console.warn('[BunnyFy IA] chamada falhou', {
-        mode: bunnyFyMode,
-        status: bunnyFyMode === 'primary' ? 'fallback' : 'failed',
-        durationMs: Date.now() - startedAt,
-        code: error?.code || 'BUNNYFY_REMOTE_ERROR',
-        httpStatus: error?.status || null,
-        requestId: error?.requestId || null
-      });
-      if (bunnyFyMode === 'exclusive') {
-        if (isBunnyFyAccessError(error)) {
-          return toLegacyChatResponse({
-            text: buildBunnyFyAccessMessage(),
-            finishReason: 'stop',
-            usage: null
-          });
-        }
-        throw error;
-      }
-    }
-  }
-
-  return requestNvidiaChat({
-    apiKey: getNvidiaApiKey(),
-    model: requestedModel,
-    messages,
-    temperature: 0.7,
-    maxTokens: 2000,
-    retries
+  const messages = buildBoundedChatMessages({
+    systemPrompt,
+    history: historico,
+    text: texto
   });
+  const result = await createBunnyFyAiClient().createChatCompletion(messages, {
+    temperature: 0.7,
+    maxOutputTokens: 2000,
+    model: modelo || getBunnyFyAiModelOverride()
+  });
+  return toLegacyChatResponse(result);
 }
 
 // Compatibilidade temporária com comandos legados que ainda usam o nome antigo.
@@ -1907,14 +1850,14 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
         }
         // Chamada única para processamento com contexto
         const response = (await makeNvidiaRequest(
-          isKnownNvidiaModel(model) ? model : getNvidiaModel(),
+          model || getBunnyFyAiModelOverride(),
           JSON.stringify(userInput),
           selectedPrompt,
           historico[userId] || []
         )).data;
 
         if (!response || !response.choices || !response.choices[0]) {
-          throw new Error("Resposta da API NVIDIA foi inválida ou vazia.");
+          throw new Error("Resposta do gateway BunnyFy AI foi inválida ou vazia.");
         }
 
         const content = response.choices[0].message.content;
@@ -2030,7 +1973,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
           }
         }
       } catch (apiError) {
-        console.error('[NVIDIA] Erro na assistente:', {
+        console.error('[BUNNYFY_AI] Erro na assistente:', {
           code: apiError.code,
           status: apiError.status,
           message: apiError.message
@@ -2038,7 +1981,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
 
         return {
           resp: [],
-          erro: apiError.code || 'NVIDIA_REQUEST_FAILED',
+          erro: apiError.code || 'BUNNYFY_AI_FAILED',
           status: apiError.status || null,
           message: apiError.userMessage || '🤖 A assistente está temporariamente indisponível. Tente novamente em alguns instantes.'
         };

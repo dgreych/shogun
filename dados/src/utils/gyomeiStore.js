@@ -77,7 +77,6 @@ export function getConfig() {
   const stored = readJson(CONFIG_FILE, {});
   return {
     ...stored,
-    nvidia_api_key: process.env.NVIDIA_API_KEY || stored.nvidia_api_key || '',
     nvidia_model: isKnownNvidiaModel(stored.nvidia_model) ? stored.nvidia_model : DEFAULT_NVIDIA_MODEL,
     apikey_vex: process.env.VEX_API_KEY || stored.apikey_vex || '',
     site_vex: process.env.VEX_SITE || stored.site_vex || '',

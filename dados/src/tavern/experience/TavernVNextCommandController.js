@@ -277,16 +277,20 @@ class TavernVNextCommandController extends TavernCommandController {
     // evita o render em si).
     if (playerId === TAVERN_BOT_PLAYER_ID) return true;
     const caption = this.buildPrivateHandCaption(state, playerId, prefix);
-    let buffer = null;
+    let pages = [];
     try {
-      buffer = await this.renderQueue.run(() => this.handRenderer.render(state, playerId));
+      pages = await this.renderPrivateHandPages(state, playerId);
     } catch (error) {
       console.warn('[TAVERN] Render privado indisponível; usando fallback textual:', error?.message || error);
     }
 
     try {
-      if (buffer) {
-        await transport.sendPrivateImage(playerId, buffer, { caption });
+      if (pages.length) {
+        for (let index = 0; index < pages.length; index += 1) {
+          await transport.sendPrivateImage(playerId, pages[index], {
+            caption: this.handPageCaption(caption, index + 1, pages.length)
+          });
+        }
       } else {
         const cards = privateHandFallback(state, playerId);
         await transport.sendPrivateText(playerId, `${caption}\n\n*Cartas:*\n${cards.join('\n')}`);

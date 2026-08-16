@@ -335,46 +335,79 @@ case 'setperfilpersona':
 case 'changeperso':
 case 'mudarpersona':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem trocar a identidade do bot.');
+    // Por grupo, a pedido do dono (não é mais identidade global da conta
+    // toda): cada grupo define a sua própria identidade completa, sem
+    // afetar os outros grupos. Segue o mesmo gate/armazenamento que
+    // nomegrupo/fotomenugrupo já usavam (isGroupCustomizationEnabled +
+    // isGroupAdmin), só que agora também cobrindo a persona da IA.
+    if (!isGroup) return reply('🚫 Use este comando dentro do grupo que você quer personalizar.');
+    if (!isGroupAdmin) return reply('Você precisa ser administrador do grupo 💔');
+    if (!isGroupCustomizationEnabled()) {
+      return reply(\`⚠️ O sistema de personalização de grupos está desativado. Peça ao dono do bot pra ativar com \${prefix}personalizargrupo.\`);
+    }
+
     const changepersoKey = String(q || '').trim().toLowerCase();
     if (!changepersoKey || !automacoesV9.PERSONALITY_KEYS.includes(changepersoKey)) {
       return reply(\`Use: \${prefix}changeperso <personalidade>\\n\\nPersonalidades disponíveis: \${automacoesV9.PERSONALITY_KEYS.join(', ')}\`);
     }
 
-    const changepersoResult = automacoesV9.setActivePersona(changepersoKey);
-    if (!changepersoResult.ok) return reply(\`❌ \${changepersoResult.msg}\`);
+    setGroupCustomPersona(from, changepersoKey);
 
     const changepersoDisplayName = changepersoKey.charAt(0).toUpperCase() + changepersoKey.slice(1);
-    let changepersoConfig = JSON.parse(fs.readFileSync(CONFIG_FILE));
-    changepersoConfig.nomebot = changepersoDisplayName;
-    writeJsonFile(CONFIG_FILE, changepersoConfig);
-
-    const changepersoDesign = automacoesV9.PERSONA_MENU_DESIGNS[changepersoKey];
-    if (changepersoDesign && !saveMenuDesign({ ...changepersoDesign })) {
-      console.error('[CHANGEPERSO] Falha ao salvar o tema visual do menu.');
-    }
+    setGroupCustomName(from, changepersoDisplayName);
 
     const changepersoFotoMedia = automacoesV9.getCommandMedia(\`\${changepersoKey}_profilep\`);
     if (changepersoFotoMedia?.path && fs.existsSync(changepersoFotoMedia.path)) {
       try {
-        const changepersoFotoBuffer = fs.readFileSync(changepersoFotoMedia.path);
-        const changepersoProcessedBuffer = await processImageForProfile(changepersoFotoBuffer);
-        await nazu.updateProfilePicture(nazu.user.id, changepersoProcessedBuffer);
+        const changepersoGroupPhotoPath = __dirname + \`/../database/grupos/\${from}_menu.jpg\`;
+        fs.copyFileSync(changepersoFotoMedia.path, changepersoGroupPhotoPath);
+        setGroupCustomPhoto(from, changepersoGroupPhotoPath);
       } catch (changepersoFotoError) {
-        console.error('[CHANGEPERSO] Erro ao trocar a foto:', changepersoFotoError);
+        console.error('[CHANGEPERSO] Erro ao copiar a foto pro grupo:', changepersoFotoError);
+      }
+
+      // A foto de perfil da CONTA do WhatsApp é única pro número inteiro
+      // (não existe "foto de conta por grupo" na plataforma) — confirmado
+      // com o dono que, mesmo assim, ele quer que ela acompanhe o último
+      // !changeperso usado em qualquer grupo. Já a foto do PRÓPRIO GRUPO
+      // (o ícone do grupo em si, como o comando fotogp/setfoto já troca)
+      // é sim específica de cada grupo, então também é trocada aqui pra
+      // combinar com a identidade escolhida, se o bot for admin do grupo.
+      // Falha em qualquer uma dessas duas não derruba o comando: a parte
+      // por grupo (nome/foto de menu/persona) já foi salva de qualquer jeito.
+      let changepersoProcessedBuffer = null;
+      try {
+        const changepersoFotoBuffer = fs.readFileSync(changepersoFotoMedia.path);
+        changepersoProcessedBuffer = await processImageForProfile(changepersoFotoBuffer);
+      } catch (changepersoProcessaError) {
+        console.error('[CHANGEPERSO] Erro ao processar a foto:', changepersoProcessaError);
+      }
+
+      if (changepersoProcessedBuffer) {
+        try {
+          await nazu.updateProfilePicture(nazu.user.id, changepersoProcessedBuffer);
+        } catch (changepersoContaFotoError) {
+          console.error('[CHANGEPERSO] Erro ao trocar a foto de perfil da conta:', changepersoContaFotoError);
+        }
+
+        if (isBotAdmin) {
+          try {
+            await nazu.updateProfilePicture(from, changepersoProcessedBuffer);
+          } catch (changepersoGrupoFotoError) {
+            console.error('[CHANGEPERSO] Erro ao trocar a foto do grupo:', changepersoGrupoFotoError);
+          }
+        }
       }
     }
 
-    try {
-      await nazu.updateProfileName(changepersoDisplayName);
-    } catch (changepersoNomeError) {
-      console.error('[CHANGEPERSO] Erro ao trocar o nome:', changepersoNomeError);
-    }
+    const changepersoGrupoFotoNota = isBotAdmin
+      ? 'A foto do próprio grupo também foi trocada pra combinar.'
+      : \`Pra eu trocar a foto do grupo também, me deixe como administrador e rode \${prefix}changeperso \${changepersoKey} de novo.\`;
 
-    await reply(\`✅ Personalidade e temática do bot mudaram para *\${changepersoKey.toUpperCase()}*.\`);
+    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. \${changepersoGrupoFotoNota} A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\`);
   } catch (e) {
     console.error('[CHANGEPERSO] Erro:', e);
-    await reply(\`❌ Falha ao trocar a identidade do bot: \${e.message}\`);
+    await reply(\`❌ Falha ao trocar a identidade do grupo: \${e.message}\`);
   }
   break;
 
@@ -384,7 +417,7 @@ case 'identidadepadrao':
   try {
     if (!isOwner) return reply('🚫 Apenas donos podem restaurar a identidade padrão do bot.');
 
-    const defaultPersonaResult = automacoesV9.setActivePersona('gyomei');
+    const defaultPersonaResult = automacoesV9.setActivePersona('nazuna');
     if (!defaultPersonaResult.ok) return reply(\`❌ \${defaultPersonaResult.msg}\`);
 
     const defaultDisplayName = 'NAZUNA BOT • GYOMEI';
@@ -392,7 +425,14 @@ case 'identidadepadrao':
     defaultConfig.nomebot = defaultDisplayName;
     writeJsonFile(CONFIG_FILE, defaultConfig);
 
-    const defaultFactoryDesign = {
+    // A identidade padrão do bot agora é a Nazuna (antes era a Gyomei).
+    // O design do menu e a foto usados aqui acompanham essa troca: em vez
+    // de um design/foto "de fábrica" genérico e desconectado de qualquer
+    // persona real, usamos os próprios assets da persona Nazuna — os
+    // mesmos que !changeperso nazuna usaria num grupo. O objeto abaixo é
+    // só um fallback de segurança caso o design da Nazuna não esteja
+    // carregado por algum motivo.
+    const nazunaFallbackDesign = {
       header: \`╭┈⊰ 🌸 『 *{botName}* 』\\n┊Olá, {userName}!\\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯\`,
       menuTopBorder: '╭┈',
       bottomBorder: '╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯',
@@ -401,9 +441,9 @@ case 'identidadepadrao':
       separatorIcon: '❁',
       middleBorder: '┊'
     };
-    saveMenuDesign(defaultFactoryDesign);
+    saveMenuDesign(automacoesV9.PERSONA_MENU_DESIGNS.nazuna || nazunaFallbackDesign);
 
-    const defaultFotoMedia = automacoesV9.getCommandMedia('default_profilep') || automacoesV9.getCommandMedia('gyomei_profilep');
+    const defaultFotoMedia = automacoesV9.getCommandMedia('nazuna_profilep');
     if (defaultFotoMedia?.path && fs.existsSync(defaultFotoMedia.path)) {
       try {
         const defaultFotoBuffer = fs.readFileSync(defaultFotoMedia.path);
@@ -420,7 +460,7 @@ case 'identidadepadrao':
       console.error('[DEFAULT] Erro ao trocar o nome:', defaultNomeError);
     }
 
-    await reply('✅ Personalidade e temática do bot voltaram ao padrão: *NAZUNA BOT • GYOMEI*.');
+    await reply('✅ Personalidade e temática do bot voltaram ao padrão: *Nazuna* (NAZUNA BOT • GYOMEI).');
   } catch (e) {
     console.error('[DEFAULT] Erro:', e);
     await reply(\`❌ Falha ao restaurar a identidade padrão: \${e.message}\`);

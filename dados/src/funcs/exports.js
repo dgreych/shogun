@@ -93,9 +93,9 @@ async function loadModules() {
             console.warn('[EXPORTS] Kwai dl function not found');
         }
         
-        // Enhanced null checking and error handling for all modules
+        // Checagem de nulo e tratamento de erro reforçados para todos os módulos
         if (modules.youtube) {
-            // Ensure critical methods exist
+            // Garante que os métodos críticos existam
             const youtubeMethods = ['search', 'mp3', 'mp4'];
             youtubeMethods.forEach(method => {
                 if (typeof modules.youtube[method] !== 'function') {
@@ -206,7 +206,7 @@ async function loadModules() {
         modules.imagetools = imagetoolsMod.default ?? imagetoolsMod;
         modules.freefire = freefireMod.default ?? freefireMod;
 
-        // expose sendSticker directly (preserving previous API shape) with null check
+        // expõe sendSticker diretamente (preservando o formato anterior da API), com checagem de nulo
         if (modules.stickerModule && modules.stickerModule.sendSticker) {
             modules.sendSticker = modules.stickerModule.sendSticker;
         } else {
@@ -277,17 +277,17 @@ async function loadModules() {
 }
 
 /**
- * Named async accessor for callers that prefer explicit async usage.
+ * Acessor assíncrono nomeado, para chamadores que preferem usar async explicitamente.
  */
 export async function getModules() {
     return await loadModules();
 }
 
 /**
- * Default export resolves the aggregated modules object via top-level await.
- * This keeps existing ESM consumers using:
+ * A exportação padrão resolve o objeto agregado de módulos via top-level await.
+ * Isso mantém os consumidores ESM existentes que usam:
  *   const modules = (await import('./funcs/exports.js')).default;
- * working as expected.
+ * funcionando como esperado.
  */
 const modules = await loadModules();
 

@@ -2838,8 +2838,8 @@ const saveMenuDesign = (design) => {
   }
 };
 
-const getMenuDesignWithDefaults = (botName, userName, prefix) => {
-  const design = loadMenuDesign();
+const getMenuDesignWithDefaults = (botName, userName, prefix, overrideDesign = null) => {
+  const design = overrideDesign || loadMenuDesign();
 
   // Substitui os placeholders pelos valores atuais
   const processedDesign = {};
@@ -2921,7 +2921,7 @@ const addCommandLimit = (commandName, maxUses, timeFrame) => {
       };
     }
     
-    // Check if command already has a limit
+    // Verifica se o comando já tem um limite configurado
     if (limitsData.commands[cmdName]) {
       return {
         success: false,
@@ -3020,13 +3020,13 @@ const checkCommandLimit = (commandName, userId) => {
       };
     }
     
-    // Initialize users tracking for this command if not exists
+    // Inicializa o rastreamento de usuários deste comando, se ainda não existir
     limitsData.users[cmdName] = limitsData.users[cmdName] || {};
     const userUsage = limitsData.users[cmdName][userId] || { uses: 0, resetTime: 0 };
-    
+
     const now = Date.now();
-    
-    // Reset counter if time frame has passed
+
+    // Zera o contador se o período já passou
     if (now >= userUsage.resetTime) {
       userUsage.uses = 0;
       userUsage.resetTime = now + parseTimeFrame(commandLimit.timeFrame);
@@ -3041,7 +3041,7 @@ const checkCommandLimit = (commandName, userId) => {
       };
     }
     
-    // Increment usage count for this user
+    // Incrementa a contagem de uso deste usuário
     userUsage.uses++;
     userUsage.lastUsed = now;
     limitsData.users[cmdName][userId] = userUsage;
@@ -3062,7 +3062,7 @@ const checkCommandLimit = (commandName, userId) => {
   }
 };
 
-// Helper function to parse time frame (e.g., "1h" -> 3600000 milliseconds)
+// Função auxiliar para interpretar o período (ex.: "1h" -> 3600000 milissegundos)
 const parseTimeFrame = (timeFrame) => {
   const match = timeFrame.match(/^(\d+)([smhd])$/i);
   if (!match) return 0;
@@ -3079,7 +3079,7 @@ const parseTimeFrame = (timeFrame) => {
   }
 };
 
-// Helper function to format time left
+// Função auxiliar para formatar o tempo restante
 const formatTimeLeft = (milliseconds) => {
   if (milliseconds <= 0) return '0s';
   
@@ -3169,6 +3169,31 @@ const removeGroupCustomPhoto = (groupId) => {
       fs.unlinkSync(data.groups[groupId].customPhoto);
     }
     delete data.groups[groupId].customPhoto;
+    if (Object.keys(data.groups[groupId]).length === 0) {
+      delete data.groups[groupId];
+    }
+    saveGroupCustomization(data);
+  }
+  return true;
+};
+
+// Persona escolhida por !changeperso dentro de um grupo específico — usa o
+// mesmo arquivo/gate (enabled + isGroupAdmin) das demais personalizações de
+// grupo (nome, foto), em vez de um sistema separado.
+const setGroupCustomPersona = (groupId, personaKey) => {
+  const data = loadGroupCustomization();
+  if (!data.groups[groupId]) {
+    data.groups[groupId] = {};
+  }
+  data.groups[groupId].customPersona = personaKey;
+  saveGroupCustomization(data);
+  return true;
+};
+
+const removeGroupCustomPersona = (groupId) => {
+  const data = loadGroupCustomization();
+  if (data.groups[groupId]) {
+    delete data.groups[groupId].customPersona;
     if (Object.keys(data.groups[groupId]).length === 0) {
       delete data.groups[groupId];
     }
@@ -3410,6 +3435,8 @@ export {
   setGroupCustomPhoto,
   removeGroupCustomName,
   removeGroupCustomPhoto,
+  setGroupCustomPersona,
+  removeGroupCustomPersona,
   // Sistema de Áudio do Menu
   loadMenuAudio,
   saveMenuAudio,

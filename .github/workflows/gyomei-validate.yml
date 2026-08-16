@@ -63,30 +63,32 @@ jobs:
       - name: Executar validação equivalente ao ambiente público
         run: npm run validate:ci
 
-      - name: Confirmar NVIDIA, identidade, créditos e comandos
+      - name: Confirmar gateway BunnyFy, identidade, créditos e comandos
         run: |
           grep -q "meta/llama-3.1-70b-instruct" dados/src/utils/nvidiaApi.js
-          grep -q "isKnownNvidiaModel(modelo)" dados/src/funcs/private/ia.js
-          grep -q "model: requestedModel" dados/src/funcs/private/ia.js
           grep -q "createBunnyFyAiClient().createChatCompletion" dados/src/funcs/private/ia.js
-          grep -q "https://integrate.api.nvidia.com/v1/chat/completions" dados/src/utils/nvidiaApi.js
+          grep -q "toLegacyChatResponse" dados/src/funcs/private/ia.js
+          ! grep -q "requestNvidiaChat" dados/src/funcs/private/ia.js
+          ! grep -q "https://integrate.api.nvidia.com/v1/chat/completions" dados/src/utils/nvidiaApi.js
+          ! grep -q "import axios from 'axios'" dados/src/utils/nvidiaApi.js
+          ! grep -q "CIPHER_BYTES" dados/src/utils/nvidiaEmbedded.js
           ! grep -q "moonshotai/kimi-k2-instruct" dados/src/funcs/private/ia.js
           ! grep -q "moonshotai/kimi-k2-instruct" dados/src/index.js
           grep -q "test:nvidia:live" package.json
           grep -q "test:assistant:live" package.json
           test -s assets/nazuna-gyomei-banner.png
           grep -q "NAZUNA BOT" dados/src/.runtime-index.js
-          grep -q "Versão modificada: \*GYOMEI\*" dados/src/.runtime-index.js
-          grep -q "CRIAÇÃO ORIGINAL — HIUDY" dados/src/.runtime-index.js
-          grep -q "CONTINUIDADE DA NAZUNA — DEVTOKYO" dados/src/.runtime-index.js
-          grep -q "APRIMORAMENTOS DA VERSÃO GYOMEI" dados/src/.runtime-index.js
+          grep -Fq '│ 💎 *Hiudy* — criação original' dados/src/.runtime-index.js
+          grep -Fq '│ 💎 *DevTokyo* — continuidade da Nazuna' dados/src/.runtime-index.js
+          grep -Fq '│ 💎 *Alaska_dev* — versão GYOMEI' dados/src/.runtime-index.js
           grep -q "wa.me/5532985076326" dados/src/.runtime-index.js
-          grep -q "github.com/dgreych/nazuna9.0-com-automa-es" dados/src/.runtime-index.js
+          grep -q "github.com/dgreych" dados/src/.runtime-index.js
           grep -q "Comando não reconhecido" dados/src/.runtime-index.js
           grep -q "Talvez você procurasse" dados/src/.runtime-index.js
           grep -q "downloadQuotedCommandMedia" dados/src/.runtime-index.js
           grep -q "Buffer.from(value.data)" dados/src/utils/gyomeiStore.js
-          grep -q "process.env.NVIDIA_API_KEY" dados/src/funcs/private/.runtime-ia.js
+          ! grep -q "process.env.NVIDIA_API_KEY" dados/src/funcs/private/.runtime-ia.js
+          grep -q "createBunnyFyAiClient" dados/src/funcs/private/.runtime-ia.js
           ! grep -q "const IA_API_KEY = 'nvapi-" dados/src/funcs/private/.runtime-ia.js
 
       - name: Gerar artefato público root-ready
@@ -121,6 +123,7 @@ jobs:
           ! grep -R -I -n -E 'nvapi-[A-Za-z0-9_-]+' "$BUNDLE"
 
       - name: Publicar conteúdo root-ready
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: nazuna-gyomei-server-v1.0.0-root
@@ -132,6 +135,7 @@ jobs:
           retention-days: 14
 
       - name: Publicar ZIP e TAR root-ready
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: nazuna-gyomei-server-v1.0.0-arquivos
