@@ -369,12 +369,11 @@ case 'mudarpersona':
       // A foto de perfil da CONTA do WhatsApp é única pro número inteiro
       // (não existe "foto de conta por grupo" na plataforma) — confirmado
       // com o dono que, mesmo assim, ele quer que ela acompanhe o último
-      // !changeperso usado em qualquer grupo. Já a foto do PRÓPRIO GRUPO
-      // (o ícone do grupo em si, como o comando fotogp/setfoto já troca)
-      // é sim específica de cada grupo, então também é trocada aqui pra
-      // combinar com a identidade escolhida, se o bot for admin do grupo.
-      // Falha em qualquer uma dessas duas não derruba o comando: a parte
-      // por grupo (nome/foto de menu/persona) já foi salva de qualquer jeito.
+      // !changeperso usado em qualquer grupo. A foto REAL do ícone do
+      // grupo no WhatsApp NUNCA deve ser trocada por este comando (só a
+      // foto de menu interna acima, via setGroupCustomPhoto) -- trocar o
+      // ícone real do grupo automaticamente causou problemas reais com
+      // clientes e foi removido a pedido do dono.
       let changepersoProcessedBuffer = null;
       try {
         const changepersoFotoBuffer = fs.readFileSync(changepersoFotoMedia.path);
@@ -389,22 +388,10 @@ case 'mudarpersona':
         } catch (changepersoContaFotoError) {
           console.error('[CHANGEPERSO] Erro ao trocar a foto de perfil da conta:', changepersoContaFotoError);
         }
-
-        if (isBotAdmin) {
-          try {
-            await nazu.updateProfilePicture(from, changepersoProcessedBuffer);
-          } catch (changepersoGrupoFotoError) {
-            console.error('[CHANGEPERSO] Erro ao trocar a foto do grupo:', changepersoGrupoFotoError);
-          }
-        }
       }
     }
 
-    const changepersoGrupoFotoNota = isBotAdmin
-      ? 'A foto do próprio grupo também foi trocada pra combinar.'
-      : \`Pra eu trocar a foto do grupo também, me deixe como administrador e rode \${prefix}changeperso \${changepersoKey} de novo.\`;
-
-    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. \${changepersoGrupoFotoNota} A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\`);
+    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\`);
   } catch (e) {
     console.error('[CHANGEPERSO] Erro:', e);
     await reply(\`❌ Falha ao trocar a identidade do grupo: \${e.message}\`);

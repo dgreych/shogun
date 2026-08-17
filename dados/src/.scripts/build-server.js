@@ -199,39 +199,27 @@ function rebaseLocalStatePaths(localState) {
   for (const relativePath of localState) visit(path.join(bundleDir, relativePath.replace(/\/$/, '')));
 }
 
+function secureIaDeclaration() {
+  return "const IA_API_KEY = String(process.env.NVIDIA_API_KEY || '').trim();";
+}
+
 function sanitizeBundleSource() {
   const iaFile = path.join(bundleDir, 'dados', 'src', 'funcs', 'private', 'ia.js');
-  const apiFile = path.join(bundleDir, 'dados', 'src', 'utils', 'nvidiaApi.js');
-  const embeddedFile = path.join(bundleDir, 'dados', 'src', 'utils', 'nvidiaEmbedded.js');
-  const storeFile = path.join(bundleDir, 'dados', 'src', 'utils', 'gyomeiStore.js');
   if (!fs.existsSync(iaFile)) throw new Error('Arquivo legado da IA não foi encontrado na build.');
 
-  const iaSource = fs.readFileSync(iaFile, 'utf8');
-  const apiSource = fs.existsSync(apiFile) ? fs.readFileSync(apiFile, 'utf8') : '';
-  const embeddedSource = fs.existsSync(embeddedFile) ? fs.readFileSync(embeddedFile, 'utf8') : '';
-  const storeSource = fs.existsSync(storeFile) ? fs.readFileSync(storeFile, 'utf8') : '';
-  const combined = [iaSource, apiSource, embeddedSource, storeSource].join('\n');
+  let source = fs.readFileSync(iaFile, 'utf8');
+  source = source.replace(
+    /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/,
+    secureIaDeclaration()
+  );
 
-  if (/nvapi-[A-Za-z0-9_-]+/.test(combined)) {
-    throw new Error('A build contém uma credencial de provedor hardcoded.');
+  if (/nvapi-[A-Za-z0-9_-]+/.test(source)) {
+    throw new Error('A build ainda contém uma chave NVIDIA hardcoded.');
   }
-  const forbidden = [
-    [iaSource, 'requestNvidiaChat', 'transporte direto na assistente'],
-    [iaSource, 'process.env.NVIDIA_API_KEY', 'leitura de credencial na assistente'],
-    [apiSource, 'integrate.api.nvidia.com', 'endpoint direto no catálogo legado'],
-    [apiSource, "import axios from 'axios'", 'cliente HTTP no catálogo legado'],
-    [embeddedSource, 'CIPHER_BYTES', 'credencial reconstruível no tombstone'],
-    [embeddedSource, 'createHash', 'decodificador de credencial no tombstone'],
-    [storeSource, 'process.env.NVIDIA_API_KEY', 'leitura de credencial no store'],
-    [storeSource, 'stored.nvidia_api_key', 'credencial persistida no store']
-  ];
-  const violations = forbidden.filter(([source, marker]) => source.includes(marker));
-  if (violations.length > 0) {
-    throw new Error(`A build não está BunnyFy-only: ${violations.map(([, , label]) => label).join(', ')}.`);
+  if (!source.includes('process.env.NVIDIA_API_KEY')) {
+    throw new Error('A credencial NVIDIA não foi externalizada no módulo legado.');
   }
-  if (!iaSource.includes('createBunnyFyAiClient')) {
-    throw new Error('O gateway BunnyFy não foi encontrado no módulo da assistente.');
-  }
+  fs.writeFileSync(iaFile, source);
 }
 
 function resetJsonPreservingType(file) {

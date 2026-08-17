@@ -1,5 +1,6 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
+import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
 
 const AI_MODES = new Set(['off', 'primary', 'exclusive']);
 const DEFAULT_LIMITS = Object.freeze({
@@ -8,7 +9,7 @@ const DEFAULT_LIMITS = Object.freeze({
   maxTotalChars: 48_000
 });
 
-function resolveBunnyFyAiMode(env = process.env) {
+function resolveBunnyFyAiMode(env = resolveBunnyFyRuntimeEnv()) {
   if (!['true', '1'].includes(String(env.BUNNYFY_ENABLED || '').trim().toLowerCase())) {
     return 'off';
   }
@@ -29,7 +30,7 @@ function resolveBunnyFyAccountUrl(value) {
   }
 }
 
-function buildBunnyFyAccessMessage(env = process.env) {
+function buildBunnyFyAccessMessage(env = resolveBunnyFyRuntimeEnv()) {
   const accountUrl = resolveBunnyFyAccountUrl(env.BUNNYFY_ACCOUNT_URL);
   return [
     '🐰 *BunnyFy*',
@@ -96,11 +97,14 @@ function buildBoundedChatMessages({
     : [...selectedHistory, user];
 }
 
-function createBunnyFyAiClient(env = process.env) {
+function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv()) {
   const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
   return new BunnyFyClient({
     baseUrl: env.BUNNYFY_BASE_URL,
     token: env.BUNNYFY_API_TOKEN,
+    allowInsecureHttp: ['true', '1'].includes(
+      String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
+    ),
     timeoutMs: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 130_000,
     maxResponseBytes: 2 * 1024 * 1024,
     retries: 0

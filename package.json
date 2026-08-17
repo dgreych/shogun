@@ -20,13 +20,13 @@
     "test:regressions": "node dados/src/.scripts/test-regressions.js",
     "test:bunnyfy": "node --test dados/src/services/bunnyfy/*.test.js",
     "test:tavern": "node --test dados/src/tavern/tests/*.test.js",
-    "tavern:balance-report": "node dados/src/tavern/tools/runBalanceReport.mjs",
     "test:security": "node --test dados/src/security/*.test.js",
     "diagnose:tavern-db": "node dados/src/.scripts/checkServerDatabaseConnection.mjs",
     "diagnose:nvidia": "node dados/src/.scripts/diagnose-nvidia.js",
     "test:nvidia:live": "node dados/src/.scripts/diagnose-nvidia.js",
     "test:assistant:live": "node dados/src/.scripts/test-assistant-live.js",
-    "verify:server:bunnyfy": "node dados/src/.scripts/verifyBunnyFyServerRuntime.mjs"
+    "verify:server:bunnyfy": "node dados/src/.scripts/verifyBunnyFyServerRuntime.mjs",
+    "test:bunnyfy:ai:live": "node dados/src/.scripts/test-assistant-live.js"
   },
   "repository": {
     "type": "git",

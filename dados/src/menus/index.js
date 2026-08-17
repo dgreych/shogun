@@ -23,6 +23,7 @@ const menuModules = {
     menuIa: './menuia.js',
     menuTopCmd: './topcmd.js',
     menuRPG: './menurpg.js',
+    menuNexo: './menunexo.js',
     menuVIP: './menuvip.js'
 };
 

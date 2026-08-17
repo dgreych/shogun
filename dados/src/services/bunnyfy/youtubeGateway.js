@@ -1,5 +1,6 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
+import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
 
 const YOUTUBE_MODES = new Set(['off', 'primary', 'exclusive']);
 const YOUTUBE_HOSTS = new Set([
@@ -28,7 +29,7 @@ function enabledByMasterFlag(env) {
   return ['true', '1'].includes(String(env.BUNNYFY_ENABLED || '').trim().toLowerCase());
 }
 
-function resolveBunnyFyYoutubeMode(env = process.env) {
+function resolveBunnyFyYoutubeMode(env = resolveBunnyFyRuntimeEnv()) {
   if (!enabledByMasterFlag(env)) return 'off';
   const mode = String(env.BUNNYFY_YOUTUBE_MODE || 'off').trim().toLowerCase();
   if (!YOUTUBE_MODES.has(mode)) throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
@@ -40,14 +41,14 @@ function readPositiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function resolveYoutubeLimits(env = process.env) {
+function resolveYoutubeLimits(env = resolveBunnyFyRuntimeEnv()) {
   return {
     timeoutMs: readPositiveNumber(env.BUNNYFY_YOUTUBE_TIMEOUT_MS, DEFAULT_YOUTUBE_TIMEOUT_MS),
     maxBytes: readPositiveNumber(env.BUNNYFY_YOUTUBE_MAX_BYTES, DEFAULT_YOUTUBE_MAX_BYTES)
   };
 }
 
-function resolveYoutubeMaxConcurrency(env = process.env) {
+function resolveYoutubeMaxConcurrency(env = resolveBunnyFyRuntimeEnv()) {
   const parsed = Number(env.BUNNYFY_YOUTUBE_MAX_CONCURRENCY);
   if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_YOUTUBE_MAX_CONCURRENCY;
   return Math.min(MAX_YOUTUBE_MAX_CONCURRENCY, Math.floor(parsed));
@@ -79,7 +80,7 @@ function createYoutubePlayConcurrencyLimiter(maxConcurrency = DEFAULT_YOUTUBE_MA
 }
 
 const youtubePlayConcurrencyLimiter = createYoutubePlayConcurrencyLimiter(
-  resolveYoutubeMaxConcurrency(process.env)
+  resolveYoutubeMaxConcurrency(resolveBunnyFyRuntimeEnv())
 );
 
 function tryAcquireYoutubePlaySlot() {
@@ -381,7 +382,7 @@ async function downloadLegacyYoutubeAudio(input, legacyYoutube, onMetadata) {
   });
 }
 
-function createBunnyFyYoutubeClient(env = process.env) {
+function createBunnyFyYoutubeClient(env = resolveBunnyFyRuntimeEnv()) {
   const { timeoutMs } = resolveYoutubeLimits(env);
   return new BunnyFyClient({
     baseUrl: env.BUNNYFY_BASE_URL,
@@ -501,7 +502,7 @@ async function downloadBunnyFyYoutubeVideo(input, quality, env, clientFactory, l
 }
 
 async function downloadYoutubeAudioForPlay(value, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   legacyYoutube,
   clientFactory = createBunnyFyYoutubeClient,
   onMetadata
@@ -531,7 +532,7 @@ async function downloadYoutubeAudioForPlay(value, {
 
 async function downloadYoutubeVideoForPlay(value, {
   quality = '360p',
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   legacyYoutube,
   clientFactory = createBunnyFyYoutubeClient
 } = {}) {

@@ -224,6 +224,65 @@ async function tavernSceneWithBunnyFy(view, {
   });
 }
 
+// Mesmo contrato de retorno das três funções da Tavern acima (Buffer PNG
+// puro): o adapter em dados/src/nexo/rendering/ decide o que fazer se vier
+// null (fallback textual, sempre disponível independente da BunnyFy --
+// seção do plano de coordenação: falha/timeout/429 nunca cancela uma
+// transação de jogo já válida).
+async function nexoCircleWithBunnyFy(view, {
+  env = process.env,
+  clientFactory = createCapabilityClient,
+  legacyFallback = async () => null
+} = {}) {
+  const mode = resolveCapabilityMode('BUNNYFY_NEXO_RENDER_MODE', env);
+  return executeCapability({
+    mode,
+    legacyFallback,
+    operation: async () => {
+      const client = clientFactory(env);
+      const result = await client.renderNexoCircle(view, { idempotencyKey: crypto.randomUUID() });
+      const downloaded = await client.downloadMedia(result.media, { maxBytes: 5 * 1024 * 1024 });
+      return downloaded.buffer;
+    }
+  });
+}
+
+async function nexoCharacterWithBunnyFy(view, {
+  env = process.env,
+  clientFactory = createCapabilityClient,
+  legacyFallback = async () => null
+} = {}) {
+  const mode = resolveCapabilityMode('BUNNYFY_NEXO_RENDER_MODE', env);
+  return executeCapability({
+    mode,
+    legacyFallback,
+    operation: async () => {
+      const client = clientFactory(env);
+      const result = await client.renderNexoCharacter(view, { idempotencyKey: crypto.randomUUID() });
+      const downloaded = await client.downloadMedia(result.media, { maxBytes: 5 * 1024 * 1024 });
+      return downloaded.buffer;
+    }
+  });
+}
+
+async function nexoEncounterWithBunnyFy(view, {
+  env = process.env,
+  clientFactory = createCapabilityClient,
+  legacyFallback = async () => null
+} = {}) {
+  const mode = resolveCapabilityMode('BUNNYFY_NEXO_RENDER_MODE', env);
+  return executeCapability({
+    mode,
+    legacyFallback,
+    operation: async () => {
+      const client = clientFactory(env);
+      const result = await client.renderNexoEncounter(view, { idempotencyKey: crypto.randomUUID() });
+      const downloaded = await client.downloadMedia(result.media, { maxBytes: 5 * 1024 * 1024 });
+      return downloaded.buffer;
+    }
+  });
+}
+
 async function stickerWithBunnyFy(buffer, {
   kind,
   fit = 'contain',
@@ -520,6 +579,9 @@ export {
   imageGenerateWithBunnyFy,
   masterEnabled,
   movieQuizWithBunnyFy,
+  nexoCircleWithBunnyFy,
+  nexoCharacterWithBunnyFy,
+  nexoEncounterWithBunnyFy,
   removeBackgroundWithBunnyFy,
   resolveCapabilityMode,
   socialCardWithBunnyFy,

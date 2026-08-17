@@ -21,6 +21,9 @@ const BUNNYFY_ROUTES = Object.freeze({
   tavernBoard: '/v1/games/tavern/board',
   tavernHand: '/v1/games/tavern/hand',
   tavernScene: '/v1/games/tavern/scene',
+  nexoCircle: '/v1/games/nexo/circle',
+  nexoCharacter: '/v1/games/nexo/character',
+  nexoEncounter: '/v1/games/nexo/encounter',
   transcriptions: '/v1/audio/transcriptions',
   downloadsFacebook: '/v1/downloads/facebook',
   downloadsPinterest: '/v1/downloads/pinterest',
@@ -44,44 +47,65 @@ const PHONE_LIKE_PATTERN = /^\+?\d{8,20}$/;
 const PHONE_FORMATTED_PATTERN = /^[+\d\s().-]+$/;
 const COMPACT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
 
-function badTavernRenderView() {
+// Espelho local do contrato Render View v1 do NEXO congelado em BunnyFy
+// (src/nexoGame/contracts/renderView.ts, GPT-NEXO-002). Camada de defesa
+// própria deste cliente -- igual ao que já existe acima para a Tavern --
+// antes de qualquer payload sair para a rede.
+const NEXO_RENDER_VIEW_SCHEMA_VERSION = 1;
+const NEXO_RENDER_LIMITS = Object.freeze({
+  labelLength: 96,
+  titleLength: 120,
+  metrics: 12,
+  highlights: 8,
+  techniques: 8,
+  traits: 8,
+  encounterActions: 6,
+  encounterStatuses: 8,
+  numericMagnitude: 999_999
+});
+const NEXO_FORBIDDEN_IDENTITY_SENTINEL = /\b(?:jid|phone|telefone|seed|pn|lid|chat[\s_-]*id|user[\s_-]*id|history|hist[oó]rico|hidden(?:[\s_-]*content)?|conte[uú]do[\s_-]*oculto)\b/i;
+const NEXO_PHONE_LIKE_FRAGMENT = /(?:^|\D)\+?\d(?:[\s().-]*\d){8,}(?:$|\D)/;
+const NEXO_UUID_LIKE_FRAGMENT = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i;
+const NEXO_LONG_HEX_FRAGMENT = /\b[0-9a-f]{24,}\b/i;
+
+function badRenderView() {
   throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
 }
 
 function exactRecord(value, requiredKeys, optionalKeys = []) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) badTavernRenderView();
+  if (!value || typeof value !== 'object' || Array.isArray(value)) badRenderView();
   const allowed = new Set([...requiredKeys, ...optionalKeys]);
   const keys = Object.keys(value);
   if (requiredKeys.some(key => !Object.hasOwn(value, key)) || keys.some(key => !allowed.has(key))) {
-    badTavernRenderView();
+    badRenderView();
   }
   return value;
 }
 
 function boundedString(value, { min = 1, max = 191 } = {}) {
-  if (typeof value !== 'string' || value.length < min || value.length > max) badTavernRenderView();
+  if (typeof value !== 'string' || value.length < min || value.length > max) badRenderView();
   return value;
 }
 
 function boundedNumber(value, { min = 0, max = 99_999 } = {}) {
-  if (!Number.isSafeInteger(value) || value < min || value > max) badTavernRenderView();
+  if (!Number.isSafeInteger(value) || value < min || value > max) badRenderView();
   return value;
 }
 
 function assertKeywords(value) {
-  if (!Array.isArray(value) || value.length > 8) badTavernRenderView();
+  if (!Array.isArray(value) || value.length > 8) badRenderView();
   for (const keyword of value) assertCompactId(keyword);
 }
 
 function assertPublicString(value, options) {
   const string = boundedString(value, options);
-  if (RAW_ID_PATTERN.test(string)) badTavernRenderView();
+  if (RAW_ID_PATTERN.test(string)) badRenderView();
   return string;
 }
 
 function assertCompactId(value) {
   const compactId = assertPublicString(value, { max: 64 });
-  if (!COMPACT_ID_PATTERN.test(compactId)) badTavernRenderView();
+  if (!COMPACT_ID_PATTERN.test(compactId)) badRenderView();
   return compactId;
 }
 
@@ -94,7 +118,7 @@ function assertDisplayName(value, max = 64) {
     PHONE_LIKE_PATTERN.test(name)
     || (digits.length >= 8 && PHONE_FORMATTED_PATTERN.test(name))
   ) {
-    badTavernRenderView();
+    badRenderView();
   }
   return name;
 }
@@ -113,12 +137,12 @@ function assertBoardCard(value) {
   ]);
   assertCompactId(card.cardId);
   assertPublicString(card.name, { max: 120 });
-  if (!TAVERN_RARITIES.has(card.rarity)) badTavernRenderView();
+  if (!TAVERN_RARITIES.has(card.rarity)) badRenderView();
   assertCompactId(card.classId);
   boundedNumber(card.attack);
   boundedNumber(card.health);
   assertKeywords(card.keywords);
-  if (typeof card.canAttack !== 'boolean') badTavernRenderView();
+  if (typeof card.canAttack !== 'boolean') badRenderView();
   boundedNumber(card.attacksThisTurn, { max: 16 });
 }
 
@@ -134,7 +158,7 @@ function assertHandCard(value) {
   ], ['attack', 'health', 'text']);
   assertCompactId(card.cardId);
   assertPublicString(card.name, { max: 120 });
-  if (!TAVERN_CARD_TYPES.has(card.type) || !TAVERN_RARITIES.has(card.rarity)) badTavernRenderView();
+  if (!TAVERN_CARD_TYPES.has(card.type) || !TAVERN_RARITIES.has(card.rarity)) badRenderView();
   assertCompactId(card.classId);
   boundedNumber(card.cost, { max: 100 });
   if (Object.hasOwn(card, 'attack')) boundedNumber(card.attack);
@@ -144,7 +168,7 @@ function assertHandCard(value) {
 }
 
 function assertTavernStatusAndPhase(view) {
-  if (!TAVERN_STATUS.has(view.status) || !TAVERN_PHASE.has(view.phase)) badTavernRenderView();
+  if (!TAVERN_STATUS.has(view.status) || !TAVERN_PHASE.has(view.phase)) badRenderView();
 }
 
 function assertTavernBoardRenderView(value) {
@@ -152,28 +176,28 @@ function assertTavernBoardRenderView(value) {
     'schemaVersion', 'kind', 'status', 'phase', 'turn', 'terrain', 'players'
   ]);
   if (view.schemaVersion !== TAVERN_RENDER_VIEW_SCHEMA_VERSION || view.kind !== 'board') {
-    badTavernRenderView();
+    badRenderView();
   }
   assertTavernStatusAndPhase(view);
   const turn = exactRecord(view.turn, ['number', 'activeSlot', 'deadlineAt']);
   boundedNumber(turn.number, { min: 1, max: 99_999 });
-  if (!TAVERN_BOARD_SLOTS.has(turn.activeSlot)) badTavernRenderView();
+  if (!TAVERN_BOARD_SLOTS.has(turn.activeSlot)) badRenderView();
   if (turn.deadlineAt !== null) {
     boundedString(turn.deadlineAt, { max: 64 });
-    if (!Number.isFinite(Date.parse(turn.deadlineAt))) badTavernRenderView();
+    if (!Number.isFinite(Date.parse(turn.deadlineAt))) badRenderView();
   }
   if (view.terrain !== null) {
     const terrain = exactRecord(view.terrain, ['name']);
     assertPublicString(terrain.name, { max: 120 });
   }
-  if (!Array.isArray(view.players) || view.players.length !== 2) badTavernRenderView();
-  if (view.players[0]?.slot !== 'bottom' || view.players[1]?.slot !== 'top') badTavernRenderView();
+  if (!Array.isArray(view.players) || view.players.length !== 2) badRenderView();
+  if (view.players[0]?.slot !== 'bottom' || view.players[1]?.slot !== 'top') badRenderView();
   const slots = new Set();
   for (const value of view.players) {
     const player = exactRecord(value, [
       'slot', 'displayName', 'classId', 'hero', 'mana', 'handCount', 'deckCount', 'board'
     ]);
-    if (!TAVERN_BOARD_SLOTS.has(player.slot) || slots.has(player.slot)) badTavernRenderView();
+    if (!TAVERN_BOARD_SLOTS.has(player.slot) || slots.has(player.slot)) badRenderView();
     slots.add(player.slot);
     assertDisplayName(player.displayName);
     assertCompactId(player.classId);
@@ -183,10 +207,10 @@ function assertTavernBoardRenderView(value) {
     const mana = exactRecord(player.mana, ['current', 'max']);
     boundedNumber(mana.current, { max: 100 });
     boundedNumber(mana.max, { max: 100 });
-    if (mana.current > mana.max) badTavernRenderView();
+    if (mana.current > mana.max) badRenderView();
     boundedNumber(player.handCount, { max: 10 });
     boundedNumber(player.deckCount, { max: 100 });
-    if (!Array.isArray(player.board) || player.board.length > 7) badTavernRenderView();
+    if (!Array.isArray(player.board) || player.board.length > 7) badRenderView();
     for (const card of player.board) assertBoardCard(card);
   }
   return view;
@@ -197,10 +221,10 @@ function assertTavernHandRenderView(value) {
     'schemaVersion', 'kind', 'status', 'phase', 'isActive', 'viewer', 'cards'
   ]);
   if (view.schemaVersion !== TAVERN_RENDER_VIEW_SCHEMA_VERSION || view.kind !== 'hand') {
-    badTavernRenderView();
+    badRenderView();
   }
   assertTavernStatusAndPhase(view);
-  if (typeof view.isActive !== 'boolean') badTavernRenderView();
+  if (typeof view.isActive !== 'boolean') badRenderView();
   const viewer = exactRecord(view.viewer, [
     'classId', 'mana', 'nextSpellDiscount', 'boardCount'
   ]);
@@ -208,10 +232,10 @@ function assertTavernHandRenderView(value) {
   const mana = exactRecord(viewer.mana, ['current', 'max']);
   boundedNumber(mana.current, { max: 100 });
   boundedNumber(mana.max, { max: 100 });
-  if (mana.current > mana.max) badTavernRenderView();
+  if (mana.current > mana.max) badRenderView();
   boundedNumber(viewer.nextSpellDiscount, { max: 100 });
   boundedNumber(viewer.boardCount, { max: 7 });
-  if (!Array.isArray(view.cards) || view.cards.length > 10) badTavernRenderView();
+  if (!Array.isArray(view.cards) || view.cards.length > 10) badRenderView();
   for (const card of view.cards) assertHandCard(card);
   return view;
 }
@@ -228,7 +252,7 @@ function assertTavernSceneRenderView(value) {
     || view.kind !== 'scene'
     || !TAVERN_SCENE_KINDS.has(view.sceneKind)
   ) {
-    badTavernRenderView();
+    badRenderView();
   }
   switch (view.sceneKind) {
     case 'invite': {
@@ -276,8 +300,93 @@ function assertTavernSceneRenderView(value) {
       break;
     }
     default:
-      badTavernRenderView();
+      badRenderView();
   }
+  return view;
+}
+
+function assertNexoLabel(value, max = NEXO_RENDER_LIMITS.labelLength) {
+  if (typeof value !== 'string' || !value.trim() || value.length > max) badRenderView();
+  if (RAW_ID_PATTERN.test(value)) badRenderView();
+  if (NEXO_FORBIDDEN_IDENTITY_SENTINEL.test(value)) badRenderView();
+  if (NEXO_PHONE_LIKE_FRAGMENT.test(value)) badRenderView();
+  if (NEXO_UUID_LIKE_FRAGMENT.test(value) || NEXO_LONG_HEX_FRAGMENT.test(value)) badRenderView();
+  return value;
+}
+
+function assertNexoLabelArray(values, max) {
+  if (!Array.isArray(values) || values.length > max) badRenderView();
+  return values.map(value => assertNexoLabel(value));
+}
+
+function assertNexoMetric(metric) {
+  const value = exactRecord(metric, ['label', 'value'], ['max']);
+  assertNexoLabel(value.label);
+  boundedNumber(value.value, { min: -NEXO_RENDER_LIMITS.numericMagnitude, max: NEXO_RENDER_LIMITS.numericMagnitude });
+  if (Object.hasOwn(value, 'max')) {
+    boundedNumber(value.max, { max: NEXO_RENDER_LIMITS.numericMagnitude });
+    if (value.value > value.max) badRenderView();
+  }
+  return value;
+}
+
+function assertNexoMetrics(values) {
+  if (!Array.isArray(values) || values.length > NEXO_RENDER_LIMITS.metrics) badRenderView();
+  return values.map(assertNexoMetric);
+}
+
+function assertNexoCircleRenderView(value) {
+  const view = exactRecord(value, [
+    'schemaVersion', 'kind', 'titleLabel', 'modeLabel', 'statusLabel', 'metrics', 'highlights'
+  ]);
+  if (view.schemaVersion !== NEXO_RENDER_VIEW_SCHEMA_VERSION || view.kind !== 'circle') badRenderView();
+  assertNexoLabel(view.titleLabel, NEXO_RENDER_LIMITS.titleLength);
+  assertNexoLabel(view.modeLabel);
+  assertNexoLabel(view.statusLabel);
+  assertNexoMetrics(view.metrics);
+  assertNexoLabelArray(view.highlights, NEXO_RENDER_LIMITS.highlights);
+  return view;
+}
+
+function assertNexoCharacterRenderView(value) {
+  const view = exactRecord(value, [
+    'schemaVersion', 'kind', 'titleLabel', 'originLabel', 'toneLabel',
+    'impulseLabel', 'scarLabel', 'metrics', 'techniqueLabels', 'traitLabels'
+  ]);
+  if (view.schemaVersion !== NEXO_RENDER_VIEW_SCHEMA_VERSION || view.kind !== 'character') badRenderView();
+  assertNexoLabel(view.titleLabel, NEXO_RENDER_LIMITS.titleLength);
+  assertNexoLabel(view.originLabel);
+  assertNexoLabel(view.toneLabel);
+  assertNexoLabel(view.impulseLabel);
+  assertNexoLabel(view.scarLabel);
+  assertNexoMetrics(view.metrics);
+  assertNexoLabelArray(view.techniqueLabels, NEXO_RENDER_LIMITS.techniques);
+  assertNexoLabelArray(view.traitLabels, NEXO_RENDER_LIMITS.traits);
+  return view;
+}
+
+function assertNexoEncounterSide(value, { withIntent = false } = {}) {
+  const side = exactRecord(value, ['label', 'metrics'], withIntent ? ['intentLabel'] : []);
+  assertNexoLabel(side.label);
+  assertNexoMetrics(side.metrics);
+  if (withIntent) assertNexoLabel(side.intentLabel);
+  return side;
+}
+
+function assertNexoEncounterRenderView(value) {
+  const view = exactRecord(value, [
+    'schemaVersion', 'kind', 'titleLabel', 'round', 'postureLabel',
+    'actor', 'enemy', 'actionLabels', 'statusLabels'
+  ], ['outcomeLabel']);
+  if (view.schemaVersion !== NEXO_RENDER_VIEW_SCHEMA_VERSION || view.kind !== 'encounter') badRenderView();
+  boundedNumber(view.round, { min: 1, max: 9_999 });
+  assertNexoLabel(view.titleLabel, NEXO_RENDER_LIMITS.titleLength);
+  assertNexoLabel(view.postureLabel);
+  if (Object.hasOwn(view, 'outcomeLabel')) assertNexoLabel(view.outcomeLabel);
+  assertNexoEncounterSide(view.actor);
+  assertNexoEncounterSide(view.enemy, { withIntent: true });
+  assertNexoLabelArray(view.actionLabels, NEXO_RENDER_LIMITS.encounterActions);
+  assertNexoLabelArray(view.statusLabels, NEXO_RENDER_LIMITS.encounterStatuses);
   return view;
 }
 
@@ -515,9 +624,13 @@ function parseSocialDownload(value) {
 export {
   BUNNYFY_ROUTES,
   TAVERN_RENDER_VIEW_SCHEMA_VERSION,
+  NEXO_RENDER_VIEW_SCHEMA_VERSION,
   assertTavernBoardRenderView,
   assertTavernHandRenderView,
   assertTavernSceneRenderView,
+  assertNexoCircleRenderView,
+  assertNexoCharacterRenderView,
+  assertNexoEncounterRenderView,
   parseAnimatedLogo,
   parseEnvelope,
   parseAiChat,

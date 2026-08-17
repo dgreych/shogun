@@ -46,6 +46,15 @@ import { removeBg, upscale } from './funcs/utils/imagetools.js';
 import { ensureNonWebpImage } from './utils/mediaFormat.js';
 import { convertToGifPlayback } from './funcs/utils/togif.js';
 import { handleTavernCommand, shouldHandleTavernCommand, warmupTavernRuntime } from './tavern/runtime.js';
+import {
+  handleNexoCommand,
+  handleNexoPlayerCommand,
+  shouldHandleNexoCommand,
+  shouldHandleNexoNumericReply,
+  shouldHandleNexoPlayerCommand,
+  warmupNexoRuntime
+} from './nexo/runtime.js';
+import { checkFreshGroupAdmin } from './nexo/transport/checkFreshGroupAdmin.js';
 import { canGrantModeratorCommand, evaluateModerationTarget } from './security/ModerationPolicy.js';
 import { MessageReplayGuard, createMessageReplayKey } from './security/MessageReplayGuard.js';
 import { writeSecurityAudit } from './security/SecurityAuditLog.js';
@@ -465,7 +474,7 @@ function getValidCommandSet() {
 }
 
 const COMMAND_EMOJI_OVERRIDES = {
-  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menuia: '📜', menurpg: '📜', menuvip: '📜',
+  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menuia: '📜', menurpg: '📜', menunexo: '📜', menuvip: '📜',
   criador: '👑', ping: '🏓',
   play: '🎵', ytmp3: '🎵', playvid: '🎥', ytmp4: '🎥',
   tiktok: '📱', tiktokaudio: '📱', tiktokvideo: '📱', tiktoks: '📱', tiktoksearch: '📱', ttk: '📱', tkk: '📱',
@@ -1392,6 +1401,7 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     menuLogos,
     menuTopCmd,
     menuRPG,
+    menuNexo,
     menuVIP,
     menuBuscas,
     menuBrawlStars
@@ -2816,6 +2826,9 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     }
     void warmupTavernRuntime(nazu).catch(error => {
       console.error('[TAVERN] Falha ao iniciar o módulo:', error?.message || error);
+    });
+    void warmupNexoRuntime().catch(error => {
+      console.error('[NEXO] Falha ao iniciar o módulo:', error?.message || error);
     });
     const reagir = async (emj, options = {}) => {
       try {
@@ -5428,6 +5441,58 @@ Entre em contato com o dono do bot:
       return;
     }
 
+    if (shouldHandleNexoCommand(command)) {
+      // Só as ações de `!nexo` que mutam estado do grupo (ativar/confirmar/
+      // desativar) pagam o custo de uma consulta fresca de metadata -- o
+      // resto reaproveita o cache já calculado acima, como o resto do bot.
+      const nexoAction = String(args?.[0] || '').toLowerCase();
+      const nexoMutatingActions = new Set(['ativar', 'confirmar', 'desativar']);
+      let nexoIsGroupAdmin = isGroupAdmin || isOwner;
+      if (isGroup && nexoMutatingActions.has(nexoAction)) {
+        nexoIsGroupAdmin = isOwner || await checkFreshGroupAdmin({
+          socket: nazu,
+          groupChatId: from,
+          senderId: sender
+        });
+      }
+      await handleNexoCommand({
+        socket: nazu,
+        raw: {
+          messageId: info.key?.id || `${sender}:${Date.now()}`,
+          chatId: from,
+          groupId: isGroup ? from : undefined,
+          senderLid: sender?.includes('@lid') ? sender : undefined,
+          senderJid: sender?.includes('@lid') ? undefined : sender,
+          pushName: pushname,
+          timestamp: Date.now()
+        },
+        args,
+        isGroupAdmin: nexoIsGroupAdmin
+      });
+      return;
+    }
+
+    if (
+      shouldHandleNexoPlayerCommand(command) ||
+      await shouldHandleNexoNumericReply({ command, chatId: from, senderAddress: sender })
+    ) {
+      await handleNexoPlayerCommand({
+        socket: nazu,
+        raw: {
+          messageId: info.key?.id || `${sender}:${Date.now()}`,
+          chatId: from,
+          groupId: isGroup ? from : undefined,
+          senderLid: sender?.includes('@lid') ? sender : undefined,
+          senderJid: sender?.includes('@lid') ? undefined : sender,
+          pushName: pushname,
+          timestamp: Date.now()
+        },
+        command,
+        args
+      });
+      return;
+    }
+
     switch (command) {
 
 case 'tavern':
@@ -5930,6 +5995,11 @@ case 'role.info': {
 case 'menurpg':
 case 'rpg': {
     await sendMenuWithMedia('menurpg', menuRPG);
+       break;
+      }
+
+case 'menunexo': {
+    await sendMenuWithMedia('menunexo', menuNexo);
        break;
       }
 

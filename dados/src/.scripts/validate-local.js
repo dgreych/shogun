@@ -125,6 +125,7 @@ function validateConfig(config) {
   const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || config.BUNNYFY_BASE_URL || config.bunnyfy_base_url || '').trim();
   const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || config.BUNNYFY_API_TOKEN || config.bunnyfy_api_token || config.bunnyfy_token || '').trim();
   const bunnyfyAiMode = String(process.env.BUNNYFY_AI_MODE || config.BUNNYFY_AI_MODE || config.bunnyfy_ai_mode || '').trim();
+
   const vexKey = String(
     process.env.VEX_API_KEY || config.apikey_vex || ''
   ).trim();

@@ -41,15 +41,16 @@ if (fs.existsSync(runtimeIndexPath)) {
   const runtimeIndex = fs.readFileSync(runtimeIndexPath, 'utf8');
   assert(runtimeIndex.includes("case 'criador'"), 'comando criador presente');
   assert(runtimeIndex.includes('NAZUNA BOT'), 'nome principal NAZUNA BOT presente');
+  assert(runtimeIndex.includes('Versão modificada: *GYOMEI*'), 'GYOMEI identificado como versão modificada');
   assert(
-    runtimeIndex.includes('github.com/dgreych') && runtimeIndex.includes('wa.me/5522997028553'),
-    'GitHub e contato de Alaska_dev presentes no comando criador'
+    runtimeIndex.includes('https://github.com/dgreych/nazuna9.0-com-automa-es'),
+    'repositório da versão modificada presente no comando criador'
   );
-  assert(runtimeIndex.includes('criação original') && runtimeIndex.includes('github.com/hiudyy'), 'criação original de Hiudy preservada, com GitHub');
-  assert(runtimeIndex.includes('wa.me/553391967445'), 'contato original de Hiudy preservado');
-  assert(runtimeIndex.includes('continuidade da Nazuna') && runtimeIndex.includes('github.com/DevTokyoVx'), 'continuidade de DevTokyo preservada, com GitHub');
-  assert(runtimeIndex.includes('wa.me/5532985076326'), 'contato de DevTokyo preservado');
-  assert(runtimeIndex.includes('versão GYOMEI'), 'crédito dos aprimoramentos de Alaska_dev presente');
+  assert(runtimeIndex.includes('CRIAÇÃO ORIGINAL — HIUDY'), 'criação original de Hiudy preservada');
+  assert(runtimeIndex.includes('https://wa.me/553391967445'), 'contato original de Hiudy preservado');
+  assert(runtimeIndex.includes('CONTINUIDADE DA NAZUNA — DEVTOKYO'), 'continuidade de DevTokyo preservada');
+  assert(runtimeIndex.includes('https://wa.me/5532985076326'), 'contato de DevTokyo preservado');
+  assert(runtimeIndex.includes('APRIMORAMENTOS DA VERSÃO GYOMEI'), 'crédito dos aprimoramentos de Alaska_dev presente');
   assert(runtimeIndex.includes('Comando não reconhecido'), 'novo cartão de comando inválido presente');
   assert(runtimeIndex.includes('Talvez você procurasse'), 'sugestões de similaridade presentes');
   assert(runtimeIndex.includes('comandos disponíveis'), 'total de comandos aparece de forma discreta');

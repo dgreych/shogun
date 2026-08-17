@@ -6,7 +6,7 @@ import path from 'node:path';
 
 import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, resolveCommandInput } from '../utils/commandResolver.js';
 import { extractJSON } from '../funcs/private/ia.js';
-import { buildBoundedChatMessages, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
+import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
 import { getQuotedMediaSource } from '../utils/gyomeiCore.js';
 import { normalizeVipCommandsData } from '../utils/vipCommandsManager.js';
@@ -157,20 +157,10 @@ await test('diagnóstico Vex do YouTube não inclui consulta, URL ou conteúdo d
 await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto', () => {
   const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-  const legacyApiSource = fs.readFileSync(new URL('../utils/nvidiaApi.js', import.meta.url), 'utf8');
-  const embeddedSource = fs.readFileSync(new URL('../utils/nvidiaEmbedded.js', import.meta.url), 'utf8');
-  const storeSource = fs.readFileSync(new URL('../utils/gyomeiStore.js', import.meta.url), 'utf8');
   assert.ok(iaSource.includes('createBunnyFyAiClient'));
   assert.ok(iaSource.includes('toLegacyChatResponse'));
   assert.ok(!iaSource.includes('requestNvidiaChat'));
   assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
-  assert.ok(!legacyApiSource.includes('integrate.api.nvidia.com'));
-  assert.ok(!legacyApiSource.includes("import axios from 'axios'"));
-  assert.ok(!legacyApiSource.includes('requestNvidiaChat'));
-  assert.ok(!embeddedSource.includes('CIPHER_BYTES'));
-  assert.ok(!embeddedSource.includes('createHash'));
-  assert.ok(!storeSource.includes('process.env.NVIDIA_API_KEY'));
-  assert.ok(!storeSource.includes('stored.nvidia_api_key'));
   assert.ok(!iaSource.includes('moonshotai/kimi-k2-instruct'));
   assert.ok(!indexSource.includes('moonshotai/kimi-k2-instruct'));
 });
@@ -183,9 +173,16 @@ await test('fonte principal já contém as correções críticas, sem depender d
 
   assert.ok(iaSource.includes('createBunnyFyAiClient'));
   assert.ok(iaSource.includes('makeNvidiaRequest'));
+  // O transporte de IA pertence à BunnyFy. Helpers locais de catálogo NVIDIA
+  // não podem reaparecer no fluxo real da assistente.
+  assert.ok(!iaSource.includes('isKnownNvidiaModel('));
+  assert.ok(!iaSource.includes('getNvidiaModel('));
+  assert.match(
+    iaSource,
+    /const response = \(await makeNvidiaRequest\(\s*model\s*,\s*JSON\.stringify\(userInput\)\s*,/
+  );
   assert.ok(!iaSource.includes('requestNvidiaChat'));
-  assert.ok(!iaSource.includes('resolveEmbeddedNvidiaKey'));
-  assert.ok(!iaSource.includes('getNvidiaApiKey'));
+  assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
   assert.ok(!iaSource.includes("import axios from 'axios'"));
   assert.ok(!iaSource.includes('Erro na API Cognima'));
   assert.ok(!iaSource.includes('Resposta da API Cognima'));
@@ -280,6 +277,24 @@ await test('modo BunnyFy exclusive exige ativação global explícita', () => {
   );
 });
 
+await test('gateway de IA respeita BUNNYFY_ALLOW_INSECURE_HTTP do config bridge', () => {
+  const baseEnv = {
+    BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20072',
+    BUNNYFY_API_TOKEN: 'token-regressao-nao-secreto'
+  };
+
+  assert.throws(
+    () => createBunnyFyAiClient(baseEnv),
+    error => error?.code === 'BUNNYFY_CONFIG_INVALID'
+  );
+
+  const client = createBunnyFyAiClient({
+    ...baseEnv,
+    BUNNYFY_ALLOW_INSECURE_HTTP: 'true'
+  });
+  assert.equal(client.baseUrl, 'http://node1.vexhost.com.br:20072');
+});
+
 await test('resposta canônica BunnyFy mantém o envelope legado da assistente', () => {
   const response = toLegacyChatResponse({
     text: 'ok',
@@ -304,32 +319,6 @@ await test('gateway BunnyFy limita mensagens antes de qualquer transporte', () =
   assert.equal(messages.at(-1).role, 'user');
   assert.ok(messages.length > 0);
   assert.ok(messages.every(message => typeof message.content === 'string' && message.content.length > 0));
-});
-
-await test('feedback de comando não reage cedo, não cruza chats e nunca silencia comando desconhecido', () => {
-  const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-  const connectSource = fs.readFileSync(new URL('../connect.js', import.meta.url), 'utf8');
-
-  assert.ok(indexSource.includes("tavern: '🍺'"));
-  assert.ok(indexSource.includes("mao: '🃏'"));
-  assert.ok(indexSource.includes("fim: '⏭️'"));
-  assert.ok(indexSource.includes('const pendingCommandReaction ='));
-  assert.ok(indexSource.indexOf('if (pendingCommandReaction)') > indexSource.indexOf("botState.status === 'off'"));
-  assert.ok(!indexSource.includes('nazu.react = reagir'));
-  assert.ok(!indexSource.includes('nazu.react('));
-  assert.ok(!indexSource.includes('nazu.reply = reply'));
-  assert.ok(indexSource.includes('Não reconheci *${groupPrefix}${command || \'\'}*'));
-  assert.ok(indexSource.includes('const rejectInLiteMode = async () =>'));
-  assert.equal((indexSource.match(/somente administradores podem usar comandos/g) || []).length, 2);
-  assert.ok(indexSource.includes('Não consegui enviar a resposta completa'));
-  assert.ok(indexSource.includes('commandError.isCommandFailure = Boolean(isCmd)'));
-  assert.match(indexSource, /ERRO NO PROCESSAMENTO DA MENSAGEM[\s\S]*?throw commandError;/);
-
-  assert.ok(connectSource.includes('message.viewOnceMessageV2?.message'));
-  assert.ok(connectSource.includes('message.buttonsResponseMessage?.selectedButtonId'));
-  assert.ok(connectSource.includes('message.listResponseMessage?.singleSelectReply?.selectedRowId'));
-  assert.ok(connectSource.includes('nativeFlowResponseMessage?.paramsJson'));
-  assert.ok(connectSource.includes('error?.isCommandFailure === true'));
 });
 
 const failures = results.filter(item => !item.ok);

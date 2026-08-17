@@ -6,6 +6,9 @@ import {
   assertTavernBoardRenderView,
   assertTavernHandRenderView,
   assertTavernSceneRenderView,
+  assertNexoCircleRenderView,
+  assertNexoCharacterRenderView,
+  assertNexoEncounterRenderView,
   parseAnimatedLogo,
   parseAiChat,
   parseEnvelope,
@@ -441,6 +444,39 @@ class BunnyFyClient {
   async renderTavernScene(view, { idempotencyKey = crypto.randomUUID() } = {}) {
     assertTavernSceneRenderView(view);
     const response = await this.request(BUNNYFY_ROUTES.tavernScene, {
+      method: 'POST',
+      json: { view },
+      idempotencyKey
+    });
+    const result = parseImageProcess(response.data);
+    return { ...result, media: this.resolveMediaDescriptor(result.media) };
+  }
+
+  async renderNexoCircle(view, { idempotencyKey = crypto.randomUUID() } = {}) {
+    assertNexoCircleRenderView(view);
+    const response = await this.request(BUNNYFY_ROUTES.nexoCircle, {
+      method: 'POST',
+      json: { view },
+      idempotencyKey
+    });
+    const result = parseImageProcess(response.data);
+    return { ...result, media: this.resolveMediaDescriptor(result.media) };
+  }
+
+  async renderNexoCharacter(view, { idempotencyKey = crypto.randomUUID() } = {}) {
+    assertNexoCharacterRenderView(view);
+    const response = await this.request(BUNNYFY_ROUTES.nexoCharacter, {
+      method: 'POST',
+      json: { view },
+      idempotencyKey
+    });
+    const result = parseImageProcess(response.data);
+    return { ...result, media: this.resolveMediaDescriptor(result.media) };
+  }
+
+  async renderNexoEncounter(view, { idempotencyKey = crypto.randomUUID() } = {}) {
+    assertNexoEncounterRenderView(view);
+    const response = await this.request(BUNNYFY_ROUTES.nexoEncounter, {
       method: 'POST',
       json: { view },
       idempotencyKey

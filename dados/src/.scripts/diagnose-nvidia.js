@@ -1,43 +1,47 @@
 #!/usr/bin/env node
 
-import { loadLocalEnv } from './envLoader.js';
-import {
-  buildBoundedChatMessages,
-  createBunnyFyAiClient
-} from '../services/bunnyfy/aiGateway.js';
+import fs from 'fs';
+import path from 'path';
+
+import { loadLocalEnv, ROOT_DIR } from './envLoader.js';
+import { DEFAULT_NVIDIA_MODEL, requestNvidiaChat } from '../utils/nvidiaApi.js';
 
 loadLocalEnv();
 
-const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || '').trim();
-const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || '').trim();
-if (!bunnyfyToken || !bunnyfyBase) {
-  console.error('❌ BUNNYFY_API_TOKEN e BUNNYFY_BASE_URL são obrigatórios para o diagnóstico de IA.');
+const configFile = path.join(ROOT_DIR, 'dados', 'src', 'config.json');
+let config = {};
+try {
+  config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+} catch (error) {
+  console.error(`❌ Não foi possível ler config.json: ${error.message}`);
   process.exit(1);
 }
 
-process.env.BUNNYFY_ENABLED = 'true';
-process.env.BUNNYFY_AI_MODE = 'exclusive';
-console.log('🔎 Testando a assistente pelo gateway BunnyFy...');
+const apiKey = String(process.env.NVIDIA_API_KEY || config.nvidia_api_key || '').trim();
+if (!apiKey) {
+  console.error('❌ NVIDIA_API_KEY não foi encontrada em .env.local, no ambiente ou em config.json.');
+  process.exit(1);
+}
+
+console.log(`🔎 Testando NVIDIA com ${DEFAULT_NVIDIA_MODEL}...`);
 
 try {
-  const messages = buildBoundedChatMessages({
-    text: 'Responda apenas: OK',
-    history: [],
-    systemPrompt: null
-  });
-  const response = await createBunnyFyAiClient().createChatCompletion(messages, {
+  const response = await requestNvidiaChat({
+    apiKey,
+    model: DEFAULT_NVIDIA_MODEL,
+    messages: [{ role: 'user', content: 'Responda apenas: OK' }],
     temperature: 0,
-    maxOutputTokens: 8
+    maxTokens: 8,
+    retries: 1
   });
-  if (typeof response?.text !== 'string' || !response.text.trim()) {
-    throw new Error('A BunnyFy devolveu uma resposta vazia.');
-  }
-  console.log('✅ Gateway BunnyFy AI respondeu corretamente.');
+  const content = response.data.choices[0]?.message?.content || '';
+  console.log(`✅ NVIDIA respondeu corretamente${content ? `: ${content.trim()}` : '.'}`);
+  process.exit(0);
 } catch (error) {
-  console.error('❌ Diagnóstico BunnyFy AI reprovado:', {
-    code: error?.code,
-    status: error?.status,
-    message: error?.message
+  console.error('❌ Diagnóstico NVIDIA reprovado:', {
+    code: error.code,
+    status: error.status,
+    message: error.message
   });
-  process.exitCode = 1;
+  process.exit(1);
 }
