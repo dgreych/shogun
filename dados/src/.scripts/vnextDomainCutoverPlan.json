@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "strategy": "atomic-domain-cutover",
+  "domains": {
+    "members": {
+      "bucket": "members",
+      "state": "active",
+      "activationMode": "all-or-nothing",
+      "duplicateClosure": "required",
+      "expectedBaseFamilies": 29,
+      "expectedBaseTokens": 148,
+      "expectedCutoverFamilies": 32,
+      "expectedCutoverTokens": 152,
+      "description": "Members está ativo como cutover atômico de 32 famílias / 152 tokens: 29 famílias-base e 3 famílias exigidas pelo fechamento de aliases duplicados. Ownership parcial continua proibido."
+    }
+  }
+}

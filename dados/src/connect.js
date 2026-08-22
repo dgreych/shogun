@@ -7,9 +7,15 @@ import fs from 'fs/promises';
 import path, { dirname, join } from 'path';
 import qrcode from 'qrcode-terminal';
 import { readFile } from 'fs/promises';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import {
+  MessageQueue,
+  MAX_SIMULTANEOS_GLOBAL,
+  MAX_SIMULTANEOS_POR_PESSOA,
+  MAX_SIMULTANEOS_POR_GRUPO
+} from './core/messageQueue.js';
 import axios from 'axios';
 
 import PerformanceOptimizer from './utils/performanceOptimizer.js';
@@ -18,9 +24,13 @@ import { loadMsgBotOn } from './utils/database.js';
 import { buildUserId } from './utils/helpers.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
 import { gerarWelcomeCard } from './funcs/downloads/canvas.js';
+import { renderConnectionPanel } from '../../dist-vnext/console/shogunPanel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const IS_TERMUX = Boolean(process.env.TERMUX_VERSION) || existsSync('/data/data/com.termux');
+const LOW_MEMORY_MODE = IS_TERMUX || /^(1|true|yes)$/i.test(process.env.SHOGUN_LOW_MEMORY || '');
+const MESSAGE_CACHE_LIMIT = LOW_MEMORY_MODE ? 800 : 3000;
 
 try {
   const { execSync } = await import('child_process');
@@ -40,231 +50,8 @@ function logCrashToDisk(origem, err, info) {
   fs.appendFile(__dirname + '/../logs/crash-diagnostico.log', linha).catch(() => {});
 }
 
-class MessageQueue {
-    constructor(maxWorkers = 4, batchSize = 10, messagesPerBatch = 2) {
-    this.queue = [];
-    this.maxWorkers = maxWorkers;
-    this.batchSize = batchSize;
-    this.messagesPerBatch = messagesPerBatch;
-    this.activeWorkers = 0;
-    this.isProcessing = false;
-    this.processingInterval = null;
-    this.errorHandler = null;
-    this.stats = {
-    totalProcessed: 0,
-    totalErrors: 0,
-    currentQueueLength: 0,
-    startTime: Date.now(),
-    batchesProcessed: 0,
-    avgBatchTime: 0
-    };
-    this.idCounter = 0; // Contador simples ao invés de crypto.randomUUID()
-    }
 
-    setErrorHandler(handler) {
-    this.errorHandler = handler;
-    }
-
-    async add(message, processor) {
-    return new Promise((resolve, reject) => {
-    this.queue.push({
-    message,
-    processor,
-    resolve,
-    reject,
-    timestamp: Date.now(),
-    id: `msg_${++this.idCounter}_${Date.now()}`
-    });
-    
-    this.stats.currentQueueLength = this.queue.length;
-    
-    if (!this.isProcessing) {
-    this.startProcessing();
-    }
-    });
-    }
-
-    startProcessing() {
-    if (this.isProcessing) return;
-    
-    this.isProcessing = true;
-    // Usa processo recursivo em vez de setInterval para melhor performance
-    this.processQueue();
-    }
-
-    stopProcessing() {
-    this.isProcessing = false;
-    }
-
-    resume() {
-    if (!this.isProcessing) {
-    console.log('[MessageQueue] Retomando processamento');
-    this.startProcessing();
-    }
-    }
-
-    async processQueue() {
-    // Processa mensagens em lotes paralelos
-    while (this.isProcessing && this.queue.length > 0) {
-    // Calcula quantos lotes podemos processar
-    const availableBatches = Math.min(
-    this.batchSize,
-    Math.ceil(this.queue.length / this.messagesPerBatch)
-    );
-
-    if (availableBatches === 0) break;
-
-    // Cria array de lotes
-    const batches = [];
-    for (let i = 0; i < availableBatches && this.queue.length > 0; i++) {
-    const batchItems = [];
-    for (let j = 0; j < this.messagesPerBatch && this.queue.length > 0; j++) {
-        const item = this.queue.shift();
-        if (item) batchItems.push(item);
-    }
-    if (batchItems.length > 0) {
-        batches.push(batchItems);
-    }
-    }
-
-    this.stats.currentQueueLength = this.queue.length;
-
-    // Processa todos os lotes em paralelo
-    const batchStartTime = Date.now();
-    await Promise.allSettled(
-    batches.map(batch => this.processBatch(batch))
-    );
-    
-    const batchDuration = Date.now() - batchStartTime;
-    this.stats.batchesProcessed++;
-    this.stats.avgBatchTime = 
-    (this.stats.avgBatchTime * (this.stats.batchesProcessed - 1) + batchDuration) / 
-    this.stats.batchesProcessed;
-    }
-
-    if (this.queue.length === 0) {
-    this.stopProcessing();
-    }
-    }
-
-    async processBatch(batchItems) {
-    // Processa todas as mensagens do lote em paralelo
-    const batchPromises = batchItems.map(item => this.processItem(item));
-    
-    const results = await Promise.allSettled(batchPromises);
-    
-    // Contabiliza resultados
-    results.forEach((result, index) => {
-    if (result.status === 'fulfilled') {
-    this.stats.totalProcessed++;
-    } else {
-    this.stats.totalErrors++;
-    }
-    });
-    }
-
-    async processItem(item) {
-    const { message, processor, resolve, reject } = item;
-    
-    try {
-    const result = await processor(message);
-    resolve(result);
-    return result;
-    } catch (error) {
-    await this.handleProcessingError(item, error);
-    reject(error);
-    throw error;
-    }
-    }
-
-    async handleProcessingError(item, error) {
-    this.stats.totalErrors++;
-    
-    console.error(`❌ Queue processing error for message ${item.id}:`, error.message);
-    
-    if (this.errorHandler) {
-    try {
-    await this.errorHandler(item, error);
-    } catch (handlerError) {
-    console.error('❌ Error handler failed:', handlerError.message);
-    }
-    }
-    
-    item.reject(error);
-    }
-
-    getStatus() {
-    const uptime = Date.now() - this.stats.startTime;
-    return {
-    queueLength: this.queue.length,
-    activeWorkers: this.activeWorkers,
-    maxWorkers: this.maxWorkers,
-    batchSize: this.batchSize,
-    messagesPerBatch: this.messagesPerBatch,
-    isProcessing: this.isProcessing,
-    totalProcessed: this.stats.totalProcessed,
-    totalErrors: this.stats.totalErrors,
-    currentQueueLength: this.stats.currentQueueLength,
-    batchesProcessed: this.stats.batchesProcessed,
-    avgBatchTime: Math.round(this.stats.avgBatchTime),
-    uptime: uptime,
-    uptimeFormatted: this.formatUptime(uptime),
-    throughput: this.stats.totalProcessed > 0 ?
-    (this.stats.totalProcessed / (uptime / 1000)).toFixed(2) : 0,
-    errorRate: this.stats.totalProcessed > 0 ?
-    ((this.stats.totalErrors / this.stats.totalProcessed) * 100).toFixed(2) : 0
-    };
-    }
-
-    formatUptime(ms) {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    
-    if (hours > 0) {
-    return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
-    } else if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
-    } else {
-    return `${seconds}s`;
-    }
-    }
-
-    clear() {
-    // Rejeita todas as mensagens pendentes antes de limpar
-    this.queue.forEach(item => {
-    if (item.reject) {
-    item.reject(new Error('Queue cleared'));
-    }
-    });
-    this.queue = [];
-    this.stats.currentQueueLength = 0;
-    this.stopProcessing();
-    }
-
-    async shutdown() {
-    console.log('🛑 Finalizando MessageQueue...');
-    this.stopProcessing();
-    
-    // Aguarda workers ativos terminarem (timeout de 10s)
-    const shutdownTimeout = 10000;
-    const startTime = Date.now();
-    
-    while (this.activeWorkers > 0 && (Date.now() - startTime) < shutdownTimeout) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    if (this.activeWorkers > 0) {
-    console.warn(`⚠️ ${this.activeWorkers} workers ainda ativos após timeout de shutdown`);
-    }
-    
-    this.clear();
-    console.log('✅ MessageQueue finalizado');
-    }
-}
-
-const messageQueue = new MessageQueue(8, 10, 2); // 8 workers, 10 lotes, 2 mensagens por lote
-
+const messageQueue = new MessageQueue(MAX_SIMULTANEOS_GLOBAL, MAX_SIMULTANEOS_POR_PESSOA, MAX_SIMULTANEOS_POR_GRUPO);
 const configPath = path.join(__dirname, "config.json");
 let config;
 let DEBUG_MODE = false; // Modo debug para logs detalhados
@@ -349,7 +136,9 @@ async function initializeOptimizedCaches() {
     
     }
 }
-const codeMode = process.argv.includes('--code') || process.env.NAZUNA_CODE_MODE === '1';
+const codeMode = process.argv.includes('--code')
+    || process.env.SHOGUN_CODE_MODE === '1'
+    || process.env.NAZUNA_CODE_MODE === '1';
 
 // Cleanup otimizado do cache de mensagens
 let cacheCleanupInterval = null;
@@ -357,7 +146,7 @@ const setupMessagesCacheCleanup = () => {
     if (cacheCleanupInterval) clearInterval(cacheCleanupInterval);
     
     cacheCleanupInterval = setInterval(() => {
-    if (!messagesCache || messagesCache.size <= 3000) return;
+    if (!messagesCache || messagesCache.size <= MESSAGE_CACHE_LIMIT) return;
     
     const keysToDelete = Math.floor(messagesCache.size * 0.4); // Remove 40% dos mais antigos
     const keys = Array.from(messagesCache.keys()).slice(0, keysToDelete);
@@ -1078,7 +867,7 @@ async function createBotSocket(authDir) {
     emitOwnEvents: true,
     fireInitQueries: true,
     generateHighQualityLinkPreview: true,
-    syncFullHistory: true,
+    syncFullHistory: !LOW_MEMORY_MODE,
     markOnlineOnConnect: true,
     connectTimeoutMs: 120000,
     retryRequestDelayMs: 5000,
@@ -1336,13 +1125,18 @@ async function createBotSocket(authDir) {
     qr
     } = update;
     if (qr && !NazunaSock.authState.creds.registered && !codeMode) {
-    console.log('🔗 QR Code gerado para autenticação:');
+    // O painel desenha o Shogun e o estado; o QR é impresso logo abaixo, por
+    // fora da arte — misturar os dois acoplaria desenho a protocolo, e o QR
+    // precisa sair intacto para o leitor do WhatsApp conseguir ler.
+    console.log(renderConnectionPanel({
+      estado: 'aguardando leitura do QR',
+      detalhe: 'escaneie abaixo com o WhatsApp'
+    }));
     qrcode.generate(qr, {
         small: true
     }, (qrcodeText) => {
         console.log(qrcodeText);
     });
-    console.log('📱 Escaneie o QR code acima com o WhatsApp para autenticar o bot.');
     }
     if (connection === 'open') {
     console.log(`🔄 Conexão aberta. Inicializando sistema de otimização...`);
@@ -1394,8 +1188,14 @@ async function createBotSocket(authDir) {
         console.error('❌ Erro ao inicializar sub-bots:', error.message);
     }
     
-    console.log(`✅ Bot ${nomebot} iniciado com sucesso! Prefixo: ${prefixo} | Dono: ${nomedono}`);
-    console.log(`📊 Configuração: ${messageQueue.batchSize} lotes de ${messageQueue.messagesPerBatch} mensagens (${messageQueue.batchSize * messageQueue.messagesPerBatch} msgs paralelas)`);
+    // O painel abre em TODO boot, não só quando há QR. Ligado apenas ao QR, ele
+    // nunca aparecia num bot já autenticado — que é o caso normal em produção.
+    console.log(renderConnectionPanel({
+      titulo: nomebot,
+      estado: 'conectado',
+      detalhe: `prefixo ${prefixo}  ·  dono ${nomedono}`
+    }));
+    console.log(`   fila: ${messageQueue.maxPorPessoa} comandos por pessoa · ${messageQueue.maxPorGrupo} por grupo · teto ${messageQueue.maxGlobal}`);
     }
     if (connection === 'close') {
     const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
@@ -1499,7 +1299,8 @@ async function startNazu() {
     try {
     reconnectAttempts = 0; // Reset contador ao conectar com sucesso
     forbidden403Attempts = 0; // Reset contador de erro 403
-    console.log('🚀 Iniciando Nazuna...');
+    // Sem nome fixo: a identidade vem da configuração e vai mudar de novo.
+    console.log('Iniciando...');
 
     await createBotSocket(AUTH_DIR);
     isReconnecting = false; // Conexão estabelecida com sucesso

@@ -14,6 +14,6 @@ try {
   finalizeGyomeiRuntime();
   await import('./.runtime-start.js');
 } catch (error) {
-  console.error(`❌ Falha ao preparar o NAZUNA BOT — versão modificada GYOMEI: ${error.message}`);
+  console.error(`❌ Falha ao preparar o runtime do bot: ${error.message}`);
   process.exit(1);
 }

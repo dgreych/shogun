@@ -1,8 +1,18 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
 import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
+import { getConfig } from '../../utils/gyomeiStore.js';
+import { DEFAULT_NVIDIA_MODEL, requestNvidiaChat } from '../../utils/nvidiaApi.js';
 
 const AI_MODES = new Set(['off', 'primary', 'exclusive']);
+const DIRECT_FALLBACK_CODES = new Set([
+  'BUNNYFY_BAD_RESPONSE',
+  'BUNNYFY_NETWORK_ERROR',
+  'BUNNYFY_REMOTE_ERROR',
+  'BUNNYFY_TIMEOUT',
+  'BUNNYFY_TOOL_UNAVAILABLE',
+  'BUNNYFY_UNAVAILABLE'
+]);
 const DEFAULT_LIMITS = Object.freeze({
   maxMessages: 24,
   maxMessageChars: 16_000,
@@ -16,6 +26,12 @@ function resolveBunnyFyAiMode(env = resolveBunnyFyRuntimeEnv()) {
   const mode = String(env.BUNNYFY_AI_MODE || 'off').trim().toLowerCase();
   if (!AI_MODES.has(mode)) throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
   return mode;
+}
+
+function shouldFallbackDirectAi(error) {
+  const status = Number(error?.status);
+  if (Number.isInteger(status) && status >= 500) return true;
+  return DIRECT_FALLBACK_CODES.has(error?.code);
 }
 
 function resolveBunnyFyAccountUrl(value) {
@@ -97,18 +113,99 @@ function buildBoundedChatMessages({
     : [...selectedHistory, user];
 }
 
-function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv()) {
+function directCredentials(env) {
+  const config = getConfig() || {};
+  return {
+    apiKey: String(env.NVIDIA_API_KEY || config.nvidia_api_key || '').trim(),
+    model: String(config.nvidia_model || DEFAULT_NVIDIA_MODEL).trim() || DEFAULT_NVIDIA_MODEL
+  };
+}
+
+function directResultToCanonical(result) {
+  const data = result?.data;
+  const choice = data?.choices?.[0];
+  const text = choice?.message?.content;
+  if (typeof text !== 'string' || !text.trim()) {
+    throw new Error('NVIDIA_DIRECT_INVALID_RESPONSE');
+  }
+  const usage = data?.usage;
+  return {
+    text,
+    finishReason: choice?.finish_reason ?? null,
+    usage: usage && Number.isFinite(usage.prompt_tokens) && Number.isFinite(usage.completion_tokens) && Number.isFinite(usage.total_tokens)
+      ? {
+          inputTokens: usage.prompt_tokens,
+          outputTokens: usage.completion_tokens,
+          totalTokens: usage.total_tokens
+        }
+      : null
+  };
+}
+
+async function createDirectCompletion(messages, options, env, directRequest = requestNvidiaChat) {
+  const credentials = directCredentials(env);
   const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
-  return new BunnyFyClient({
-    baseUrl: env.BUNNYFY_BASE_URL,
-    token: env.BUNNYFY_API_TOKEN,
-    allowInsecureHttp: ['true', '1'].includes(
-      String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
-    ),
-    timeoutMs: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 130_000,
-    maxResponseBytes: 2 * 1024 * 1024,
-    retries: 0
+  const result = await directRequest({
+    apiKey: credentials.apiKey,
+    model: options?.model || credentials.model,
+    messages,
+    temperature: options?.temperature ?? 0.7,
+    maxTokens: options?.maxOutputTokens ?? 2000,
+    retries: 3,
+    timeout: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 120_000
   });
+  return directResultToCanonical(result);
+}
+
+function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = {}) {
+  const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
+  const initialMode = resolveBunnyFyAiMode(env);
+  let bunnyFyClient = dependencies.bunnyFyClient || null;
+  const directRequest = dependencies.directRequest || requestNvidiaChat;
+
+  function buildBunnyFyClient() {
+    return new BunnyFyClient({
+      baseUrl: env.BUNNYFY_BASE_URL,
+      token: env.BUNNYFY_API_TOKEN,
+      allowInsecureHttp: ['true', '1'].includes(
+        String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
+      ),
+      timeoutMs: Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 130_000,
+      maxResponseBytes: 2 * 1024 * 1024,
+      retries: 0
+    });
+  }
+
+  // Modos ativos validam URL/token imediatamente, como já fazia o gateway
+  // original. O modo off é a única exceção: não deve sequer precisar de
+  // configuração BunnyFy para preservar o fallback NVIDIA direto.
+  if (initialMode !== 'off' && !bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
+
+  function getBunnyFyClient() {
+    if (!bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
+    return bunnyFyClient;
+  }
+
+  return {
+    baseUrl: bunnyFyClient?.baseUrl ?? null,
+    async createChatCompletion(messages, options = {}) {
+      const mode = resolveBunnyFyAiMode(env);
+      if (mode === 'off') {
+        return createDirectCompletion(messages, options, env, directRequest);
+      }
+
+      try {
+        return await getBunnyFyClient().createChatCompletion(messages, options);
+      } catch (error) {
+        if (mode !== 'primary' || !shouldFallbackDirectAi(error)) throw error;
+        console.warn('[BUNNYFY_AI] Falha transitória na BunnyFy; usando fallback NVIDIA direto.', {
+          code: error?.code,
+          status: error?.status
+        });
+        return createDirectCompletion(messages, options, env, directRequest);
+      }
+    }
+  };
 }
 
 function toLegacyChatResponse(result) {
@@ -137,5 +234,6 @@ export {
   isBunnyFyAccessError,
   resolveBunnyFyAccountUrl,
   resolveBunnyFyAiMode,
+  shouldFallbackDirectAi,
   toLegacyChatResponse
 };

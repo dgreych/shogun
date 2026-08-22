@@ -11,11 +11,11 @@ const DIST_DIR = path.join(ROOT_DIR, 'dist');
 const packageData = JSON.parse(fs.readFileSync(PACKAGE_FILE, 'utf8'));
 const version = String(packageData.version || '1.0.0');
 const publicMode = process.argv.includes('--public');
-const bundleName = `nazuna-gyomei-server-v${version}`;
+const bundleName = `shogun-server-v${version}`;
 const bundleDir = path.join(DIST_DIR, bundleName);
 const rootTarPath = path.join(DIST_DIR, `${bundleName}-root.tar.gz`);
 const rootZipPath = path.join(DIST_DIR, `${bundleName}-root.zip`);
-const sourceArchivePath = path.join(DIST_DIR, `.nazuna-source-${process.pid}.tar`);
+const sourceArchivePath = path.join(DIST_DIR, `.shogun-source-${process.pid}.tar`);
 
 const LOCAL_FILES = [
   'dados/src/config.json',
@@ -106,22 +106,25 @@ function ensureInsideRoot(relativePath) {
   return { normalized, source };
 }
 
-function copyEntry(relativePath, included) {
+function copyEntry(relativePath, included, options = {}) {
   const { normalized, source } = ensureInsideRoot(relativePath);
   if (!fs.existsSync(source)) return false;
 
   const destination = path.join(bundleDir, normalized);
-  const stat = fs.lstatSync(source);
+  const linkStat = fs.lstatSync(source);
+  const stat = options.dereference ? fs.statSync(source) : linkStat;
   fs.mkdirSync(path.dirname(destination), { recursive: true });
 
-  if (stat.isSymbolicLink()) {
+  if (linkStat.isSymbolicLink() && !options.dereference) {
     try { fs.unlinkSync(destination); } catch {}
     fs.symlinkSync(fs.readlinkSync(source), destination);
   } else if (stat.isDirectory()) {
+    fs.rmSync(destination, { recursive: true, force: true });
     fs.cpSync(source, destination, {
       recursive: true,
       force: true,
       preserveTimestamps: true,
+      dereference: Boolean(options.dereference),
       filter: item => !item.includes(`${path.sep}qr-code${path.sep}`)
     });
   } else {
@@ -208,17 +211,21 @@ function sanitizeBundleSource() {
   if (!fs.existsSync(iaFile)) throw new Error('Arquivo legado da IA não foi encontrado na build.');
 
   let source = fs.readFileSync(iaFile, 'utf8');
-  source = source.replace(
-    /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/,
-    secureIaDeclaration()
-  );
+  const legacyIaKeyPattern = /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/;
+  if (legacyIaKeyPattern.test(source)) {
+    source = source.replace(legacyIaKeyPattern, secureIaDeclaration());
+  }
 
   if (/nvapi-[A-Za-z0-9_-]+/.test(source)) {
     throw new Error('A build ainda contém uma chave NVIDIA hardcoded.');
   }
-  if (!source.includes('process.env.NVIDIA_API_KEY')) {
-    throw new Error('A credencial NVIDIA não foi externalizada no módulo legado.');
+
+  const usesBunnyFyGateway = source.includes('createBunnyFyAiClient');
+  const externalizesLegacyNvidiaKey = source.includes('process.env.NVIDIA_API_KEY');
+  if (!usesBunnyFyGateway && !externalizesLegacyNvidiaKey) {
+    throw new Error('A build de IA não usa o gateway BunnyFy nem externaliza a credencial NVIDIA legada.');
   }
+
   fs.writeFileSync(iaFile, source);
 }
 
@@ -246,7 +253,7 @@ function sanitizePublicState() {
   fs.writeFileSync(configFile, JSON.stringify({
     nomedono: 'SEU_NOME',
     numerodono: '55DDDNUMERO',
-    nomebot: 'NAZUNA BOT • GYOMEI',
+    nomebot: 'SHOGUN',
     prefixo: '!',
     lidowner: '',
     site_vex: 'https://vexapi.com.br',
@@ -272,7 +279,7 @@ function writeManifest(included, localState) {
   const branchResult = run('git', ['branch', '--show-current'], { capture: true });
 
   const manifest = {
-    name: 'NAZUNA BOT - versão modificada GYOMEI',
+    name: 'SHOGUN',
     version,
     generatedAt: new Date().toISOString(),
     commit: commitResult.status === 0 ? commitResult.stdout.trim() : null,
@@ -290,9 +297,8 @@ function writeManifest(included, localState) {
     localPathsRebased: true,
     sensitiveArtifact: !publicMode,
     credits: {
-      originalCreation: 'Hiudy (Hiduy)',
-      nazunaContinuity: 'DevTokyo',
-      modifiedVersionEnhancements: 'Alaska_dev'
+      productDirection: 'Maurício',
+      codeContributors: ['Hiudy (Hiduy)', 'DevTokyo']
     },
     notes: [
       'Os arquivos do ZIP e do TAR ficam diretamente na raiz após a extração.',
@@ -329,7 +335,7 @@ function createRootArchives() {
   }
 }
 
-console.log(`🤖 Preparando build ${publicMode ? 'pública higienizada' : 'privada controlada'} da NAZUNA BOT • GYOMEI...`);
+console.log(`⛩️ Preparando build ${publicMode ? 'pública higienizada' : 'privada controlada'} do SHOGUN...`);
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const preflightScript = publicMode ? 'validate:ci' : 'validate:deploy';
@@ -350,7 +356,7 @@ const localState = [];
 try {
   const trackedCount = exportCommittedTree(included);
 
-  if (!copyEntry('node_modules', included)) {
+  if (!copyEntry('node_modules', included, { dereference: true })) {
     throw new Error('node_modules ausente. Execute npm ci antes de gerar a build.');
   }
 

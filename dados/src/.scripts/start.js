@@ -3,7 +3,7 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
-import { spawn, execSync } from 'child_process';
+import { spawn } from 'child_process';
 import readline from 'readline/promises';
 import os from 'os';
 
@@ -41,70 +41,15 @@ const getVersion = () => {
 let botProcess = null;
 const version = getVersion();
 
-async function setupTermuxAutostart() {
-  if (!isTermux) {
-    info('📱 Não está rodando no Termux. Ignorando configuração de autostart.');
-    return;
-  }
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const answer = await rl.question(`${colors.yellow}📱 Detectado ambiente Termux. Deseja configurar inicialização automática? (s/n): ${colors.reset}`);
-  rl.close();
-
-  if (answer.trim().toLowerCase() !== 's') {
-    info('📱 Configuração de autostart ignorada pelo usuário.');
-    return;
-  }
-
-  info('📱 Configurando inicialização automática no Termux...');
-
-  try {
-    const termuxProperties = path.join(process.env.HOME, '.termux', 'termux.properties');
-    await fs.mkdir(path.dirname(termuxProperties), { recursive: true });
-    if (!fsSync.existsSync(termuxProperties)) {
-      await fs.writeFile(termuxProperties, '');
-    }
-    execSync(`sed '/^# *allow-external-apps *= *true/s/^# *//' ${termuxProperties} -i && termux-reload-settings`, { stdio: 'inherit' });
-    mensagem('📝 Configuração de termux.properties concluída.');
-
-    const bashrcPath = path.join(process.env.HOME, '.bashrc');
-    const termuxServiceCommand = `
-am startservice --user 0 \\
-  -n com.termux/com.termux.app.RunCommandService \\
-  -a com.termux.RUN_COMMAND \\
-  --es com.termux.RUN_COMMAND_PATH '/data/data/com.termux/files/usr/bin/npm' \\
-  --esa com.termux.RUN_COMMAND_ARGUMENTS 'start' \\
-  --es com.termux.RUN_COMMAND_SESSION_NAME 'Nazuna Bot' \\
-  --es com.termux.RUN_COMMAND_WORKDIR '${path.join(process.cwd())}' \\
-  --ez com.termux.RUN_COMMAND_BACKGROUND 'false' \\
-  --es com.termux.RUN_COMMAND_SESSION_ACTION '0'
-`.trim();
-
-    let bashrcContent = '';
-    if (fsSync.existsSync(bashrcPath)) {
-      bashrcContent = await fs.readFile(bashrcPath, 'utf8');
-    }
-
-    if (!bashrcContent.includes(termuxServiceCommand)) {
-      await fs.appendFile(bashrcPath, `\n${termuxServiceCommand}\n`);
-      mensagem('📝 Comando am startservice adicionado ao ~/.bashrc');
-    } else {
-      info('📝 Comando am startservice já presente no ~/.bashrc');
-    }
-
-    mensagem('📱 Configuração de inicialização automática no Termux concluída!');
-  } catch (error) {
-    aviso(`❌ Erro ao configurar autostart no Termux: ${error.message}`);
-  }
+async function showTermuxGuidance() {
+  if (!isTermux) return;
+  info('📱 Termux detectado. Para manter a patrulha acordada, use termux-wake-lock.');
+  info('📖 A inicialização no Android fica em docs/instalacao/termux.md.');
 }
 
 function setupGracefulShutdown() {
   const shutdown = () => {
-    mensagem('🛑 Encerrando o Nazuna... Até logo!');
+    mensagem('🛑 Encerrando o SHOGUN. Até a próxima patrulha!');
     if (botProcess) {
       botProcess.removeAllListeners();
       botProcess.kill();
@@ -126,7 +71,7 @@ function setupGracefulShutdown() {
 
 async function displayHeader() {
   const header = [
-    `${colors.bold}🚀 Nazuna - Conexão WhatsApp${colors.reset}`,
+    `${colors.bold}⛩️ SHOGUN — Conexão WhatsApp${colors.reset}`,
     `${colors.bold}📦 Versão: ${version}${colors.reset}`,
   ];
 
@@ -265,7 +210,7 @@ async function main() {
     setupGracefulShutdown();
     await displayHeader();
     await checkPrerequisites();
-    await setupTermuxAutostart();
+    await showTermuxGuidance();
 
     const hasSession = await checkAutoConnect();
     if (hasSession) {

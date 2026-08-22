@@ -8,7 +8,7 @@ import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, 
 import { extractJSON } from '../funcs/private/ia.js';
 import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
-import { getQuotedMediaSource } from '../utils/gyomeiCore.js';
+import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/gyomeiCore.js';
 import { normalizeVipCommandsData } from '../utils/vipCommandsManager.js';
 import { buildSafeMessagePreview } from '../utils/safeCommandLog.js';
 
@@ -153,7 +153,6 @@ await test('diagnóstico Vex do YouTube não inclui consulta, URL ou conteúdo d
   assert.ok(youtubeSource.includes('buildVexFailureLogEntry(endpoint, response)'));
 });
 
-
 await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto', () => {
   const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
@@ -165,7 +164,6 @@ await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto'
   assert.ok(!indexSource.includes('moonshotai/kimi-k2-instruct'));
 });
 
-
 await test('fonte principal já contém as correções críticas, sem depender da runtime', () => {
   const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
@@ -173,13 +171,14 @@ await test('fonte principal já contém as correções críticas, sem depender d
 
   assert.ok(iaSource.includes('createBunnyFyAiClient'));
   assert.ok(iaSource.includes('makeNvidiaRequest'));
-  // O transporte de IA pertence à BunnyFy. Helpers locais de catálogo NVIDIA
-  // não podem reaparecer no fluxo real da assistente.
+  assert.ok(iaSource.includes('buildBoundedChatMessages'));
+  assert.ok(iaSource.includes('createBunnyFyAiClient().createChatCompletion'));
+  assert.ok(iaSource.includes('model || getBunnyFyAiModelOverride()'));
   assert.ok(!iaSource.includes('isKnownNvidiaModel('));
   assert.ok(!iaSource.includes('getNvidiaModel('));
   assert.match(
     iaSource,
-    /const response = \(await makeNvidiaRequest\(\s*model\s*,\s*JSON\.stringify\(userInput\)\s*,/
+    /const response = \(await makeNvidiaRequest\(\s*model\s*\|\|\s*getBunnyFyAiModelOverride\(\)\s*,\s*JSON\.stringify\(userInput\)\s*,/
   );
   assert.ok(!iaSource.includes('requestNvidiaChat'));
   assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
@@ -233,13 +232,65 @@ await test('rollout do YouTube permanece isolado e sem segredo no código', () =
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MODE=off'));
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_TIMEOUT_MS='));
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_BYTES=52428800'));
-  assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_CONCURRENCY=1'));
+  assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_CONCURRENCY=4'));
 });
 
 await test('resposta textual da assistente é normalizada sem perder conteúdo', () => {
   assert.deepEqual(extractJSON('FLUXO NAZUNA OK'), {
     resp: [{ resp: 'FLUXO NAZUNA OK' }]
   });
+});
+
+await test('JSON malformado da assistente nunca vaza para a conversa', () => {
+  // Payload real capturado em produção: um "s" perdido depois da chave derruba
+  // todos os parses, e o comportamento anterior despejava a estrutura interna
+  // inteira no WhatsApp -- id, aprender, notas_importantes, tudo.
+  const malformado = '{s "resp": [{ "id": "Mau_QuemEuSou", "resp": "Ah, você não sabia? Eu sou NAZUNA.", "react": "" }], "aprender": [{ "acao": "atualizar", "tipo": "nome_usuario", "valor": "Mauricio" }] }';
+  const saida = extractJSON(malformado);
+  const texto = saida.resp[0].resp;
+
+  assert.equal(texto, 'Ah, você não sabia? Eu sou NAZUNA.');
+  assert.ok(!texto.includes('aprender'), 'estrutura interna vazou para a resposta');
+  assert.ok(!texto.includes('"resp"'), 'JSON cru vazou para a resposta');
+  assert.ok(!texto.includes('nome_usuario'), 'dado de memória vazou para a resposta');
+});
+
+await test('JSON irrecuperável vira mensagem humana, nunca o payload', () => {
+  const semResp = '{ "aprender": [{ "acao": "adicionar", "tipo": "gosto", "valor": "pizza" }] }';
+  const texto = extractJSON(semResp).resp[0].resp;
+
+  assert.ok(!texto.includes('aprender'));
+  assert.ok(!texto.includes('{'));
+  assert.ok(texto.length > 0);
+});
+
+await test('Shogun é a identidade padrão e nenhuma persona foi perdida', () => {
+  // Shogun não é uma persona competindo com as outras: é como o bot chega
+  // numa instância nova. Por isso é ele, e não uma das personagens, que
+  // responde quando ninguém escolheu nada.
+  assert.equal(DEFAULT_PERSONA, 'shogun');
+  assert.ok(PERSONALITY_KEYS.includes('shogun'));
+  for (const persona of ['alaska', 'gyomei', 'nazuna', 'tanjiro', 'zenitsu', 'inosuke', 'shinobu']) {
+    assert.ok(PERSONALITY_KEYS.includes(persona), `persona ${persona} sumiu da lista`);
+  }
+});
+
+await test('toda persona tem descrição própria, para a escolha não ser às cegas', () => {
+  for (const chave of PERSONALITY_KEYS) {
+    const texto = describePersona(chave);
+    assert.ok(texto && texto.length > 20, `persona ${chave} sem descrição útil`);
+    assert.notEqual(texto, 'Personalidade do bot.', `persona ${chave} caiu no texto genérico`);
+  }
+});
+
+await test('a persona padrão tem tema de menu próprio, sem herdar o da anterior', () => {
+  const tema = PERSONA_MENU_DESIGNS[DEFAULT_PERSONA];
+  assert.ok(tema, 'a persona padrão precisa de tema próprio');
+  assert.ok(tema.header.includes('{botName}'));
+  // Se herdasse o tema da Nazuna, o menu continuaria com a identidade antiga
+  // mesmo depois do !default.
+  assert.notEqual(tema.header, PERSONA_MENU_DESIGNS.nazuna?.header);
+  assert.notEqual(tema.header, PERSONA_MENU_DESIGNS.gyomei?.header);
 });
 
 await test('comandos VIP normalizam bancos vazios e formatos antigos', () => {
@@ -277,22 +328,35 @@ await test('modo BunnyFy exclusive exige ativação global explícita', () => {
   );
 });
 
-await test('gateway de IA respeita BUNNYFY_ALLOW_INSECURE_HTTP do config bridge', () => {
-  const baseEnv = {
-    BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20072',
+await test('gateway de IA respeita BUNNYFY_ALLOW_INSECURE_HTTP do config bridge sem liberar HTTP arbitrário', () => {
+  const temporaryVexHostEnv = {
+    BUNNYFY_ENABLED: 'true',
+    BUNNYFY_AI_MODE: 'exclusive',
+    BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20056',
     BUNNYFY_API_TOKEN: 'token-regressao-nao-secreto'
   };
 
   assert.throws(
-    () => createBunnyFyAiClient(baseEnv),
+    () => createBunnyFyAiClient(temporaryVexHostEnv),
     error => error?.code === 'BUNNYFY_CONFIG_INVALID'
   );
 
   const client = createBunnyFyAiClient({
-    ...baseEnv,
+    ...temporaryVexHostEnv,
     BUNNYFY_ALLOW_INSECURE_HTTP: 'true'
   });
-  assert.equal(client.baseUrl, 'http://node1.vexhost.com.br:20072');
+  assert.equal(client.baseUrl, 'http://node1.vexhost.com.br:20056');
+
+  assert.throws(
+    () => createBunnyFyAiClient({
+      BUNNYFY_ENABLED: 'true',
+      BUNNYFY_AI_MODE: 'exclusive',
+      BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20072',
+      BUNNYFY_API_TOKEN: 'token-regressao-nao-secreto',
+      BUNNYFY_ALLOW_INSECURE_HTTP: 'true'
+    }),
+    error => error?.code === 'BUNNYFY_CONFIG_INVALID'
+  );
 });
 
 await test('resposta canônica BunnyFy mantém o envelope legado da assistente', () => {

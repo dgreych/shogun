@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.dirname(__filename);
 const SRC_DIR = path.resolve(SCRIPTS_DIR, '..');
 const CONFIG_FILE = path.join(SRC_DIR, 'config.json');
+const CONFIG_EXAMPLE_FILE = path.join(SRC_DIR, 'config.example.json');
 const require = createRequire(import.meta.url);
 
 const requestedMode = process.argv.find(argument => argument.startsWith('--')) || '--local';
@@ -83,12 +84,15 @@ function checkWritable(directory) {
 }
 
 function readConfig() {
+  const source = mode === 'ci' || mode === 'public'
+    ? CONFIG_EXAMPLE_FILE
+    : CONFIG_FILE;
   try {
-    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    ok('config.json é um JSON válido');
+    const parsed = JSON.parse(fs.readFileSync(source, 'utf8'));
+    ok(`${path.basename(source)} é um JSON válido`);
     return parsed;
   } catch (error) {
-    fail(`config.json inválido ou ausente: ${error.message}`);
+    fail(`${path.basename(source)} inválido ou ausente: ${error.message}`);
     return {};
   }
 }
@@ -111,8 +115,8 @@ function validateConfig(config) {
     }
   }
 
-  if (String(config.nomebot || '').trim() === 'NAZUNA BOT • GYOMEI') {
-    ok('nomebot preservado como NAZUNA BOT • GYOMEI');
+  if (String(config.nomebot || '').trim().toUpperCase() === 'SHOGUN') {
+    ok('Identidade padrão SHOGUN configurada');
   } else if (config.nomebot) {
     warn(`nomebot atual é "${config.nomebot}"; este release não altera identidade automaticamente.`);
   }
@@ -202,10 +206,10 @@ function validateRuntime() {
       [runtimeIa.includes('createBunnyFyAiClient'), 'Runtime usa BunnyFy como gateway de IA'],
       [!runtimeIndex.includes('requestNvidiaChat'), 'Runtime principal não chama NVIDIA diretamente'],
       [!runtimeIa.includes('moonshotai/kimi-k2-instruct') && !runtimeIndex.includes('moonshotai/kimi-k2-instruct'), 'Runtime sem referências ao modelo Kimi'],
-      [runtimeIa.includes('buildAssistantSystemPrompt'), 'Prompt do GYOMEI composto'],
+      [runtimeIa.includes('buildAssistantSystemPrompt'), 'Voz do assistente composta'],
       [!runtimeIa.includes('process.env.NVIDIA_API_KEY'), 'Runtime não lê NVIDIA_API_KEY diretamente'],
       [!runtimeIa.includes("const IA_API_KEY = 'nvapi-"), 'Runtime sem chave NVIDIA hardcoded'],
-      [runtimeStart.includes('GYOMEI'), 'Inicialização com identidade GYOMEI']
+      [runtimeStart.includes('BOT_NAME') || runtimeStart.includes('SHOGUN'), 'Inicialização com identidade configurável']
     ];
 
     for (const [condition, message] of assertions) {
@@ -290,7 +294,7 @@ function auditCommittedSecrets() {
   }
 }
 
-console.log(`\n🪨 Validação GYOMEI — modo ${mode.toUpperCase()}\n`);
+console.log(`\n⛩️ Validação SHOGUN — modo ${mode.toUpperCase()}\n`);
 
 const envResult = loadLocalEnv();
 if (envResult.exists) {
@@ -299,10 +303,11 @@ if (envResult.exists) {
   ok('config.json é a fonte canônica de configuração; .env.local é opcional.');
 }
 
-const majorNode = Number(process.versions.node.split('.')[0]);
-majorNode >= 20
+const nodeParts = process.versions.node.split('.').map(Number);
+const nodeCompatible = nodeParts[0] > 20 || (nodeParts[0] === 20 && nodeParts[1] >= 19);
+nodeCompatible
   ? ok(`Node.js compatível: ${process.version}`)
-  : fail(`Node.js 20 ou superior é obrigatório; encontrado ${process.version}.`);
+  : fail(`Node.js 20.19 ou superior é obrigatório; encontrado ${process.version}.`);
 
 for (const relative of [
   'package.json',

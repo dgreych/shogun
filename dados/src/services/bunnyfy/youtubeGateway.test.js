@@ -158,9 +158,11 @@ test('thumbnail aceita somente hosts HTTPS explícitos do YouTube sem credenciai
   }
 });
 
-test('limite local de concorrência tem padrão um, teto quatro e liberação idempotente', () => {
+test('limite local de concorrência tem padrão quatro, teto quatro e liberação idempotente', () => {
   assert.equal(DEFAULT_YOUTUBE_MAX_BYTES, 50 * 1024 * 1024);
-  assert.equal(resolveYoutubeMaxConcurrency({}), 1);
+  // O padrão acompanha o alvo de 4 simultâneos por pessoa/grupo. Com 1, todo
+  // download de YouTube era serializado no bot e a fila justa não teria efeito.
+  assert.equal(resolveYoutubeMaxConcurrency({}), 4);
   assert.equal(resolveYoutubeMaxConcurrency({ BUNNYFY_YOUTUBE_MAX_CONCURRENCY: '99' }), 4);
 
   const limiter = createYoutubePlayConcurrencyLimiter(2);

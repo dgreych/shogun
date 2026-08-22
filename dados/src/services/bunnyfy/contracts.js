@@ -27,6 +27,7 @@ const BUNNYFY_ROUTES = Object.freeze({
   transcriptions: '/v1/audio/transcriptions',
   downloadsFacebook: '/v1/downloads/facebook',
   downloadsPinterest: '/v1/downloads/pinterest',
+  searchPinterest: '/v1/search/pinterest',
   downloadsTiktok: '/v1/downloads/tiktok',
   downloadsKwai: '/v1/downloads/kwai'
 });

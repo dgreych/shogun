@@ -3,6 +3,7 @@ node_modules/
 
 # Credenciais e ambiente local. Nunca versionar.
 CREDENCIAIS-DEV.md
+dados/src/config.json
 .env
 .env.local
 .env.*.local

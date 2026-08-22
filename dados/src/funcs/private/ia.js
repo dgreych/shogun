@@ -1425,6 +1425,21 @@ function stripJsonComments(text) {
   return text.replace(/("(?:[^"\\]|\\.)*")|\/\/[^\n]*/g, (match, stringLiteral) => stringLiteral || '');
 }
 
+/**
+ * Garante que a saída sempre tenha uma fala utilizável.
+ *
+ * JSON pode ser VÁLIDO e ainda assim não trazer `resp` — por exemplo quando o
+ * modelo devolve só o bloco `aprender`. Sem esta normalização o consumidor lê
+ * resp[0] de undefined e quebra depois do parse ter dado certo, que é o pior
+ * lugar para falhar.
+ */
+function garantirResposta(parsed) {
+  const lista = Array.isArray(parsed?.resp) ? parsed.resp : null;
+  const primeira = lista?.find((item) => typeof item?.resp === 'string' && item.resp.trim());
+  if (primeira) return parsed;
+  return { ...parsed, resp: [{ resp: 'Me perdi no meio da resposta. Pergunta de novo?' }] };
+}
+
 function extractJSON(content) {
   if (!content || typeof content !== 'string') {
     console.warn('Conteúdo inválido para extração de JSON, retornando objeto vazio.');
@@ -1445,7 +1460,7 @@ function extractJSON(content) {
   try {
     const parsed = JSON.parse(cleanContent);
     console.log('✅ JSON extraído com sucesso (parse direto)');
-    return parsed;
+    return garantirResposta(parsed);
   } catch (e) {
     // Se falhar, tentar corrigir problemas comuns
   }
@@ -1454,7 +1469,7 @@ function extractJSON(content) {
   try {
     const parsed = JSON.parse(stripJsonComments(cleanContent));
     console.log('✅ JSON extraído com sucesso (sem comentários)');
-    return parsed;
+    return garantirResposta(parsed);
   } catch (e) {
     // Se falhar, continua para a extração via regex
   }
@@ -1478,22 +1493,37 @@ function extractJSON(content) {
 
       const parsed = JSON.parse(fixedJson);
       console.log('✅ JSON extraído com sucesso (com correção de quebras de linha)');
-      return parsed;
+      return garantirResposta(parsed);
     } catch (e) {
       console.warn('Falha ao fazer parse do JSON encontrado:', e.message);
     }
   }
 
-  const fallbackText = cleanWhatsAppFormatting(cleanContent);
   const lookedLikeJson = /^[\[{]/.test(cleanContent);
 
-  if (lookedLikeJson) {
-    console.warn('⚠️ A NVIDIA retornou JSON malformado; usando o conteúdo textual como fallback.');
-  } else {
+  if (!lookedLikeJson) {
     console.log('ℹ️ Resposta textual recebida; normalizando para o formato interno da assistente.');
+    return { resp: [{ resp: cleanWhatsAppFormatting(cleanContent) || 'Não entendi a resposta, pode tentar de novo?' }] };
   }
 
-  return { resp: [{ resp: fallbackText || 'Não entendi a resposta, pode tentar de novo?' }] };
+  // O payload parece JSON e nenhum parse pegou. A resposta de verdade quase
+  // sempre continua lá dentro, no campo resp -- basta um caso como {s "resp":
+  // (um caractere perdido depois da chave) para derrubar todos os parses.
+  // Resgatar o campo entrega a fala correta em vez de despejar a estrutura.
+  const resgate = cleanContent.match(/"resp"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (resgate) {
+    console.warn('⚠️ JSON malformado da assistente; resposta resgatada do campo resp.');
+    const texto = resgate[1]
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+    return { resp: [{ resp: cleanWhatsAppFormatting(texto) }] };
+  }
+
+  // Sem resgate possível, o usuário NUNCA pode receber o payload cru: antes
+  // disso, a estrutura interna da assistente ia inteira para a conversa.
+  console.warn('⚠️ JSON malformado da assistente e sem campo resp recuperável; payload descartado.');
+  return { resp: [{ resp: 'Me perdi no meio da resposta. Pergunta de novo?' }] };
 }
 
 function validateMessage(msg) {

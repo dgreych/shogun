@@ -1,16 +1,30 @@
 {
-  "name": "nazuna-gyomei",
-  "version": "1.0.0",
-  "description": "NAZUNA BOT - versão modificada GYOMEI, baseada na Nazuna 9.0 com novos comandos, automações, IA e deploy controlado",
+  "name": "shogun-whatsapp",
+  "version": "2.0.0",
+  "description": "SHOGUN é seu sentinela no WhatsApp: organiza grupos, encontra mídias, anima conversas e reúne ferramentas para o dia a dia.",
   "type": "module",
   "main": "dados/src/connect.js",
   "scripts": {
     "start": "node dados/src/.scripts/start-v9-fixed.js",
     "start:validated": "npm run validate:local && npm start",
     "dev": "nodemon dados/src/.scripts/start-v9-fixed.js",
-    "validate:ci": "node dados/src/.scripts/validate-local.js --ci && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
-    "validate:local": "node dados/src/.scripts/validate-local.js --local && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
-    "validate:deploy": "node dados/src/.scripts/validate-local.js --deploy && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "preflight": "node scripts/preflight-platform.mjs",
+    "setup": "node dados/src/.scripts/config.js",
+    "typecheck:vnext": "npx --yes --package=typescript@5.9.3 tsc -p tsconfig.vnext.json --noEmit",
+    "build:vnext": "npx --yes --package=typescript@5.9.3 tsc -p tsconfig.vnext.json",
+    "analyze:vnext:surface": "node scripts/analyze-legacy-command-surface.mjs",
+    "plan:vnext:domains": "node scripts/plan-vnext-domain-cutover.mjs",
+    "test:vnext:surface": "node --test test/vnext/legacy-command-surface.test.mjs",
+    "test:vnext:menu": "npm run build:vnext && node --test test/vnext/menu-sticker-parity.test.mjs test/vnext/menu-download-parity.test.mjs",
+    "test:vnext:commands": "npm run build:vnext && node --test test/vnext/command-resolver-parity.test.mjs test/vnext/command-text-parser.test.mjs",
+    "test:vnext:state": "npm run build:vnext && node --test test/vnext/state-boundaries.test.mjs",
+    "test:vnext:routing": "npm run build:vnext && node --test test/vnext/command-dispatch-harness.test.mjs",
+    "test:vnext:compat": "npm run build:vnext && node --test test/vnext/compatibility-dispatch.test.mjs test/vnext/legacy-command-executor-adapter.test.mjs",
+    "test:vnext:domain": "npm run build:vnext && node --test test/vnext/menu-domain.test.mjs test/vnext/fun-domain.test.mjs test/vnext/moderation-domain.test.mjs test/vnext/admin-native-domain.test.mjs test/vnext/tools-native-domain.test.mjs test/vnext/tools-utility-domain.test.mjs test/vnext/tools-external-domain.test.mjs test/vnext/tools-link-check-domain.test.mjs test/vnext/members-domain.test.mjs test/vnext/members-cutover-state.test.mjs test/vnext/domain-ownership-overlay.test.mjs test/vnext/macrotranche-bridge.test.mjs test/vnext/live-command-dispatcher.test.mjs test/vnext/domain-ownership.test.mjs test/vnext/domain-cutover-contract.test.mjs test/vnext/atomic-domain.test.mjs test/vnext/live-message-context.test.mjs test/vnext/vnext-command-runtime.test.mjs test/vnext/legacy-menu-presentation.test.mjs test/vnext/legacy-switch-hook.test.mjs test/vnext/runtime-vnext-hook-patch.test.mjs",
+    "test:vnext:active-deploy": "node --test test/vnext/active-deploy-contract.test.mjs",
+    "validate:ci": "node dados/src/.scripts/validate-local.js --ci && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:core && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "validate:local": "node dados/src/.scripts/validate-local.js --local && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:core && npm run test:regressions && npm run test:tavern && npm run test:security",
+    "validate:deploy": "node dados/src/.scripts/validate-local.js --deploy && node dados/src/.scripts/applyCriticalRuntimeFixes.js && node dados/src/.scripts/validate-critical-runtime.js && node dados/src/.scripts/validate-release-output.js && npm run test:bunnyfy && npm run test:core && npm run test:regressions && npm run test:tavern && npm run test:security",
     "validate:public": "npm run validate:ci && node dados/src/.scripts/audit-public.js",
     "build:server": "node dados/src/.scripts/build-server.js --private && node dados/src/.scripts/sanitize-server-build.js --private",
     "build:server:artifact": "node dados/src/.scripts/build-server.js --public && node dados/src/.scripts/sanitize-server-build.js --public",
@@ -19,6 +33,7 @@
     "update": "node dados/src/.scripts/update.js",
     "test:regressions": "node dados/src/.scripts/test-regressions.js",
     "test:bunnyfy": "node --test dados/src/services/bunnyfy/*.test.js",
+    "test:core": "node --test dados/src/core/*.test.js",
     "test:tavern": "node --test dados/src/tavern/tests/*.test.js",
     "test:security": "node --test dados/src/security/*.test.js",
     "diagnose:tavern-db": "node dados/src/.scripts/checkServerDatabaseConnection.mjs",
@@ -30,10 +45,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_.git"
+    "url": "git+https://github.com/dgreych/shogun.git"
   },
-  "homepage": "https://github.com/dgreych/_Nazuna_bot_vs.Gyomei_",
-  "author": "Hiudy (criação original), DevTokyo (continuidade da Nazuna) e Alaska_dev (aprimoramentos da versão modificada GYOMEI)",
+  "homepage": "https://github.com/dgreych/shogun",
+  "author": "Maurício Almeida",
   "license": "ISC",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
@@ -56,7 +71,7 @@
     "nodemon": "^3.1.4"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=20.19.0",
     "npm": ">=9.0.0"
   }
 }

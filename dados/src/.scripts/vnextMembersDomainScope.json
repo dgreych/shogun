@@ -1,0 +1,675 @@
+{
+  "schemaVersion": 2,
+  "id": "members-domain-full-cutover",
+  "strategy": "atomic-domain-cutover",
+  "implementationMode": "generated-direct-behavior-with-strict-typed-boundary",
+  "baseExpected": {
+    "families": 29,
+    "tokens": 148
+  },
+  "baseActual": {
+    "families": 29,
+    "tokens": 148
+  },
+  "cutoverExpected": {
+    "families": 32,
+    "tokens": 152
+  },
+  "closure": {
+    "addedFamilies": 3,
+    "addedTokens": 4,
+    "familyIndexes": [
+      74,
+      86,
+      442
+    ]
+  },
+  "selected": {
+    "families": 32,
+    "tokens": 152
+  },
+  "families": [
+    {
+      "index": 1,
+      "baseMemberFamily": true,
+      "primary": "roles",
+      "tokens": [
+        "roles",
+        "role.lista",
+        "listaroles"
+      ]
+    },
+    {
+      "index": 5,
+      "baseMemberFamily": true,
+      "primary": "role.vou",
+      "tokens": [
+        "role.vou"
+      ]
+    },
+    {
+      "index": 6,
+      "baseMemberFamily": true,
+      "primary": "role.nvou",
+      "tokens": [
+        "role.nvou"
+      ]
+    },
+    {
+      "index": 7,
+      "baseMemberFamily": true,
+      "primary": "role",
+      "tokens": [
+        "role",
+        "role.confirmados",
+        "role.participantes",
+        "role.info"
+      ]
+    },
+    {
+      "index": 14,
+      "baseMemberFamily": true,
+      "primary": "perfilrpg",
+      "tokens": [
+        "perfilrpg",
+        "carteira",
+        "banco",
+        "depositar",
+        "dep",
+        "sacar",
+        "saque",
+        "transferir",
+        "pix",
+        "loja",
+        "lojarps",
+        "comprar",
+        "buy",
+        "inventario",
+        "inv",
+        "apostar",
+        "bet",
+        "slots",
+        "minerar",
+        "mine",
+        "trabalhar",
+        "work",
+        "emprego",
+        "vagas",
+        "demitir",
+        "pescar",
+        "fish",
+        "explorar",
+        "explore",
+        "cacar",
+        "caçar",
+        "hunt",
+        "mercado",
+        "listar",
+        "comprarmercado",
+        "cmerc",
+        "meusanuncios",
+        "meusan",
+        "cancelar",
+        "propriedades",
+        "comprarpropriedade",
+        "cprop",
+        "coletarpropriedades",
+        "cprops",
+        "habilidades",
+        "desafiosemanal",
+        "desafiomensal",
+        "materiais",
+        "precos",
+        "preços",
+        "vender",
+        "reparar",
+        "desafio",
+        "forjar",
+        "forge",
+        "crime",
+        "assaltar",
+        "roubar",
+        "cozinhar",
+        "cook",
+        "receitas",
+        "plantar",
+        "cultivar",
+        "plant",
+        "farm",
+        "colher",
+        "coletar",
+        "harvest",
+        "plantacao",
+        "plantação",
+        "horta",
+        "comer",
+        "eat",
+        "vendercomida",
+        "ingredientes",
+        "sementes",
+        "toprpg",
+        "ranklevel",
+        "ranklvl",
+        "rankinglevel",
+        "levels",
+        "toplevels",
+        "diario",
+        "daily",
+        "resetrpg"
+      ]
+    },
+    {
+      "index": 16,
+      "baseMemberFamily": true,
+      "primary": "conquistas",
+      "tokens": [
+        "conquistas",
+        "achievements",
+        "medalhas"
+      ]
+    },
+    {
+      "index": 59,
+      "baseMemberFamily": true,
+      "primary": "reputacao",
+      "tokens": [
+        "reputacao",
+        "rep",
+        "reputation"
+      ]
+    },
+    {
+      "index": 74,
+      "baseMemberFamily": false,
+      "primary": "slots",
+      "tokens": [
+        "slots",
+        "slotmachine",
+        "cacaniquel"
+      ]
+    },
+    {
+      "index": 82,
+      "baseMemberFamily": true,
+      "primary": "presente",
+      "tokens": [
+        "presente",
+        "gift"
+      ]
+    },
+    {
+      "index": 86,
+      "baseMemberFamily": false,
+      "primary": "vender",
+      "tokens": [
+        "vender",
+        "sell"
+      ]
+    },
+    {
+      "index": 217,
+      "baseMemberFamily": true,
+      "primary": "zipbot",
+      "tokens": [
+        "zipbot",
+        "zip-bot",
+        "botzip",
+        "bot-zip",
+        "downloadbot",
+        "download-bot"
+      ]
+    },
+    {
+      "index": 218,
+      "baseMemberFamily": true,
+      "primary": "gitbot",
+      "tokens": [
+        "gitbot",
+        "git-bot",
+        "github",
+        "git-hub",
+        "repo",
+        "repositorio",
+        "source",
+        "sourcecode",
+        "source-code"
+      ]
+    },
+    {
+      "index": 307,
+      "baseMemberFamily": true,
+      "primary": "rankativos",
+      "tokens": [
+        "rankativos",
+        "rankativo"
+      ]
+    },
+    {
+      "index": 308,
+      "baseMemberFamily": true,
+      "primary": "rankinativos",
+      "tokens": [
+        "rankinativos",
+        "rankinativo"
+      ]
+    },
+    {
+      "index": 309,
+      "baseMemberFamily": true,
+      "primary": "checkativo",
+      "tokens": [
+        "checkativo"
+      ]
+    },
+    {
+      "index": 310,
+      "baseMemberFamily": true,
+      "primary": "atividade",
+      "tokens": [
+        "atividade"
+      ]
+    },
+    {
+      "index": 311,
+      "baseMemberFamily": true,
+      "primary": "totalcmd",
+      "tokens": [
+        "totalcmd",
+        "totalcomando"
+      ]
+    },
+    {
+      "index": 312,
+      "baseMemberFamily": true,
+      "primary": "meustatus",
+      "tokens": [
+        "meustatus"
+      ]
+    },
+    {
+      "index": 314,
+      "baseMemberFamily": true,
+      "primary": "statusbot",
+      "tokens": [
+        "statusbot",
+        "infobot",
+        "botinfo"
+      ]
+    },
+    {
+      "index": 316,
+      "baseMemberFamily": true,
+      "primary": "topcmd",
+      "tokens": [
+        "topcmd",
+        "topcmds",
+        "comandosmaisusados"
+      ]
+    },
+    {
+      "index": 318,
+      "baseMemberFamily": true,
+      "primary": "statusgp",
+      "tokens": [
+        "statusgp",
+        "dadosgp"
+      ]
+    },
+    {
+      "index": 324,
+      "baseMemberFamily": true,
+      "primary": "ping",
+      "tokens": [
+        "ping"
+      ]
+    },
+    {
+      "index": 343,
+      "baseMemberFamily": true,
+      "primary": "mention",
+      "tokens": [
+        "mention"
+      ]
+    },
+    {
+      "index": 440,
+      "baseMemberFamily": true,
+      "primary": "caixa",
+      "tokens": [
+        "caixa",
+        "box"
+      ]
+    },
+    {
+      "index": 442,
+      "baseMemberFamily": false,
+      "primary": "inventario",
+      "tokens": [
+        "inventario",
+        "inventory"
+      ]
+    },
+    {
+      "index": 444,
+      "baseMemberFamily": true,
+      "primary": "toprep",
+      "tokens": [
+        "toprep",
+        "rankrep"
+      ]
+    },
+    {
+      "index": 445,
+      "baseMemberFamily": true,
+      "primary": "denunciar",
+      "tokens": [
+        "denunciar",
+        "report"
+      ]
+    },
+    {
+      "index": 446,
+      "baseMemberFamily": true,
+      "primary": "denuncias",
+      "tokens": [
+        "denuncias",
+        "reports"
+      ]
+    },
+    {
+      "index": 479,
+      "baseMemberFamily": true,
+      "primary": "perfil",
+      "tokens": [
+        "perfil"
+      ]
+    },
+    {
+      "index": 500,
+      "baseMemberFamily": true,
+      "primary": "afk",
+      "tokens": [
+        "afk"
+      ]
+    },
+    {
+      "index": 501,
+      "baseMemberFamily": true,
+      "primary": "voltei",
+      "tokens": [
+        "voltei"
+      ]
+    },
+    {
+      "index": 502,
+      "baseMemberFamily": true,
+      "primary": "regras",
+      "tokens": [
+        "regras"
+      ]
+    }
+  ],
+  "tokens": [
+    "achievements",
+    "afk",
+    "apostar",
+    "assaltar",
+    "atividade",
+    "banco",
+    "bet",
+    "bot-zip",
+    "botinfo",
+    "botzip",
+    "box",
+    "buy",
+    "cacaniquel",
+    "cacar",
+    "caixa",
+    "cancelar",
+    "carteira",
+    "caçar",
+    "checkativo",
+    "cmerc",
+    "coletar",
+    "coletarpropriedades",
+    "colher",
+    "comandosmaisusados",
+    "comer",
+    "comprar",
+    "comprarmercado",
+    "comprarpropriedade",
+    "conquistas",
+    "cook",
+    "cozinhar",
+    "cprop",
+    "cprops",
+    "crime",
+    "cultivar",
+    "dadosgp",
+    "daily",
+    "demitir",
+    "denunciar",
+    "denuncias",
+    "dep",
+    "depositar",
+    "desafio",
+    "desafiomensal",
+    "desafiosemanal",
+    "diario",
+    "download-bot",
+    "downloadbot",
+    "eat",
+    "emprego",
+    "explorar",
+    "explore",
+    "farm",
+    "fish",
+    "forge",
+    "forjar",
+    "gift",
+    "git-bot",
+    "git-hub",
+    "gitbot",
+    "github",
+    "habilidades",
+    "harvest",
+    "horta",
+    "hunt",
+    "infobot",
+    "ingredientes",
+    "inv",
+    "inventario",
+    "inventory",
+    "levels",
+    "listar",
+    "listaroles",
+    "loja",
+    "lojarps",
+    "materiais",
+    "medalhas",
+    "mention",
+    "mercado",
+    "meusan",
+    "meusanuncios",
+    "meustatus",
+    "mine",
+    "minerar",
+    "perfil",
+    "perfilrpg",
+    "pescar",
+    "ping",
+    "pix",
+    "plant",
+    "plantacao",
+    "plantar",
+    "plantação",
+    "precos",
+    "presente",
+    "preços",
+    "propriedades",
+    "rankativo",
+    "rankativos",
+    "rankinativo",
+    "rankinativos",
+    "rankinglevel",
+    "ranklevel",
+    "ranklvl",
+    "rankrep",
+    "receitas",
+    "regras",
+    "rep",
+    "reparar",
+    "repo",
+    "report",
+    "reports",
+    "repositorio",
+    "reputacao",
+    "reputation",
+    "resetrpg",
+    "role",
+    "role.confirmados",
+    "role.info",
+    "role.lista",
+    "role.nvou",
+    "role.participantes",
+    "role.vou",
+    "roles",
+    "roubar",
+    "sacar",
+    "saque",
+    "sell",
+    "sementes",
+    "slotmachine",
+    "slots",
+    "source",
+    "source-code",
+    "sourcecode",
+    "statusbot",
+    "statusgp",
+    "topcmd",
+    "topcmds",
+    "toplevels",
+    "toprep",
+    "toprpg",
+    "totalcmd",
+    "totalcomando",
+    "trabalhar",
+    "transferir",
+    "vagas",
+    "vender",
+    "vendercomida",
+    "voltei",
+    "work",
+    "zip-bot",
+    "zipbot"
+  ],
+  "forcedBindings": {
+    "perfilrpg": [
+      "q",
+      "timeLeft"
+    ],
+    "meustatus": [
+      "groupData"
+    ]
+  },
+  "freeBindings": [
+    "AllgroupMembers",
+    "GRUPOS_DIR",
+    "PICKAXE_TIER_MULT",
+    "ROLE_GOING_BASE",
+    "ROLE_NOT_GOING_BASE",
+    "SKILL_LIST",
+    "__dirname",
+    "addSkillXP",
+    "applyShopBonuses",
+    "args",
+    "axios",
+    "botState",
+    "botVersion",
+    "buildGroupFilePath",
+    "commandStats",
+    "ensureEconomyDefaults",
+    "ensureRoleParticipants",
+    "ensureUserChallenge",
+    "ensureUserPeriodChallenges",
+    "ensureUserSkills",
+    "findKeyIgnoringAccents",
+    "fmt",
+    "formatRoleSummary",
+    "formatScheduleLastRun",
+    "formatUptime",
+    "from",
+    "fs",
+    "getActivePickaxe",
+    "getCachedGroupMetadata",
+    "getEcoUser",
+    "getGroupRentalStatus",
+    "getSkillBonus",
+    "getUserName",
+    "gifts",
+    "giveMaterial",
+    "globalBlocks",
+    "groupAdmins",
+    "groupData",
+    "groupFile",
+    "groupMetadata",
+    "groupName",
+    "groupPrefix",
+    "i6",
+    "info",
+    "isAntiLinkCanal",
+    "isAntiLinkGp",
+    "isAntiPorn",
+    "isBotSender",
+    "isChallengeCompleted",
+    "isGroup",
+    "isGroupAdmin",
+    "isModoBn",
+    "isModoLite",
+    "isOwner",
+    "isOwnerOrSub",
+    "isPeriodCompleted",
+    "isPremium",
+    "isRentalModeActive",
+    "isSubOwner",
+    "isUserId",
+    "loadEconomy",
+    "loadLevelingSafe",
+    "menc_jid2",
+    "menc_os2",
+    "menuTopCmd",
+    "nazu",
+    "nmrdn",
+    "nomebot",
+    "nomedono",
+    "normalizar",
+    "normalizeParam",
+    "optimizer",
+    "os",
+    "parceriasData",
+    "parseAmount",
+    "pathz",
+    "persistGroupData",
+    "prefix",
+    "premiumListaZinha",
+    "pushname",
+    "q",
+    "refreshRoleAnnouncement",
+    "relationshipManager",
+    "reply",
+    "reputation",
+    "sanitizeRoleCode",
+    "saveEconomy",
+    "sender",
+    "skillXpForNext",
+    "socialCardWithBunnyFy",
+    "timeLeft",
+    "updateChallenge",
+    "updatePeriodChallenge",
+    "updateQuestProgress",
+    "writeJsonFile"
+  ],
+  "writeBindings": [
+    "i6"
+  ]
+}

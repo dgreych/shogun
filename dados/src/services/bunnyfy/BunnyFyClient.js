@@ -683,6 +683,32 @@ class BunnyFyClient {
     return this.downloadSocialMedia(BUNNYFY_ROUTES.downloadsKwai, url, options);
   }
 
+  /**
+   * Busca por assunto, sem exigir link do pin. A BunnyFy agrega Pinterest e
+   * Wallhaven e devolve as mídias já baixadas, então aqui só chega URL assinada.
+   */
+  async searchPinterest(query, { limit } = {}) {
+    const termo = String(query || '').trim();
+    if (!termo) throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
+    const response = await this.request(BUNNYFY_ROUTES.searchPinterest, {
+      method: 'POST',
+      json: { query: termo, ...(limit ? { limit } : {}) }
+    });
+    const resultados = Array.isArray(response.data?.results) ? response.data.results : [];
+    // A API devolve mediaUrl relativa (/v1/media/...). Sem resolver contra a
+    // base, o consumidor trata como caminho de arquivo e estoura ENOENT.
+    const midias = resultados.map((item) => ({
+      title: item?.title ?? null,
+      ...this.resolveMediaDescriptor(item)
+    }));
+    return {
+      query: response.data?.query ?? termo,
+      count: midias.length,
+      results: midias,
+      requestId: response.requestId
+    };
+  }
+
   async getMovieQuiz({ difficulty } = {}) {
     if (difficulty !== undefined && !['easy', 'medium', 'hard'].includes(difficulty)) {
       throw new BunnyFyError('BUNNYFY_BAD_REQUEST');

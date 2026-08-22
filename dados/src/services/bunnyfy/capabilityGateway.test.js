@@ -13,6 +13,9 @@ import {
   socialDownloadWithBunnyFy,
   stickerCanvasWithBunnyFy,
   stickerWithBunnyFy,
+  nexoCircleWithBunnyFy,
+  nexoCharacterWithBunnyFy,
+  nexoEncounterWithBunnyFy,
   tavernBoardWithBunnyFy,
   tavernHandWithBunnyFy,
   tavernSceneWithBunnyFy,
@@ -29,6 +32,7 @@ const BASE_ENV = {
   BUNNYFY_STICKERS_MODE: 'exclusive',
   BUNNYFY_GAMES_MODE: 'exclusive',
   BUNNYFY_TAVERN_RENDER_MODE: 'exclusive',
+  BUNNYFY_NEXO_RENDER_MODE: 'exclusive',
   BUNNYFY_IMAGE_GEN_MODE: 'exclusive',
   BUNNYFY_TRANSCRIPTION_MODE: 'exclusive',
   BUNNYFY_FACEBOOK_MODE: 'exclusive',
@@ -68,6 +72,28 @@ const HAND_VIEW = {
     classId: 'GUARDIAN', mana: { current: 1, max: 1 }, nextSpellDiscount: 0, boardCount: 0
   },
   cards: []
+};
+
+const NEXO_CIRCLE_VIEW = {
+  schemaVersion: 1,
+  kind: 'circle',
+  titleLabel: 'Estação Zero',
+  modeLabel: 'Casual',
+  statusLabel: 'Tenso',
+  metrics: [{ label: 'Pulso', value: 68, max: 100 }],
+  highlights: ['Vozes sob a ponte']
+};
+
+const NEXO_ENCOUNTER_VIEW = {
+  schemaVersion: 1,
+  kind: 'encounter',
+  titleLabel: 'Vigia Sem Rosto',
+  round: 2,
+  postureLabel: 'Pulso',
+  actor: { label: 'Lume', metrics: [{ label: 'Vitalidade', value: 18, max: 21 }] },
+  enemy: { label: 'Vigia', metrics: [{ label: 'Vitalidade', value: 74, max: 120 }], intentLabel: 'Apagar o último a agir' },
+  actionLabels: ['Golpe Solar'],
+  statusLabels: ['Guarda 3']
 };
 
 const INVITE_VIEW = {
@@ -470,6 +496,68 @@ test('render de cena da Tavern (modo off) nunca chama a BunnyFy, só o Jimp loca
   assert.equal(bunnyfyCalls, 0);
 });
 
+test('render do círculo do NEXO usa a BunnyFy e devolve o Buffer PNG diretamente, sem envelope', async () => {
+  const calls = [];
+  const clientFactory = () => ({
+    async renderNexoCircle(view) {
+      calls.push(['render', view]);
+      return { width: 1200, height: 675, media: { mediaId: 'nexo-circle-1234567890' } };
+    },
+    async downloadMedia(media) {
+      calls.push(['download', media.mediaId]);
+      return { buffer: Buffer.from('png-circle'), mime: 'image/png' };
+    }
+  });
+
+  const buffer = await nexoCircleWithBunnyFy(NEXO_CIRCLE_VIEW, { env: BASE_ENV, clientFactory });
+  assert.equal(buffer.toString(), 'png-circle');
+  assert.deepEqual(calls.map(call => call[0]), ['render', 'download']);
+  assert.equal(calls[0][1], NEXO_CIRCLE_VIEW);
+});
+
+test('render do encontro do NEXO cai no fallback textual só em falha transitória e modo primary', async () => {
+  let fallbackCalls = 0;
+  const buffer = await nexoEncounterWithBunnyFy(NEXO_ENCOUNTER_VIEW, {
+    env: { ...BASE_ENV, BUNNYFY_NEXO_RENDER_MODE: 'primary' },
+    clientFactory: () => ({
+      async renderNexoEncounter() { throw new BunnyFyError('BUNNYFY_UNAVAILABLE'); }
+    }),
+    legacyFallback: async () => { fallbackCalls += 1; return null; }
+  });
+  assert.equal(buffer, null);
+  assert.equal(fallbackCalls, 1);
+});
+
+test('render de personagem do NEXO (modo off) nunca chama a BunnyFy, fallback devolve null por padrão', async () => {
+  let bunnyfyCalls = 0;
+  const buffer = await nexoCharacterWithBunnyFy(
+    { schemaVersion: 1, kind: 'character', titleLabel: 'Lume', originLabel: 'x', toneLabel: 'x', impulseLabel: 'x', scarLabel: 'x', metrics: [], techniqueLabels: [], traitLabels: [] },
+    {
+      env: { ...BASE_ENV, BUNNYFY_NEXO_RENDER_MODE: 'off' },
+      clientFactory: () => ({
+        async renderNexoCharacter() { bunnyfyCalls += 1; return { media: {} }; }
+      })
+    }
+  );
+  assert.equal(buffer, null);
+  assert.equal(bunnyfyCalls, 0);
+});
+
+test('render do NEXO em modo exclusive propaga erro 4xx sem tentar fallback', async () => {
+  let fallbackCalls = 0;
+  await assert.rejects(
+    () => nexoCircleWithBunnyFy(NEXO_CIRCLE_VIEW, {
+      env: BASE_ENV,
+      clientFactory: () => ({
+        async renderNexoCircle() { throw new BunnyFyError('BUNNYFY_BAD_REQUEST'); }
+      }),
+      legacyFallback: async () => { fallbackCalls += 1; return null; }
+    }),
+    error => error.code === 'BUNNYFY_BAD_REQUEST'
+  );
+  assert.equal(fallbackCalls, 0);
+});
+
 test('geração de imagem por prompt faz o download e devolve buffer com metadados', async () => {
   const calls = [];
   const clientFactory = () => ({
@@ -499,4 +587,31 @@ test('geração de imagem (modo off) nunca chama a BunnyFy, devolve null pelo fa
   });
   assert.equal(result, null);
   assert.equal(bunnyfyCalls, 0);
+});
+
+test('busca do Pinterest resolve mediaUrl contra a base, em vez de devolver caminho relativo', async () => {
+  // A API devolve "/v1/media/<id>?exp=...&sig=...". Sem resolver, o consumidor
+  // trata como caminho de arquivo e estoura ENOENT ao tentar abrir.
+  const { BunnyFyClient } = await import('./BunnyFyClient.js');
+  const client = new BunnyFyClient({
+    baseUrl: 'https://api.exemplo.test',
+    token: 'x'.repeat(40),
+    fetchImpl: async () => new Response(JSON.stringify({
+      ok: true,
+      data: {
+        query: 'gatos',
+        count: 1,
+        results: [{ mediaId: 'abc', mediaUrl: '/v1/media/abc?exp=1&sig=2', mime: 'image/gif', bytes: 10, title: 'gato' }]
+      },
+      error: null,
+      meta: { requestId: 'r1' }
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  });
+
+  const resultado = await client.searchPinterest('gatos');
+  assert.equal(resultado.count, 1);
+  assert.equal(resultado.results[0].mediaUrl, 'https://api.exemplo.test/v1/media/abc?exp=1&sig=2');
+  // O tipo real precisa sobreviver: é o que preserva GIF como GIF.
+  assert.equal(resultado.results[0].mime, 'image/gif');
+  assert.equal(resultado.results[0].title, 'gato');
 });

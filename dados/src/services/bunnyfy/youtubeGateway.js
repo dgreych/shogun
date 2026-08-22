@@ -21,7 +21,10 @@ const SELECTIVE_FALLBACK_CODES = new Set([
 
 const DEFAULT_YOUTUBE_TIMEOUT_MS = 190_000;
 const DEFAULT_YOUTUBE_MAX_BYTES = 50 * 1024 * 1024;
-const DEFAULT_YOUTUBE_MAX_CONCURRENCY = 1;
+// Alinhado ao alvo do dono: até 4 comandos simultâneos por pessoa e por grupo.
+// Com 1, todo download de YouTube era serializado no bot e a fila justa não
+// teria efeito nenhum sobre play/ytmp3. A API já opera com o mesmo teto de 4.
+const DEFAULT_YOUTUBE_MAX_CONCURRENCY = 4;
 const MAX_YOUTUBE_MAX_CONCURRENCY = 4;
 const MAX_PLAY_DURATION_SECONDS = 30 * 60;
 

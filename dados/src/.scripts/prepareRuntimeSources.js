@@ -295,9 +295,28 @@ case 'setmidia':
     if (!isOwner) return reply('🚫 Apenas donos podem configurar mídias de comandos.');
     const setmidiaArgs = String(q || '').trim().split(/\\s+/).filter(Boolean);
     const setmidiaFirstLower = (setmidiaArgs[0] || '').toLowerCase();
-    const setmidiaPersonaScope = (setmidiaArgs.length >= 2 && automacoesV9.PERSONALITY_KEYS.includes(setmidiaFirstLower))
-      ? setmidiaFirstLower
+    // "default" é apelido da identidade padrão. Sem isto,
+    // "setmidia default menu" vinculava a mídia a um comando chamado
+    // "default" em vez do menu da persona padrão — fazia o que foi escrito,
+    // não o que se quis, e ainda respondia sucesso.
+    const setmidiaScopeCandidate = setmidiaFirstLower === 'default'
+      ? automacoesV9.DEFAULT_PERSONA
+      : setmidiaFirstLower;
+    const setmidiaPersonaScope = (setmidiaArgs.length >= 2 && automacoesV9.PERSONALITY_KEYS.includes(setmidiaScopeCandidate))
+      ? setmidiaScopeCandidate
       : null;
+    // Dois argumentos com um primeiro que parece persona mas não é: avisar em
+    // vez de tratar como nome de comando e devolver sucesso enganoso.
+    if (!setmidiaPersonaScope && setmidiaArgs.length >= 2 && !/^[!./#]/.test(setmidiaArgs[0] || '')) {
+      const setmidiaConhecidas = ['default', ...automacoesV9.PERSONALITY_KEYS].join(', ');
+      if (!automacoesV9.PERSONALITY_KEYS.includes(setmidiaFirstLower)) {
+        return reply(
+          \`❌ "\${setmidiaArgs[0]}" não é uma personalidade conhecida.\\n\\n\`
+          + \`Personalidades: \${setmidiaConhecidas}\\n\`
+          + \`Exemplos: \${prefix}setmidia menu  |  \${prefix}setmidia default menu\`
+        );
+      }
+    }
     const setmidiaSlot = (setmidiaPersonaScope ? setmidiaArgs[1] : setmidiaArgs[0])?.replace(/^[!./#]+/, '').toLowerCase();
     if (!setmidiaSlot) return reply(\`Use: \${prefix}setmidia [personalidade] comando, respondendo a uma foto, GIF ou vídeo.\\n\\nExemplos:\\n\${prefix}setmidia menu\\n\${prefix}setmidia gyomei menu\`);
     const mediaCommand = setmidiaPersonaScope ? \`\${setmidiaPersonaScope}_\${setmidiaSlot}\` : setmidiaSlot;
@@ -348,7 +367,22 @@ case 'mudarpersona':
 
     const changepersoKey = String(q || '').trim().toLowerCase();
     if (!changepersoKey || !automacoesV9.PERSONALITY_KEYS.includes(changepersoKey)) {
-      return reply(\`Use: \${prefix}changeperso <personalidade>\\n\\nPersonalidades disponíveis: \${automacoesV9.PERSONALITY_KEYS.join(', ')}\`);
+      // Marcar a padrão na própria lista evita o beco de trocar de persona e
+      // não descobrir como voltar.
+      // Uma linha por persona: lista de nomes soltos não diz o que se está
+      // escolhendo, e a escolha acaba sendo às cegas.
+      const changepersoLista = automacoesV9.PERSONALITY_KEYS
+        .map((chave) => {
+          const nome = chave.charAt(0).toUpperCase() + chave.slice(1);
+          const marca = chave === automacoesV9.DEFAULT_PERSONA ? ' *(padrão)*' : '';
+          return \`*\${nome}*\${marca}\\n   \${automacoesV9.describePersona(chave)}\`;
+        })
+        .join('\\n\\n');
+      return reply(
+        \`Escolha quem comanda este grupo:\\n\\n\${changepersoLista}\\n\\n\`
+        + \`Use: \${prefix}changeperso <nome>\\n\`
+        + \`Para voltar à identidade padrão: \${prefix}default\`
+      );
     }
 
     setGroupCustomPersona(from, changepersoKey);
@@ -391,7 +425,7 @@ case 'mudarpersona':
       }
     }
 
-    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\`);
+    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\\n\\nPara voltar à identidade padrão (*Shogun*): \${prefix}default\`);
   } catch (e) {
     console.error('[CHANGEPERSO] Erro:', e);
     await reply(\`❌ Falha ao trocar a identidade do grupo: \${e.message}\`);
@@ -404,33 +438,29 @@ case 'identidadepadrao':
   try {
     if (!isOwner) return reply('🚫 Apenas donos podem restaurar a identidade padrão do bot.');
 
-    const defaultPersonaResult = automacoesV9.setActivePersona('nazuna');
+    // A identidade padrão passou a ser Alaska. A Nazuna continua existindo e
+    // selecionável pelo !changeperso — o que mudou é para onde o bot VOLTA.
+    const defaultPersonaResult = automacoesV9.setActivePersona(automacoesV9.DEFAULT_PERSONA);
     if (!defaultPersonaResult.ok) return reply(\`❌ \${defaultPersonaResult.msg}\`);
 
-    const defaultDisplayName = 'NAZUNA BOT • GYOMEI';
+    const defaultDisplayName = 'SHOGUN';
     let defaultConfig = JSON.parse(fs.readFileSync(CONFIG_FILE));
     defaultConfig.nomebot = defaultDisplayName;
     writeJsonFile(CONFIG_FILE, defaultConfig);
 
-    // A identidade padrão do bot agora é a Nazuna (antes era a Gyomei).
-    // O design do menu e a foto usados aqui acompanham essa troca: em vez
-    // de um design/foto "de fábrica" genérico e desconectado de qualquer
-    // persona real, usamos os próprios assets da persona Nazuna — os
-    // mesmos que !changeperso nazuna usaria num grupo. O objeto abaixo é
-    // só um fallback de segurança caso o design da Nazuna não esteja
-    // carregado por algum motivo.
-    const nazunaFallbackDesign = {
-      header: \`╭┈⊰ 🌸 『 *{botName}* 』\\n┊Olá, {userName}!\\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯\`,
-      menuTopBorder: '╭┈',
-      bottomBorder: '╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯',
-      menuTitleIcon: '🍧ฺꕸ▸',
-      menuItemIcon: '•.̇𖥨֗🍓⭟',
-      separatorIcon: '❁',
+    // Fallback de segurança caso o design do Shogun não esteja carregado.
+    const shogunFallbackDesign = {
+      header: \`╭─⚔─⊰ 『 *{botName}* 』\\n┊ {userName}, no comando.\\n┊ Prefixo: {prefix}\\n╰────────⊱ 🜲 ⊰────────╯\`,
+      menuTopBorder: '╭─⚔─',
+      bottomBorder: '╰────────⊱ 🜲 ⊰────────╯',
+      menuTitleIcon: '🜲▸',
+      menuItemIcon: '⚔↳',
+      separatorIcon: '🜲',
       middleBorder: '┊'
     };
-    saveMenuDesign(automacoesV9.PERSONA_MENU_DESIGNS.nazuna || nazunaFallbackDesign);
+    saveMenuDesign(automacoesV9.PERSONA_MENU_DESIGNS[automacoesV9.DEFAULT_PERSONA] || shogunFallbackDesign);
 
-    const defaultFotoMedia = automacoesV9.getCommandMedia('nazuna_profilep');
+    const defaultFotoMedia = automacoesV9.getCommandMedia(\`\${automacoesV9.DEFAULT_PERSONA}_profilep\`);
     if (defaultFotoMedia?.path && fs.existsSync(defaultFotoMedia.path)) {
       try {
         const defaultFotoBuffer = fs.readFileSync(defaultFotoMedia.path);
@@ -447,7 +477,14 @@ case 'identidadepadrao':
       console.error('[DEFAULT] Erro ao trocar o nome:', defaultNomeError);
     }
 
-    await reply('✅ Personalidade e temática do bot voltaram ao padrão: *Nazuna* (NAZUNA BOT • GYOMEI).');
+    // O caminho de volta precisa estar escrito: sem isto, quem trocar de
+    // persona não descobre sozinho como retornar à identidade padrão.
+    await reply(
+      \`✅ Identidade padrão restaurada: *Shogun*.\\n\\n\`
+      + \`Para trocar: \${prefix}changeperso <nome>\\n\`
+      + \`Disponíveis: \${automacoesV9.PERSONALITY_KEYS.join(', ')}\\n\`
+      + \`Para voltar à Alaska a qualquer momento: \${prefix}default\`
+    );
   } catch (e) {
     console.error('[DEFAULT] Erro:', e);
     await reply(\`❌ Falha ao restaurar a identidade padrão: \${e.message}\`);
@@ -613,11 +650,11 @@ function patchStartSource(source) {
   );
   output = replaceRequired(
     output,
-    `    \`\${colors.bold}🚀 Nazuna - Conexão WhatsApp\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
-    `    \`\${colors.bold}🪨 GYOMEI — O guardião despertou\${colors.reset}\`,\n    \`\${colors.bold}🙏 Força, serenidade e disciplina em cada mensagem\${colors.reset}\`,\n    \`\${colors.bold}📦 Base Nazuna: \${version}\${colors.reset}\`,`,
-    'cabeçalho de inicialização do Gyomei'
+    `    \`\${colors.bold}⛩️ SHOGUN — Conexão WhatsApp\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
+    `    \`\${colors.bold}⛩️ SHOGUN — O sentinela assumiu o posto\${colors.reset}\`,\n    \`\${colors.bold}🛡️ Disciplina, presença e prontidão em cada missão\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
+    'cabeçalho de inicialização do SHOGUN'
   );
-  output = output.replace('🛑 Encerrando o Nazuna... Até logo!', '🛑 GYOMEI recolhe suas contas de oração. Encerrando com segurança...');
+  output = output.replace('🛑 Encerrando o SHOGUN. Até a próxima patrulha!', '🛑 SHOGUN encerra a patrulha com segurança.');
   return output;
 }
 

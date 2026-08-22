@@ -27,6 +27,7 @@ export {
   isBunnyFyAccessError,
   resolveBunnyFyAccountUrl,
   resolveBunnyFyAiMode,
+  shouldFallbackDirectAi,
   toLegacyChatResponse
 } from './aiGateway.js';
 export {

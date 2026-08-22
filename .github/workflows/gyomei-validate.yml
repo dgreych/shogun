@@ -1,12 +1,11 @@
-# Pipeline oficial da edição GYOMEI
-name: Validar e empacotar NAZUNA BOT - GYOMEI
+name: Validar SHOGUN
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - feat/automacoes-v9
+      - refactor/gyomei-ts-modular-20260817
   pull_request:
     branches:
       - main
@@ -15,132 +14,80 @@ permissions:
   contents: read
 
 jobs:
-  validar-e-empacotar:
+  qualidade:
+    name: Qualidade completa
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 30
     steps:
       - name: Baixar o repositório
         uses: actions/checkout@v4
-
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
-
-      - name: Instalar dependências sem usar node_modules versionado
-        run: npm ci --omit=dev --no-audit --no-fund
-
-      - name: Confirmar ferramentas de compactação
+      - name: Preparar FFmpeg
         run: |
-          tar --version
-          zip -v | head -n 2
-
-      - name: Validar scripts e módulos alterados
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Instalar dependências
+        run: npm ci --no-audit --no-fund
+      - name: Conferir documento vivo privado
         run: |
-          node --check dados/src/.scripts/envLoader.js
-          node --check dados/src/.scripts/validate-local.js
-          node --check dados/src/.scripts/validate-release-output.js
-          node --check dados/src/.scripts/audit-public.js
-          node --check dados/src/.scripts/build-server.js
-          node --check dados/src/.scripts/sanitize-server-build.js
-          node --check dados/src/.scripts/prepareRuntimeSources.js
-          node --check dados/src/.scripts/finalizeGyomeiRuntime.js
-          node --check dados/src/.scripts/start-v9.js
-          node --check dados/src/.scripts/start-v9-fixed.js
-          node --check dados/src/.scripts/applyCriticalRuntimeFixes.js
-          node --check dados/src/.scripts/test-regressions.js
-          node --check dados/src/.scripts/test-assistant-live.js
-          node --check dados/src/.scripts/diagnose-nvidia.js
-          node --check dados/src/utils/gyomeiStore.js
-          node --check dados/src/utils/nvidiaApi.js
-          node --check dados/src/utils/commandResolver.js
-          node --check dados/src/utils/vipCommandsManager.js
-          node --check dados/src/funcs/private/ia.js
-          node --check dados/src/index.js
-
-      - name: Executar validação equivalente ao ambiente público
+          if [ -f docs/cloud/RETOMADAV2_AGENTES.md ]; then
+            cmp -s docs/RETOMADAV2_AGENTES.md docs/cloud/RETOMADAV2_AGENTES.md
+          fi
+      - name: Inspecionar plataforma
+        run: npm run preflight
+      - name: Validar arquitetura modular
+        run: |
+          npm run typecheck:vnext
+          npm run build:vnext
+          node scripts/plan-vnext-macrotranche.mjs
+          node scripts/analyze-vnext-compatibility-debt.mjs
+          npm run test:vnext:domain
+          npm run test:vnext:routing
+          npm run test:vnext:commands
+          npm run test:vnext:state
+          npm run test:vnext:compat
+          npm run test:vnext:active-deploy
+      - name: Validar runtime atual
         run: npm run validate:ci
-
-      - name: Confirmar gateway BunnyFy, identidade, créditos e comandos
+      - name: Validar identidade visual
         run: |
-          grep -q "meta/llama-3.1-70b-instruct" dados/src/utils/nvidiaApi.js
-          grep -q "createBunnyFyAiClient().createChatCompletion" dados/src/funcs/private/ia.js
-          grep -q "toLegacyChatResponse" dados/src/funcs/private/ia.js
-          ! grep -q "requestNvidiaChat" dados/src/funcs/private/ia.js
-          ! grep -q "https://integrate.api.nvidia.com/v1/chat/completions" dados/src/utils/nvidiaApi.js
-          ! grep -q "import axios from 'axios'" dados/src/utils/nvidiaApi.js
-          ! grep -q "CIPHER_BYTES" dados/src/utils/nvidiaEmbedded.js
-          ! grep -q "moonshotai/kimi-k2-instruct" dados/src/funcs/private/ia.js
-          ! grep -q "moonshotai/kimi-k2-instruct" dados/src/index.js
-          grep -q "test:nvidia:live" package.json
-          grep -q "test:assistant:live" package.json
-          test -s assets/nazuna-gyomei-banner.png
-          grep -q "NAZUNA BOT" dados/src/.runtime-index.js
-          grep -Fq '│ 💎 *Hiudy* — criação original' dados/src/.runtime-index.js
-          grep -Fq '│ 💎 *DevTokyo* — continuidade da Nazuna' dados/src/.runtime-index.js
-          grep -Fq '│ 💎 *Alaska_dev* — versão GYOMEI' dados/src/.runtime-index.js
-          grep -q "wa.me/5532985076326" dados/src/.runtime-index.js
-          grep -q "github.com/dgreych" dados/src/.runtime-index.js
-          grep -q "Comando não reconhecido" dados/src/.runtime-index.js
-          grep -q "Talvez você procurasse" dados/src/.runtime-index.js
-          grep -q "downloadQuotedCommandMedia" dados/src/.runtime-index.js
-          grep -q "Buffer.from(value.data)" dados/src/utils/gyomeiStore.js
-          ! grep -q "process.env.NVIDIA_API_KEY" dados/src/funcs/private/.runtime-ia.js
-          grep -q "createBunnyFyAiClient" dados/src/funcs/private/.runtime-ia.js
-          ! grep -q "const IA_API_KEY = 'nvapi-" dados/src/funcs/private/.runtime-ia.js
+          test -s assets/brand/shogun-banner.png
+          test -s assets/brand/shogun-mark.png
+          node --test test/vnext/console-visual.test.mjs
 
-      - name: Gerar artefato público root-ready
-        run: npm run build:server:artifact
-
-      - name: Validar layout e higienização do artefato
+  portabilidade:
+    name: ${{ matrix.os }} · Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['20.19.0', '22', '24']
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Instalar dependências em clone limpo
+        run: npm ci --no-audit --no-fund
+      - name: Conferir instaladores e entradas
+        shell: bash
         run: |
-          BUNDLE=dist/nazuna-gyomei-server-v1.0.0
-          test -f "$BUNDLE/package.json"
-          test -f "$BUNDLE/package-lock.json"
-          test -f "$BUNDLE/README.md"
-          test -f "$BUNDLE/assets/nazuna-gyomei-banner.png"
-          test -d "$BUNDLE/dados"
-          test -d "$BUNDLE/node_modules"
-          test -f "$BUNDLE/DEPLOY-MANIFEST.json"
-          test -f dist/nazuna-gyomei-server-v1.0.0-root.tar.gz
-          test -f dist/nazuna-gyomei-server-v1.0.0-root.zip
-          ! test -e "$BUNDLE/.env.local"
-          ! test -d "$BUNDLE/dados/database/qr-code"
-          ! test -d "$BUNDLE/dados/database/grupos"
-          ! test -d "$BUNDLE/dados/logs"
-          ! test -d "$BUNDLE/.github"
-          ! test -e "$BUNDLE/nazuna-main.zip"
-          ! find "$BUNDLE" -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \) | grep -q .
-          tar -tzf dist/nazuna-gyomei-server-v1.0.0-root.tar.gz | grep -q '^\./package.json$'
-          tar -tzf dist/nazuna-gyomei-server-v1.0.0-root.tar.gz | grep -q '^\./node_modules/'
-          ! tar -tzf dist/nazuna-gyomei-server-v1.0.0-root.tar.gz | grep -q '^nazuna-gyomei-server-v1.0.0/'
-          unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^package.json$'
-          unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^node_modules/'
-          ! unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^nazuna-gyomei-server-v1.0.0/'
-          ! unzip -Z1 dist/nazuna-gyomei-server-v1.0.0-root.zip | grep -q '^nazuna-main.zip$'
-          ! grep -R -I -n -E 'nvapi-[A-Za-z0-9_-]{20,}' "$BUNDLE"
-
-      - name: Publicar conteúdo root-ready
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nazuna-gyomei-server-v1.0.0-root
-          path: |
-            dist/nazuna-gyomei-server-v1.0.0/**
-            dist/nazuna-gyomei-server-v1.0.0/.env.example
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Publicar ZIP e TAR root-ready
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nazuna-gyomei-server-v1.0.0-arquivos
-          path: |
-            dist/nazuna-gyomei-server-v1.0.0-root.zip
-            dist/nazuna-gyomei-server-v1.0.0-root.tar.gz
-          if-no-files-found: error
-          retention-days: 14
+          node --check scripts/preflight-platform.mjs
+          node --check dados/src/.scripts/config.js
+          node --check dados/src/.scripts/start.js
+          node --check dados/src/.scripts/start-v9-fixed.js
+          node --check dados/src/connect.js
+          node --check dados/src/index.js
+      - name: Conferir configuração neutra
+        run: node -e "const c=require('./dados/src/config.example.json'); if(c.nomebot!=='SHOGUN'||c.numerodono!=='55DDDNUMERO') process.exit(1)"
+      - name: Construir arquitetura modular
+        run: npm run build:vnext

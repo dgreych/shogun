@@ -555,6 +555,28 @@ async function socialDownloadWithBunnyFy(provider, url, {
   });
 }
 
+/**
+ * A busca do Pinterest era a última capacidade além do YouTube que ainda
+ * dependia da Vex — e a fonte parou de responder, deixando o comando morto.
+ */
+async function pinterestSearchWithBunnyFy(query, {
+  limit,
+  env = process.env,
+  clientFactory = createCapabilityClient,
+  legacyFallback = async () => null
+} = {}) {
+  const mode = resolveCapabilityMode('BUNNYFY_PINTEREST_MODE', env);
+  return executeCapability({
+    mode,
+    legacyFallback,
+    operation: async () => {
+      const client = clientFactory(env);
+      const resultado = await client.searchPinterest(query, { limit });
+      return { ok: true, source: 'bunnyfy', ...resultado };
+    }
+  });
+}
+
 async function movieQuizWithBunnyFy({
   difficulty,
   env = process.env,
@@ -579,6 +601,7 @@ export {
   imageGenerateWithBunnyFy,
   masterEnabled,
   movieQuizWithBunnyFy,
+  pinterestSearchWithBunnyFy,
   nexoCircleWithBunnyFy,
   nexoCharacterWithBunnyFy,
   nexoEncounterWithBunnyFy,

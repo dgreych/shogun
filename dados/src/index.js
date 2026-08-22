@@ -4,6 +4,27 @@ import { exec, execSync, spawn } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
+
+function runFfmpeg(args, timeoutMs = 180000) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('ffmpeg', args, { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      error ? reject(error) : resolve();
+    };
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      finish(new Error(`FFmpeg excedeu ${timeoutMs} ms`));
+    }, timeoutMs);
+    child.stderr?.on('data', (chunk) => { stderr = `${stderr}${chunk}`.slice(-8000); });
+    child.once('error', finish);
+    child.once('close', (code) => finish(code === 0 ? null : new Error(`FFmpeg terminou com código ${code}: ${stderr.trim()}`)));
+  });
+}
 import { parseHTML } from 'linkedom';
 import axios from 'axios';
 import pathz from 'path';
@@ -20,6 +41,7 @@ import * as ia from './funcs/private/ia.js';
 import { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';
 import { NVIDIA_MODEL_CATALOG, isKnownNvidiaModel, DEFAULT_NVIDIA_MODEL } from './utils/nvidiaApi.js';
 import { buildSafeMessagePreview } from './utils/safeCommandLog.js';
+import { renderEventoFeed } from '../../dist-vnext/console/feed.js';
 import {
   animatedLogoWithBunnyFy,
   buildBunnyFyAccessMessage,
@@ -234,6 +256,10 @@ import {
 } from './utils/database.js';
 
 import { parseCustomCommandMeta, buildUsageFromParams, parseArgsFromString, escapeRegExp, validateParamValue } from './utils/helpers.js';
+import { intencaoDoComando } from '../../dist-vnext/voice/classify.js';
+import { emojiDaIntencao, gerundioDaIntencao } from '../../dist-vnext/voice/intents.js';
+import { ALASKA } from '../../dist-vnext/voice/personas/alaska.js';
+import { aplicarFloreio } from '../../dist-vnext/voice/persona.js';
 import {
   PACKAGE_JSON_PATH,
   CONFIG_FILE,
@@ -538,11 +564,12 @@ const COMMAND_EMOJI_PATTERNS = [
 
 function pickCommandEmoji(command) {
   const normalized = String(command || '').toLowerCase();
+  // Overrides manuais continuam vencendo: são escolhas deliberadas do dono.
   if (COMMAND_EMOJI_OVERRIDES[normalized]) return COMMAND_EMOJI_OVERRIDES[normalized];
-  for (const [pattern, emoji] of COMMAND_EMOJI_PATTERNS) {
-    if (pattern.test(normalized)) return emoji;
-  }
-  return '⚙️';
+  // O resto passa a derivar da INTENÇÃO, não do nome. Antes, 44 overrides e 13
+  // regex cobriam 545 famílias e 92% dos comandos caíam no mesmo ⚙️ — era por
+  // isso que a reação parecia sempre igual.
+  return emojiDaIntencao(intencaoDoComando(normalized));
 }
 
 // Mensagens de espera genéricas (comandos que só avisam "estou processando",
@@ -562,8 +589,19 @@ const LOADING_MESSAGES = [
   '⏳ Firme e forte, processando agora mesmo.'
 ];
 
-function pickLoadingMessage() {
-  return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
+function pickLoadingMessage(comando, assunto) {
+  // O pool antigo sorteava dez frases intercambiáveis para qualquer comando:
+  // "Concentração total" saía tanto num !ban quanto numa busca de imagem, sem
+  // dizer nada sobre nenhum dos dois. Agora a frase carrega o que está de fato
+  // acontecendo e o assunto que o usuário pediu.
+  if (!comando) return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
+  const intencao = intencaoDoComando(comando);
+  const alvo = String(assunto || '').trim();
+  const recorte = alvo.length > 60 ? `${alvo.slice(0, 57)}...` : alvo;
+  const base = recorte
+    ? `${emojiDaIntencao(intencao)} ${gerundioDaIntencao(intencao)} "${recorte}".`
+    : `${emojiDaIntencao(intencao)} ${gerundioDaIntencao(intencao)}.`;
+  return aplicarFloreio(base, ALASKA);
 }
 
 /**
@@ -4272,8 +4310,6 @@ Código: *${roleCode}*`,
     hour12: false,
     timeZone: 'America/Sao_Paulo'
     });
-    const messageType = isCmd ? 'COMANDO' : 'MENSAGEM';
-    const context = isGroup ? 'GRUPO' : 'PRIVADO';
     const messagePreview = buildSafeMessagePreview({
     isCommand: isCmd,
     prefix,
@@ -4281,20 +4317,15 @@ Código: *${roleCode}*`,
     query: q,
     body: budy2
     });
-    console.log('┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓');
-    console.log(`┃ ${messageType} [${context}]${' '.repeat(36 - messageType.length - context.length)}`);
-    console.log('┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫');
-    console.log(`┃ 📜 Conteúdo: ${messagePreview.padEnd(28)}`);
-    if  (isGroup) {
-    console.log(`┃ 👥 Grupo: ${(groupName || 'Desconhecido').padEnd(28)}`);
-    console.log(`┃ 👤 Usuário: ${(pushname || 'Sem Nome').padEnd(28)}`);
-    } else {
-    console.log(`┃ 👤 Usuário: ${(pushname || 'Sem Nome').padEnd(28)}`);
-    console.log(`┃ 📱 Número: ${getUserName(sender).padEnd(28)}`);
-    }
-    console.log('┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫');
-    console.log(`┃ 🕒 Data/Hora: ${timestamp.padEnd(27)}`);
-    console.log('┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n');
+    console.log(renderEventoFeed({
+    comando: isCmd,
+    emGrupo: isGroup,
+    conteudo: messagePreview,
+    grupo: groupName || 'Desconhecido',
+    usuario: pushname || 'Sem Nome',
+    numero: getUserName(sender),
+    horario: timestamp
+    }) + '\n');
       }
     } catch (error) {
       console.error('┃ 🚨 Erro ao gerar logs:', error, '');
@@ -13033,12 +13064,8 @@ case 'lowpass':
       const gem = rane;
       const ran = __dirname + `/../database/tmp/${Math.random()}.mp3`;
       const effect = audioEffects[command];
-      exec(`ffmpeg -i ${gem} -filter:a "${effect}" ${ran}`, async (err, stderr, stdout) => {
-    await fs.unlinkSync(gem);
-    if  (err) {
-      console.error(`FFMPEG Error (Audio Effect ${command}):`, err);
-      return reply(`❌ Erro ao aplicar o efeito *${command}* no áudio. Verifique se o arquivo está válido e tente novamente.`);
-    }
+      runFfmpeg(['-y', '-i', gem, '-filter:a', effect, ran]).then(async () => {
+    fs.unlinkSync(gem);
     const hah = fs.readFileSync(ran);
     await nazu.sendMessage(from, {
       audio: hah,
@@ -13046,7 +13073,11 @@ case 'lowpass':
     }, {
       quoted: info
     });
-    await fs.unlinkSync(ran);
+    fs.unlinkSync(ran);
+      }).catch(async (err) => {
+    if  (fs.existsSync(gem)) fs.unlinkSync(gem);
+    console.error(`FFMPEG Error (Audio Effect ${command}):`, err);
+    return reply(`❌ Erro ao aplicar o efeito *${command}* no áudio. Verifique se o arquivo está válido e tente novamente.`);
       });
     } else {
       reply("  Para aplicar este efeito de áudio, responda a uma mensagem que contenha um áudio.");
@@ -13101,32 +13132,23 @@ case 'rotate':
       const media = rane;
       const outputExt = command === 'tomp3' ? '.mp3' : '.mp4';
       const ran = __dirname + `/../database/tmp/${Math.random()}${outputExt}`;
-      let ffmpegCmd;
+      let ffmpegArgs;
     if  (command === 'tomp3') {
-    
-    ffmpegCmd = `ffmpeg -i ${media} -q:a 0 -map a ${ran}`;
+    ffmpegArgs = ['-y', '-i', media, '-q:a', '0', '-map', 'a', ran];
       } else if (command === 'videoloop') {
-    
-    ffmpegCmd = `ffmpeg -stream_loop 2 -i ${media} -c copy ${ran}`;
+    ffmpegArgs = ['-y', '-stream_loop', '2', '-i', media, '-c', 'copy', ran];
       } else if (command === 'videomudo') {
-    
-    ffmpegCmd = `ffmpeg -i ${media} -an ${ran}`;
+    ffmpegArgs = ['-y', '-i', media, '-an', ran];
       } else {
     const effect = videoEffects[command];
     if  (['sepia', 'espelhar', 'rotacionar', 'zoom', 'glitch', 'videobw', 'pretoebranco'].includes(command)) {
-      
-      ffmpegCmd = `ffmpeg -i ${media} -vf "${effect}" ${ran}`;
+      ffmpegArgs = ['-y', '-i', media, '-vf', effect, ran];
     } else {
-      
-      ffmpegCmd = `ffmpeg -i ${media} -filter_complex "${effect}" -map "[v]" -map "[a]" ${ran}`;
+      ffmpegArgs = ['-y', '-i', media, '-filter_complex', effect, '-map', '[v]', '-map', '[a]', ran];
     }
       }
-      exec(ffmpegCmd, async err => {
-    await fs.unlinkSync(media);
-    if  (err) {
-      console.error(`FFMPEG Error (Video Effect ${command}):`, err);
-      return reply(`❌ Erro ao aplicar o efeito *${command}* no vídeo. Verifique se o arquivo está válido e tente novamente.`);
-    }
+      runFfmpeg(ffmpegArgs).then(async () => {
+    fs.unlinkSync(media);
     const buffer453 = fs.readFileSync(ran);
     const messageType = command === 'tomp3' ? {
       audio: buffer453,
@@ -13138,7 +13160,11 @@ case 'rotate':
     await nazu.sendMessage(from, messageType, {
       quoted: info
     });
-    await fs.unlinkSync(ran);
+    fs.unlinkSync(ran);
+      }).catch(async (err) => {
+    if  (fs.existsSync(media)) fs.unlinkSync(media);
+    console.error(`FFMPEG Error (Video Effect ${command}):`, err);
+    return reply(`❌ Erro ao aplicar o efeito *${command}* no vídeo. Verifique se o arquivo está válido e tente novamente.`);
       });
     } else {
       reply(command === 'tomp3' ? "🎬 Para converter vídeo para áudio, responda a uma mensagem que contenha um vídeo." : "🎬 Para aplicar este efeito de vídeo, responda a uma mensagem que contenha um vídeo.");
@@ -15843,7 +15869,7 @@ Exemplo: ${prefix}tradutor espanhol | Olá mundo! ✨`);
     }
     const idioma = partes[0].trim();
     const texto = partes.slice(1).join('|').trim();
-    reply(pickLoadingMessage()).then(() => {
+    reply(pickLoadingMessage(command, q)).then(() => {
       const prompt = `Traduza o seguinte texto para ${idioma}:\n\n${texto}\n\nForneça apenas a tradução, sem explicações adicionais.`;
       ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((bahz) => {
     reply(`🌐✨ *Prontinho! Sua tradução para ${idioma.toUpperCase()} está aqui:*\n\n${formatAIResponse(bahz.data.choices[0].message.content)}`);
@@ -15856,7 +15882,7 @@ Exemplo: ${prefix}tradutor espanhol | Olá mundo! ✨`);
        break;
 case 'qrcode':
     if  (!q) return reply(`📲 *Gerador de QR Code*\n\n💡 *Como usar:*\n• Envie o texto ou link após o comando\n• Ex: ${prefix}qrcode https://exemplo.com\n• Ex: ${prefix}qrcode Seu texto aqui\n\n✨ O QR Code será gerado instantaneamente!`);
-    reply(pickLoadingMessage()).then(() => {
+    reply(pickLoadingMessage(command, q)).then(() => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(q)}`;
     return nazu.sendMessage(from, {
       image: { url: qrUrl },
@@ -18850,7 +18876,7 @@ case 'encurtalink':
 case 'tinyurl':
   try  {
       if  (!q) return reply(`❌️ *Forma incorreta, use está como exemplo:* ${prefix + command} https://instagram.com/hiudyyy_`);
-    await reply(pickLoadingMessage());
+    await reply(pickLoadingMessage(command, q));
     const shortResponse = await axios.post("https://spoo.me/api/v1/shorten", {
       long_url: q, 
       alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
@@ -19166,7 +19192,7 @@ case 'previsao2':
 case 'mcplugin':
 case 'mcplugins':
     if  (!q) return reply('Cadê o nome do plugin para eu pesquisar? 🤔');
-    reply(pickLoadingMessage());
+    reply(pickLoadingMessage(command, q));
     mcPlugin(q).then((datz) => {
       if  (!datz.ok) return reply(datz.msg);
     return axios.post("https://spoo.me/api/v1/shorten", { 
@@ -19348,7 +19374,7 @@ case 'playspotify':
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`);
     }
 
-    await reply(pickLoadingMessage());
+    await reply(pickLoadingMessage(command, q));
 
     const downloadResult = await spotifyModule.downloadByFreeTextQuery(q);
 
@@ -19611,7 +19637,7 @@ case 'letra':
 case 'lyrics':
   try  {
       if  (!q) return reply('cade o nome da musica?');
-    await reply(pickLoadingMessage());
+    await reply(pickLoadingMessage(command, q));
     await reply(await Lyrics(q));
     } catch (e) {
     console.error(e);
@@ -19632,7 +19658,7 @@ case 'tkk':
     // Verificar se tem API key
     
 
-    reply(pickLoadingMessage());
+    reply(pickLoadingMessage(command, q));
     let isTikTokUrl = q.includes('tiktok');
     const tiktokPromise = isTikTokUrl ? tiktok.dl(q) : tiktok.search(q);
 
@@ -19758,7 +19784,7 @@ case 'igstory':
       if  (!q) return reply(`Digite um link do Instagram.\n> Ex: ${prefix}${command} https://www.instagram.com/reel/DFaq_X7uoiT/?igsh=M3Q3N2ZyMWU1M3Bo`);
 
 
-    reply(pickLoadingMessage());
+    reply(pickLoadingMessage(command, q));
     igdl.dl(q)
       .then(async (datinha) => {
     if  (!datinha.ok) return reply(datinha.msg);
@@ -19786,7 +19812,7 @@ case 'kwai':
       if  (!q) return reply(`Digite um link do kwai.\n> Ex: ${prefix}${command} https://kwai-video.com/p/q0fr2CRm`);
 
 
-    reply(pickLoadingMessage());
+    reply(pickLoadingMessage(command, q));
     kwai.dl(q)
       .then(async (datinha) => {
     if  (!datinha.ok) return reply(datinha.msg);
@@ -20138,7 +20164,7 @@ case 'pinterest':
 case 'pin':
   try  {
       if  (!q) return reply('Digite o termo para pesquisar no Pinterest. Exemplo: ' + prefix + 'pinterest gatinhos /3');
-    await reply(pickLoadingMessage());
+    await reply(pickLoadingMessage(command, q));
 
     // Detecta se é URL de Pinterest antes de qualquer split
     const PIN_URL_REGEX = /^(?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?pinterest\.\w{2,6}(?:\.\w{2})?\/pin\/([0-9a-zA-Z]+)|^https?:\/\/pin\.it\/[a-zA-Z0-9]+/i;
@@ -20166,25 +20192,50 @@ case 'pin':
     pinPromise
       .then(async (datinha) => {
     if  (!datinha.ok || !datinha.urls || datinha.urls.length === 0) {
-      return reply(isPinUrl ? 'Não foi possível baixar este link do Pinterest. 😕' : 'Nenhuma imagem encontrada para o termo pesquisado. 😕');
+      // Erro sem o termo buscado esconde do usuário se ele errou a digitação, e
+      // erro sem saída é beco. Os dois defeitos estavam na mensagem anterior.
+      if (isPinUrl) return reply('📌 Esse link não me deu nada. Confere se o pin ainda existe.');
+      const maisCurto = String(searchTerm || '').trim().split(/\s+/).slice(0, 2).join(' ');
+      return reply(
+    `🔍 Não achei nada para "${searchTerm}".\n`
+    + (maisCurto && maisCurto !== searchTerm
+      ? `Tenta mais curto: ${prefix}pinterest ${maisCurto}`
+      : 'Tenta outro termo — às vezes é só a palavra que não pegou.')
+      );
     }
 
-    const itemsToSend = datinha.urls.slice(0, maxImages);
-    for (const url of itemsToSend) {
-      const message = isPinUrl && datinha.type === 'video'
-    ? { video: { url }, caption: '📌 Download do Pinterest' }
-    : { image: { url }, caption: isPinUrl ? '📌 Download do Pinterest' : `📌 Resultado da pesquisa por "${searchTerm}"` };
+    // A busca devolve o tipo real de cada mídia. GIF precisa ir como vídeo com
+    // gifPlayback, senão o WhatsApp mostra um quadro estático e a animação se
+    // perde — era o que acontecia quando tudo era tratado como imagem.
+    const midias = Array.isArray(datinha.medias) && datinha.medias.length > 0
+      ? datinha.medias.slice(0, maxImages)
+      : datinha.urls.slice(0, maxImages).map((url) => ({ url, mime: datinha.mime }));
+    const legenda = isPinUrl ? '📌 Download do Pinterest' : `📌 Resultado da pesquisa por "${searchTerm}"`;
+    for (const midia of midias) {
+      const url = midia.url;
+      const mime = String(midia.mime || '').toLowerCase();
+      let message;
+      if (mime === 'image/gif') {
+    message = { video: { url }, gifPlayback: true, caption: legenda };
+      } else if (mime.startsWith('video/') || (isPinUrl && datinha.type === 'video')) {
+    message = { video: { url }, caption: legenda };
+      } else {
+    message = { image: { url }, caption: legenda };
+      }
       await nazu.sendMessage(from, message, { quoted: info });
     }
       })
       .catch((e) => {
     console.error('Erro no comando pinterest (promise):', e);
-    reply("Ocorreu um erro ao processar o Pinterest 💔");
+    reply(`🔍 A busca por "${searchTerm}" falhou no meio do caminho. Tenta de novo em instantes.`);
       });
     return;
     } catch (e) {
     console.error('Erro no comando pinterest:', e);
-    reply("Ocorreu um erro ao processar o Pinterest 💔");
+    // Usa q, não searchTerm: searchTerm é declarado com let DENTRO do try e não
+    // existe aqui — referenciá-lo lançaria ReferenceError e mascararia o erro
+    // original, trocando um diagnóstico útil por outro inventado.
+    reply(`🔍 A busca por "${String(q || '').trim()}" falhou no meio do caminho. Tenta de novo em instantes.`);
     }
        break;
 case 'zipbot':
@@ -24958,7 +25009,7 @@ case 'upscale':
 case 'qc':
   try  {
       if  (!q) return reply('Falta o texto.');
-    reply(pickLoadingMessage());
+    reply(pickLoadingMessage(command, q));
     let ppimg = "";
     try  {
       ppimg = await nazu.profilePictureUrl(sender, 'image');
@@ -29690,8 +29741,12 @@ case 'cutvideo':
     
     const inicioVid = args[0];
     const fimVid = args[1];
-      if  (!inicioVid || !fimVid) {
+    if  (!inicioVid || !fimVid) {
       return reply(`❌ Informe início e fim!\n\nUso: ${prefix}cortarvideo <inicio> <fim>\nExemplo: ${prefix}cortarvideo 0:10 0:30`);
+    }
+    const tempoValido = /^(?:\d{1,2}:)?[0-5]?\d:[0-5]\d(?:\.\d{1,3})?$|^\d+(?:\.\d{1,3})?$/;
+    if  (!tempoValido.test(inicioVid) || !tempoValido.test(fimVid)) {
+      return reply('❌ Tempo inválido. Use segundos, MM:SS ou HH:MM:SS.');
     }
     
     await reply('🎬 Cortando vídeo... Por favor, aguarde alguns segundos.');
@@ -29702,22 +29757,22 @@ case 'cutvideo':
     fs.writeFileSync(raneVideoCut, buffimgVideoCut);
     
     const ranVideoCut = __dirname + `/../database/tmp/${Math.random()}_cut.mp4`;
-    // Recodifica o vídeo para garantir que a imagem seja preservada
-    const ffmpegCmdCut = `ffmpeg -ss ${inicioVid} -i ${raneVideoCut} -to ${fimVid} -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k ${ranVideoCut}`;
-    
-    exec(ffmpegCmdCut, async (err) => {
-      await fs.unlinkSync(raneVideoCut);
-    if  (err) {
-    console.error('FFMPEG Error (Cortar Vídeo):', err);
-    return reply('❌ Erro ao cortar vídeo! Verifique o formato de tempo (HH:MM:SS ou MM:SS).');
-      }
-      
+    runFfmpeg([
+      '-y', '-ss', inicioVid, '-i', raneVideoCut, '-to', fimVid,
+      '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+      '-c:a', 'aac', '-b:a', '128k', ranVideoCut
+    ]).then(async () => {
+      fs.unlinkSync(raneVideoCut);
       const bufferVideoCut = fs.readFileSync(ranVideoCut);
       await nazu.sendMessage(from, {
     video: bufferVideoCut,
     mimetype: 'video/mp4'
       }, { quoted: info });
-      await fs.unlinkSync(ranVideoCut);
+      fs.unlinkSync(ranVideoCut);
+    }).catch(async (err) => {
+      if  (fs.existsSync(raneVideoCut)) fs.unlinkSync(raneVideoCut);
+      console.error('FFMPEG Error (Cortar Vídeo):', err);
+      return reply('❌ Erro ao cortar vídeo! Verifique o formato de tempo (HH:MM:SS ou MM:SS).');
     });
     } catch (e) {
     console.error('Erro ao cortar vídeo:', e);
@@ -30673,16 +30728,14 @@ case 'adms':
     
 case 'perfil':
   try {
-    let target = sender;
-    let mentionedUser = null;
-    
-    if (info.mentionedJid && info.mentionedJid.length > 0) {
-      mentionedUser = info.mentionedJid[0];
-    } else if (info.quoted && info.quoted.participant) {
-      mentionedUser = info.quoted.participant;
-    }
-    
-    target = mentionedUser || sender;
+    // O alvo já vinha sendo lido de info.mentionedJid e info.quoted, que não
+    // existem: o Baileys põe menção e citação em
+    // info.message.extendedTextMessage.contextInfo. Por isso o comando sempre
+    // caía no próprio remetente, em silêncio, e marcar alguém não fazia nada.
+    // menc_os2 já resolve isso na entrada da mensagem: menção primeiro, senão
+    // o autor da mensagem citada.
+    const mentionedUser = menc_os2 || null;
+    const target = mentionedUser || sender;
     const targetId = getUserName(target);
     const targetName = `@${targetId}`;
     
@@ -30816,7 +30869,9 @@ case 'perfil':
   ${getEmoji(levels.feio, 'feio')} ┃ Feio: ${levels.feio}% ${createProgressBar(levels.feio)}`.trim();
     
     const profileCard = await socialCardWithBunnyFy('profile', {
-      name: String(pushname || targetName).slice(0, 48),
+      // pushname é de quem chamou o comando. Ao perfilar outra pessoa ele
+      // colocaria o nome errado no cartão, com a foto certa.
+      name: String((mentionedUser ? targetName : pushname) || targetName).slice(0, 48),
       handle: targetName.slice(0, 48),
       bio: String(bio || '').slice(0, 160),
       level: Math.max(0, Math.floor(levels.carisma / 10)),

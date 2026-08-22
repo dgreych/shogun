@@ -1,10 +1,15 @@
 /**
- * Pinterest - Busca e download via Vex API
+ * Pinterest — busca e download.
+ *
+ * A busca passou a ser servida pela BunnyFy, que agrega Pinterest e Wallhaven.
+ * Era a última capacidade além do YouTube ainda presa à Vex, e a fonte deixou
+ * de responder: o comando devolvia "nenhuma imagem encontrada" para qualquer
+ * termo. A Vex fica como fallback enquanto o modo não for exclusivo.
  */
 
 import axios from 'axios';
 import { getConfig } from '../../utils/gyomeiStore.js';
-import { socialDownloadWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
+import { pinterestSearchWithBunnyFy, socialDownloadWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
 
 // Cache simples
 const cache = new Map();
@@ -48,7 +53,7 @@ function isValidPinURL(url) {
  * @param {string} query - Termo de pesquisa
  * @returns {Promise<Object>} Resultados da pesquisa
  */
-async function search(query) {
+async function searchComVex(query) {
   try {
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return { ok: false, msg: 'Termo de pesquisa inválido' };
@@ -94,6 +99,49 @@ async function search(query) {
   } catch (error) {
     console.error('Erro na pesquisa Pinterest:', error.message);
     return { ok: false, msg: 'Erro ao buscar imagens no Pinterest' };
+  }
+}
+
+/**
+ * Busca por assunto. A BunnyFy devolve as mídias já baixadas e assinadas, com
+ * o tipo real de cada uma — é isso que preserva GIF como GIF, coisa que o
+ * caminho antigo não fazia por fixar image/jpeg para tudo.
+ */
+async function search(query) {
+  const termo = String(query || '').trim();
+  if (!termo) return { ok: false, msg: 'Termo de pesquisa inválido' };
+
+  const cached = getCached(`search:${termo.toLowerCase()}`);
+  if (cached) return { ok: true, ...cached, cached: true };
+
+  try {
+    const resultado = await pinterestSearchWithBunnyFy(termo, {
+      legacyFallback: async () => searchComVex(termo)
+    });
+
+    // legacyFallback devolve o formato antigo já pronto; só o caminho BunnyFy
+    // precisa ser convertido.
+    if (!resultado || resultado.source !== 'bunnyfy') return resultado ?? searchComVex(termo);
+
+    const midias = (resultado.results || [])
+      .map((item) => ({ url: item.mediaUrl, mime: item.mime, title: item.title ?? null }))
+      .filter((item) => item.url);
+    if (midias.length === 0) return { ok: false, msg: 'Nenhuma imagem encontrada' };
+
+    const saida = {
+      criador: 'Hiudy',
+      type: 'image',
+      mime: midias[0].mime || 'image/jpeg',
+      query: termo,
+      count: midias.length,
+      urls: midias.map((m) => m.url),
+      medias: midias
+    };
+    setCache(`search:${termo.toLowerCase()}`, saida);
+    return { ok: true, ...saida };
+  } catch (error) {
+    console.error('Erro na pesquisa Pinterest:', error.message);
+    return searchComVex(termo);
   }
 }
 
