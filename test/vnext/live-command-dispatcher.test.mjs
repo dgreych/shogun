@@ -12,7 +12,7 @@ function input(overrides = {}) {
     messagesCache: new Map(),
     rentalExpirationManager: null,
     prefix: '!',
-    botName: 'Gyomei',
+    botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Mauricio',
     isOwner: false,
     isLiteMode: false,

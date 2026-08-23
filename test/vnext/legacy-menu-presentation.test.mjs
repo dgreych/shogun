@@ -98,7 +98,7 @@ function fixture(options = {}) {
     messagesCache: {},
     rentalExpirationManager: {},
     prefix: options.prefix ?? '!',
-    botName: options.botName ?? 'GYOMEI',
+    botName: options.botName ?? '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: options.pushName ?? 'Mauricio',
     isOwner: Boolean(options.isOwner),
     isLiteMode: Boolean(options.isLiteMode),

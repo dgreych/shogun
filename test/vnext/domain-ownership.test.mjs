@@ -63,12 +63,12 @@ test('ownership vNext cobre toda a superfície preparada sem fallback e separa n
   const compatibilityOwned = new Set(plan.tokens);
   const owned = new Set([...nativeOwned, ...compatibilityOwned]);
 
-  assert.equal(runtime.raw.familyCount, 529);
-  assert.equal(runtime.raw.uniqueTokenCount, 1627);
+  assert.equal(runtime.raw.familyCount, 509);
+  assert.equal(runtime.raw.uniqueTokenCount, 1572);
   assert.equal(runtime.injectedFamilyCount, 16);
   assert.equal(runtime.injectedTokenCount, 34);
-  assert.equal(legacy.familyCount, 545);
-  assert.equal(legacy.uniqueTokenCount, 1661);
+  assert.equal(legacy.familyCount, 525);
+  assert.equal(legacy.uniqueTokenCount, 1606);
   assert.equal(plan.contractDrift, false);
   assert.deepEqual(plan.unresolved, []);
   assert.deepEqual(plan.crossBoundaryDuplicates, []);
@@ -136,8 +136,8 @@ test('ownership vNext cobre toda a superfície preparada sem fallback e separa n
     family.tokens.some((token) => compatibilityOwned.has(token)),
   );
 
-  assert.equal(MENU_COMMAND_DESCRIPTORS.length, 14);
-  assert.equal(menuOwned.size, 48);
+  assert.equal(MENU_COMMAND_DESCRIPTORS.length, 13);
+  assert.equal(menuOwned.size, 45);
   assert.equal(FUN_COMMAND_DESCRIPTORS.length, 5);
   assert.equal(funOwned.size, 333);
   assert.equal(moderationOwned.size, 26);

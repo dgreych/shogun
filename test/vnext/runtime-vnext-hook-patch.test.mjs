@@ -133,7 +133,7 @@ test('seam usa a variável lite real do legado sem reintroduzir identificador li
 
 test('falha estrutural antes do dispatch abre circuit breaker e preserva o switch legado', async () => {
   const syntheticSource = `${IMPORT_ANCHOR}
-async function NazuninhaBotExec(command) {
+async function shogunExec(command) {
   const isCmd = true;
   const __gyomeiMacrotrancheOwnedCommands = new Set(['calc']);
   const __gyomeiExecuteMacrotrancheLegacy = async () => {};
@@ -152,7 +152,7 @@ async function NazuninhaBotExec(command) {
     );
 
   const buildSyntheticRuntime = new Function(
-    `${patched}\nreturn { run: NazuninhaBotExec, calls: () => __vnextDispatchCalls, circuit: () => __gyomeiVNextContextCircuitOpen };`,
+    `${patched}\nreturn { run: shogunExec, calls: () => __vnextDispatchCalls, circuit: () => __gyomeiVNextContextCircuitOpen };`,
   );
   const runtime = buildSyntheticRuntime();
   const originalConsoleError = console.error;

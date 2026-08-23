@@ -11,7 +11,7 @@ function dispatchInput(body) {
     messagesCache: new Map(),
     rentalExpirationManager: null,
     prefix: '!',
-    botName: 'Gyomei',
+    botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Mauricio',
     isOwner: true,
     isLiteMode: false,

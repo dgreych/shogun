@@ -297,15 +297,12 @@ export function finalizeShogunRuntime() {
     /case 'criador':\s*\n\s*try\s*\{[\s\S]*?const TextinCriadorInfo = `[\s\S]*?`;\s*\n\s*await reply\(TextinCriadorInfo\);[\s\S]*?\n\s*break;/,
     `case 'criador':
   try {
-    const TextinCriadorInfo = \`╭━━━⊱ 👨‍💻 *CRIADORES* 👨‍💻 ⊱━━━╮
-│ 🛡️ *SHOGUN* — sentinela independente para WhatsApp
+    const TextinCriadorInfo = \`╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ ⚔️ *Maurício Almeida* — criação e direção
-│ 🌐 https://github.com/dgreych/shogun
-│ 📱 https://wa.me/5522997028553
+│ *Alaska dev* (Maurício)
 │
-│ 📜 Contribuições de código preservadas:
-│ Hiudy e DevTokyo
+│ 🌐 github.com/dgreych/shogun
+│ 📱 wa.me/5522997028553
 │
 ╰━━━━━━━━━━━━━━━━━━━━━━━━╯\`;
     await reply(TextinCriadorInfo);
@@ -314,7 +311,7 @@ export function finalizeShogunRuntime() {
     await reply('❌ Não foi possível carregar os créditos agora.');
   }
   break;`,
-    'créditos públicos independentes do SHOGUN'
+    'créditos do produto'
   );
 
   runtimeIndex = replacePatternRequired(

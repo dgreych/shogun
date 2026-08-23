@@ -63,7 +63,7 @@ test('resolver entrega envelope completo de grupo sem acessar estado diretamente
     },
     getBotName() {
       calls.push(['bot']);
-      return 'Gyomei';
+      return '𝖘𝖍𝖔𝖌𝖚𝖓';
     },
   };
 
@@ -90,7 +90,7 @@ test('resolver entrega envelope completo de grupo sem acessar estado diretamente
   assert.equal(result.sender, '5511999999999@s.whatsapp.net');
   assert.equal(result.isGroup, true);
   assert.equal(result.pushName, 'Mauricio');
-  assert.equal(result.botName, 'Gyomei');
+  assert.equal(result.botName, '𝖘𝖍𝖔𝖌𝖚𝖓');
   assert.equal(result.isOwner, true);
   assert.equal(result.isLiteMode, false);
   assert.deepEqual(result.rawAliases, [{ alias: 'painel', command: 'menu' }]);
@@ -103,7 +103,7 @@ test('conversa privada usa remoteJid como sender', async () => {
     getAliases: () => [],
     isOwner: (sender) => sender.startsWith('5511'),
     isLiteMode: () => false,
-    getBotName: () => 'Gyomei',
+    getBotName: () => '𝖘𝖍𝖔𝖌𝖚𝖓',
   };
   const result = await resolveLiveCommandDispatchInput({
     socket: {},

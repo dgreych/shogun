@@ -43,7 +43,7 @@ npm start
 
 ## Serviço Linux
 
-O arquivo `deploy/gyomei.service.example` é uma referência técnica temporária. Ajuste usuário, diretório e caminho do Node.js antes de ativá-lo. Nunca copie sessões ou credenciais para a unidade do serviço.
+O arquivo `deploy/shogun.service.example` é uma referência técnica temporária. Ajuste usuário, diretório e caminho do Node.js antes de ativá-lo. Nunca copie sessões ou credenciais para a unidade do serviço.
 
 ## Verificação
 

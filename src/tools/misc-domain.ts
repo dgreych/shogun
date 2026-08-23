@@ -150,7 +150,7 @@ async function shortenLinkCommand(context: MiscToolsExecutionContext, httpPost: 
   const command = context.command || 'encurtalink';
   try {
     if (!query) {
-      await context.reply(`❌️ *Forma incorreta, use está como exemplo:* ${context.prefix}${command} https://instagram.com/hiudyyy_`);
+      await context.reply(`❌️ *Forma incorreta, use está como exemplo:* ${context.prefix}${command} https://instagram.com/instagram`);
       return;
     }
     await context.reply(required(context.pickLoadingMessage, 'pickLoadingMessage')());

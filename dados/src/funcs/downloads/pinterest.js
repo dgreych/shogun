@@ -85,7 +85,7 @@ async function searchComVex(query) {
     }
 
     const result = {
-      criador: 'Hiudy',
+      criador: 'shogun',
       type: 'image',
       mime: 'image/jpeg',
       query,
@@ -129,7 +129,7 @@ async function search(query) {
     if (midias.length === 0) return { ok: false, msg: 'Nenhuma imagem encontrada' };
 
     const saida = {
-      criador: 'Hiudy',
+      criador: 'shogun',
       type: 'image',
       mime: midias[0].mime || 'image/jpeg',
       query: termo,
@@ -176,7 +176,7 @@ async function dlComVex(url) {
 
   return {
     ok: true,
-    criador: 'Hiudy',
+    criador: 'shogun',
     type,
     mime: type === 'video' ? 'video/mp4' : 'image/jpeg',
     title: 'Pin do Pinterest',

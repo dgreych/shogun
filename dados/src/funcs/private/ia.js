@@ -1779,7 +1779,7 @@ function clearConversationData(maxAge = 7 * 24 * 60 * 60 * 1000) {
   });
 }
 
-async function processUserMessages(data, nazu = null, ownerNumber = null, personality = 'nazuna') {
+async function processUserMessages(data, nazu = null, ownerNumber = null, personality = 'nazuna', modoAdulto = false) {
   try {
     const { mensagens, model } = data;
     if (!mensagens || !Array.isArray(mensagens)) {
@@ -1865,7 +1865,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
         // usar o prompt de verdade — testado e confirmado que funciona neste
         // ponto exato (mais perto do uso real do que a versão anterior).
         try {
-          selectedPrompt = automacoesV9.buildAssistantSystemPrompt(personality, selectedPrompt);
+          selectedPrompt = automacoesV9.buildAssistantSystemPrompt(personality, selectedPrompt, { modoAdulto });
           fs.appendFileSync(
             path.dirname(fileURLToPath(import.meta.url)) + '/../../../logs/debug-trigger.log',
             JSON.stringify({ ts: new Date().toISOString(), marca: 'OVERRIDE_FINAL_OK', personality, tamanho: selectedPrompt.length }) + '\n'

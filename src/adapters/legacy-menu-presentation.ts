@@ -136,7 +136,6 @@ function resolveRenderers(moduleValue: unknown): Readonly<Record<LegacyMenuRende
     'menuSticker',
     'menuRPG',
     'menuNexo',
-    'menuVIP',
   ];
 
   const resolved = {} as Record<LegacyMenuRendererKey, MenuRenderer>;

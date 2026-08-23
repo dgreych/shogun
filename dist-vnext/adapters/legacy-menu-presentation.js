@@ -65,7 +65,6 @@ function resolveRenderers(moduleValue) {
         'menuSticker',
         'menuRPG',
         'menuNexo',
-        'menuVIP',
     ];
     const resolved = {};
     for (const key of required) {

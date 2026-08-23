@@ -59,7 +59,6 @@ import {
   upscaleImageWithBunnyFy,
   youtubePlayErrorMessage
 } from './services/bunnyfy/index.js';
-import * as vipCommandsManager from './utils/vipCommandsManager.js';
 import { getInfo as gdriveGetInfo } from './funcs/utils/gdrive.js';
 import { getInfo as mediafireGetInfo } from './funcs/utils/mediafire.js';
 import { getInfo as twitterGetInfo } from './funcs/utils/twitter.js';
@@ -502,7 +501,7 @@ function getValidCommandSet() {
 }
 
 const COMMAND_EMOJI_OVERRIDES = {
-  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menuia: '📜', menurpg: '📜', menunexo: '📜', menuvip: '📜',
+  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menuia: '📜', menurpg: '📜', menunexo: '📜',
   criador: '👑', ping: '🏓',
   play: '🎵', ytmp3: '🎵', playvid: '🎥', ytmp4: '🎥',
   tiktok: '📱', tiktokaudio: '📱', tiktokvideo: '📱', tiktoks: '📱', tiktoksearch: '📱', ttk: '📱', tkk: '📱',
@@ -912,7 +911,7 @@ setInterval(() => {
 
 const messageReplayGuard = new MessageReplayGuard();
 
-async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirationManager = null) {
+async function shogunExec(nazu, info, store, messagesCache, rentalExpirationManager = null) {
   if (!info?._fromPro && messageReplayGuard.checkAndRecord(createMessageReplayKey(nazu, info))) {
     return;
   }
@@ -1440,7 +1439,6 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     menuTopCmd,
     menuRPG,
     menuNexo,
-    menuVIP,
     menuBuscas,
     menuBrawlStars
   } = menus;
@@ -4658,7 +4656,7 @@ Código: *${roleCode}*`,
     ia.makeAssistentRequest({
     mensagens: [jSoNzIn],
     model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined
-    }, nazu, nmrdn, personality).then((respAssist) => {
+    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {
       if  (respAssist.erro === 'Sistema de IA temporariamente desativado') {
       return;
     }
@@ -5417,27 +5415,6 @@ Código: *${roleCode}*`,
       }
     }
 
-    // Verificação de comandos VIP
-    if (isCmd && vipCommandsManager.isVipCommand(command)) {
-      if (!isPremium) {
-    await reply(`🔒 *Comando VIP Exclusivo*
-
-Este comando está disponível apenas para usuários VIP/Premium!
-
-💎 *Benefícios VIP:*
-• Acesso a comandos exclusivos
-• Sem limites de uso
-• Prioridade no atendimento
-• Recursos premium
-
-📞 *Como ser VIP?*
-Entre em contato com o dono do bot:
-• Use: ${prefix}dono
-
-✨ Use ${prefix}menuvip para ver todos os comandos VIP disponíveis!`);
-    return;
-      }
-    }
 
     const tavernMessageId = info.key?.id || `${sender}:${Date.now()}`;
     if (await shouldHandleTavernCommand({
@@ -16079,8 +16056,8 @@ case 'dictionary':
 case 'updates':
   try  {
       if  (!isOwner || isOwner && isSubOwner) return reply("🚫 Apenas o Dono principal pode utilizar esse comando!");
-      if  (!fs.existsSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'))) return reply('❌ Sua versão não tem suporte a esse sistema ainda.');
-    const AtualCom = await axios.get('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', {
+      if  (!fs.existsSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'))) return reply('❌ Esta instalação não tem o sistema de atualização ativo.');
+    const AtualCom = await axios.get('https://api.github.com/repos/dgreych/shogun/commits?per_page=1', {
       headers: {
     Accept: 'application/vnd.github+json'
       }
@@ -16089,10 +16066,10 @@ case 'updates':
       total
     } = JSON.parse(fs.readFileSync(pathz.join(__dirname, '..', 'database', 'updateSave.json'), 'utf-8'));
       if  (AtualCom > total) {
-      const TextZin = await VerifyUpdate('devcrician/nazuna', AtualCom - total);
+      const TextZin = await VerifyUpdate('dgreych/shogun', AtualCom - total);
       await reply(TextZin);
     } else {
-      await reply('Você ja esta utilizando a versão mais recente da bot.');
+      await reply('✅ Você já está na versão mais recente.');
     }
     } catch (e) {
     console.error(e);
@@ -16517,31 +16494,7 @@ case 'viewmsg':
     await reply('😥 Ocorreu um erro ao alterar a visualização de mensagens.');
     }
        break;
-case 'modoaluguel':
-    if  (!isOwner || isOwner && isSubOwner) return reply("🚫 Apenas o Dono principal pode gerenciar o modo de aluguel!");
-  try  {
-    const action = q.toLowerCase().trim();
-      if  (action === 'on' || action === 'ativar') {
-    if  (setRentalMode(true)) {
-    await reply("✅ Modo de aluguel global ATIVADO! O bot agora só responderá em grupos com aluguel ativo.");
-      } else {
-    await reply("❌ Erro ao ativar o modo de aluguel global.");
-      }
-    } else if (action === 'off' || action === 'desativar') {
-    if  (setRentalMode(false)) {
-    await reply("✅ Modo de aluguel global DESATIVADO! O bot responderá em todos os grupos permitidos.");
-      } else {
-    await reply("❌ Erro ao desativar o modo de aluguel global.");
-      }
-    } else {
-      const currentStatus = isRentalModeActive() ? 'ATIVADO' : 'DESATIVADO';
-      await reply(`🤔 Uso: ${prefix}modoaluguel on|off\nStatus atual: ${currentStatus}`);
-    }
-    } catch (e) {
-    console.error("Erro no comando modoaluguel:", e);
-    await reply("❌ Ocorreu um erro inesperado.");
-    }
-       break;
+
 
 case 'atualizar':
 case 'update':
@@ -16774,63 +16727,7 @@ case 'reboot':
     });
        break;
 
-case 'listaralugueis':
-case 'aluguelist':
-case 'listaluguel':
-case 'listaaluguel':
-  try  {
-      if  (!isOwner) return reply(OWNER_ONLY_MESSAGE);
-    const rentalData = loadRentalData();
-    const globalMode = rentalData.globalMode ? '🟢 Ativo' : '🔴 Desativado';
-    const groupRentals = rentalData.groups || {};
-    const groupCount = Object.keys(groupRentals).length;
-    const filtro = args[0]?.toLowerCase();
-    let message = `╭───「 *Lista de Aluguéis* 」───╮\n│ 🌍 *Modo Aluguel Global*: ${globalMode}\n│ 📊 *Total de Grupos*: ${groupCount}\n╰────────────────╯\n`;
-      if  (groupCount === 0) {
-      
-      message += '📪 Nenhum grupo com aluguel registrado.';
-    } else {
-      
-      message += '📋 *Grupos com Aluguel*:\n\n';
-      let index = 1;
-      for (const [groupId, info] of Object.entries(groupRentals)) {
-    const groupMetadata = await getCachedGroupMetadata(groupId).catch(() => ({
-      subject: 'Desconhecido'
-    }));
-    const groupName = groupMetadata.subject || 'Sem Nome';
-    let status = 'Expirado';
-    if  (info.expiresAt === 'permanent') {
-      
-      status = 'Permanente';
-    } else if (new Date(info.expiresAt) > new Date()) {
-      
-      status = 'Ativo';
-    }
-    const shouldInclude = !filtro || filtro === 'ven' && status === 'Expirado' || filtro === 'atv' && status === 'Ativo' || filtro === 'perm' && status === 'Permanente';
-    if  (!shouldInclude) continue;
-    const expires = info.expiresAt === 'permanent' ? '∞ Permanente' : info.expiresAt ? new Date(info.expiresAt).toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo'
-    }) : 'N/A';
-    
-    message += `🔹 *${index}. ${groupName}*\n`;
-    
-    message += `  - *Status*: ${status}\n`;
-    
-    message += `  - *Expira em*: ${expires}\n\n`;
-    index++;
-      }
-    if  (index === 1) {
-    
-    
-    message += '📪 Nenhum grupo encontrado com esse filtro.';
-      }
-    }
-    await reply(message);
-    } catch (e) {
-    console.error('Erro no comando listaluguel:', e);
-    await reply("Ocorreu um erro ao listar os aluguéis 💔");
-    }
-       break;
+
 case 'leveling':
     if  (!isGroup) return reply("Este comando só funciona em grupos.");
     if  (!isGroupAdmin) return reply("Apenas administradores podem usar este comando.");
@@ -16950,651 +16847,14 @@ case 'dayfree':
     }
        break;
        
-case 'addaluguel':
-    if  (!isOwner) return reply("🚫 Apenas o Dono principal pode adicionar aluguel!");
-    if  (!isGroup) return reply("Este comando só pode ser usado em grupos.");
-  try  {
-    const parts = q.toLowerCase().trim().split(' ');
-    const durationArg = parts[0];
-    let durationDays = null;
-      if  (durationArg === 'permanente') {
-      durationDays = 'permanent';
-    } else if (!isNaN(parseInt(durationArg)) && parseInt(durationArg) > 0) {
-      durationDays = parseInt(durationArg);
-    } else {
-      return reply(`🤔 Duração inválida. Use um número de dias (ex: 30) ou a palavra "permanente".\nExemplo: ${prefix}addaluguel 30`);
-    }
-    const result = setGroupRental(from, durationDays, prefix);
-    await reply(result.message);
-    } catch (e) {
-    console.error("Erro no comando addaluguel:", e);
-    await reply("❌ Ocorreu um erro inesperado ao adicionar o aluguel.");
-    }
-     break;
+
       
-case 'listaraluguel':
-case 'veralugueis':
-case 'listrentals':
-    if  (!isOwner) return reply("🚫 Apenas o Dono principal pode ver a lista de aluguéis!");
-  try  {
-    const rentalData = loadRentalData();
-    const groupIds = Object.keys(rentalData.groups || {});
-    
-      if  (groupIds.length === 0) {
-      return reply("📭 Nenhum grupo com aluguel ativo no momento.");
-    }
-    
-    let message = `╭━━━⊱ 📋 *LISTA DE ALUGUÉIS* ⊱━━━╮\n`;
-    message += `│\n`;
-    message += `│ 📊 Total de grupos: ${groupIds.length}\n`;
-    message += `│\n`;
-    message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-    
-    const now = Date.now();
-    let activeCount = 0;
-    let expiredCount = 0;
-    let permanentCount = 0;
-    
-    for (const groupId of groupIds) {
-      const rental = rentalData.groups[groupId];
+
       
-      try  {
-    const groupMeta = await getCachedGroupMetadata(groupId);
-    const groupName = groupMeta?.subject || groupId;
-    const isPermanent = rental.duration === 'permanent';
-    const isExpired = !isPermanent && rental.expiresAt < now;
-    
-    if  (isPermanent) permanentCount++;
-    else if (isExpired) expiredCount++;
-    else activeCount++;
-    
-    let statusIcon = '✅';
-    let statusText = 'Ativo';
-    
-    if  (isPermanent) {
-      statusIcon = '♾️';
-      statusText = 'PERMANENTE';
-    } else if (isExpired) {
-      statusIcon = '❌';
-      statusText = 'EXPIRADO';
-    }
-    
-    message += `${statusIcon} *${groupName}*\n`;
-    message += `┌─────────────────\n`;
-    message += `│ 📱 ID: ${groupId}\n`;
-    message += `│ 📅 Status: ${statusText}\n`;
-    
-    if  (!isPermanent) {
-      const daysLeft = Math.ceil((rental.expiresAt - now) / (1000 * 60 * 60 * 24));
-      const expirationDate = new Date(rental.expiresAt).toLocaleDateString('pt-BR');
-      message += `│ ⏰ Expira em: ${expirationDate}\n`;
-      message += `│ ⏳ Dias restantes: ${daysLeft > 0 ? daysLeft : 0}\n`;
-    }
-    
-    if  (rental.addedAt) {
-      const addedDate = new Date(rental.addedAt).toLocaleDateString('pt-BR');
-      message += `│ 📆 Adicionado em: ${addedDate}\n`;
-    }
-    
-    message += `└─────────────────\n\n`;
-      } catch (e) {
-    message += `⚠️ Grupo não encontrado\n`;
-    message += `┌─────────────────\n`;
-    message += `│ 📱 ID: ${groupId}\n`;
-    message += `│ ❌ Erro ao buscar dados\n`;
-    message += `└─────────────────\n\n`;
-      }
-    }
-    
-    message += `╭━━━⊱ 📊 *ESTATÍSTICAS* ⊱━━━╮\n`;
-    message += `│\n`;
-    message += `│ ✅ Ativos: ${activeCount}\n`;
-    message += `│ ♾️ Permanentes: ${permanentCount}\n`;
-    message += `│ ❌ Expirados: ${expiredCount}\n`;
-    message += `│ 📦 Total: ${groupIds.length}\n`;
-    message += `│\n`;
-    message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-    message += `💡 *Comandos disponíveis:*\n`;
-    message += `• ${prefix}removeraluguel <id>\n`;
-    message += `• ${prefix}estenderaluguel <id> <dias>\n`;
-    message += `• ${prefix}infoaluguel <id>`;
-    
-    await reply(message);
-    } catch (e) {
-    console.error("Erro no comando listaraluguel:", e);
-    await reply("❌ Ocorreu um erro ao listar os aluguéis.");
-    }
-       break;
+
       
-case 'removeraluguel':
-case 'deletaraluguel':
-case 'cancelaraluguel':
-    if  (!isOwner) return reply("🚫 Apenas o Dono principal pode remover aluguéis!");
-  try  {
-    let targetGroupId = q?.trim() || '';
-    
-    // Se não passou ID e está no grupo, usa o grupo atual
-      if  (!targetGroupId && isGroup) {
-      targetGroupId = from;
-    } else if (!targetGroupId) {
-      return reply(`💡 *Uso:* ${prefix}removeraluguel [id_do_grupo]\n\n📝 Use dentro de um grupo ou informe o ID.\n💡 Use ${prefix}listaraluguel para ver os IDs.`);
-    }
-    
-      if  (!targetGroupId.trim()) {
-      return reply(`💡 *Uso:* ${prefix}removeraluguel [id_do_grupo]\n\n📝 Use dentro de um grupo ou informe o ID.`);
-    }
-    
-    // Normaliza o ID do grupo
-      if  (!targetGroupId.includes('@g.us')) {
-      targetGroupId += '@g.us';
-    }
-    
-    const rentalData = loadRentalData();
-    
-      if  (!rentalData.groups || !rentalData.groups[targetGroupId]) {
-      return reply(`❌ Este grupo não possui aluguel ativo.\n\n💡 Use ${prefix}listaraluguel para ver os grupos com aluguel.`);
-    }
-    
-    // Busca informações do grupo antes de remover
-    let groupName = targetGroupId;
-    try  {
-      const groupMeta = await getCachedGroupMetadata(targetGroupId);
-      groupName = groupMeta?.subject || targetGroupId;
-    } catch (e) {
-      console.log("Erro ao buscar metadata do grupo:", e.message);
-    }
-    
-    // Remove o aluguel
-    delete rentalData.groups[targetGroupId];
-    saveRentalData(rentalData);
-    
-    let message = `╭━━━⊱ ✅ *ALUGUEL REMOVIDO* ⊱━━━╮\n`;
-    message += `│\n`;
-    message += `│ 🗑️ O aluguel do grupo foi\n`;
-    message += `│    removido com sucesso!\n`;
-    message += `│\n`;
-    message += `│ 📱 Grupo: ${groupName}\n`;
-    message += `│ 🆔 ID: ${targetGroupId}\n`;
-    message += `│\n`;
-    message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-    message += `⚠️ O bot não funcionará mais neste grupo até que um novo aluguel seja adicionado.`;
-    
-    await reply(message);
-    
-    // Tenta notificar o grupo
-    try  {
-      await nazu.sendMessage(targetGroupId, {
-    text: `⚠️ *AVISO IMPORTANTE*\n\nO aluguel deste grupo foi removido pelo proprietário do bot.\n\n❌ O bot não funcionará mais neste grupo.\n\nPara mais informações, entre em contato com o dono.`
-      });
-    } catch (e) {
-      console.log("Não foi possível notificar o grupo:", e.message);
-    }
-    } catch (e) {
-    console.error("Erro no comando removeraluguel:", e);
-    await reply("❌ Ocorreu um erro ao remover o aluguel.");
-    }
-       break;
-      
-case 'estenderaluguel':
-case 'adddiasaluguel':
-case 'extenderrental':
-    if  (!isOwner) return reply("🚫 Apenas o Dono principal pode estender aluguéis!");
-  try  {
-    const parts = q?.trim().split(' ') || [];
-    let targetGroupId;
-    let daysToAdd;
-    
-    // Se está no grupo e passou apenas 1 argumento (dias)
-      if  (isGroup && parts.length === 1) {
-      targetGroupId = from;
-      daysToAdd = parseInt(parts[0]);
-    }
-    // Se passou 2 argumentos (id e dias)
-    else if (parts.length >= 2) {
-      targetGroupId = parts[0];
-      daysToAdd = parseInt(parts[1]);
-    }
-    // Nenhum argumento válido
-    else {
-      return reply(`💡 *Uso:* ${prefix}estenderaluguel <dias> (no grupo)\nou\n${prefix}estenderaluguel <id_do_grupo> <dias>\n\n📝 *Exemplo:*\n${prefix}estenderaluguel 7 (no grupo)\n${prefix}estenderaluguel 5511999999999 7\n\n💡 Use ${prefix}listaraluguel para ver os IDs.`);
-    }
-    
-      if  (isNaN(daysToAdd) || daysToAdd <= 0) {
-      return reply("❌ O número de dias deve ser um valor positivo!");
-    }
-    
-    // Normaliza o ID do grupo
-      if  (!targetGroupId.includes('@g.us')) {
-      targetGroupId += '@g.us';
-    }
-    
-    const result = extendGroupRental(targetGroupId, daysToAdd);
-    
-      if  (!result.success) {
-      return reply(`❌ ${result.message}`);
-    }
-    
-    // Busca informações do grupo
-    let groupName = targetGroupId;
-    try  {
-      const groupMeta = await getCachedGroupMetadata(targetGroupId);
-      groupName = groupMeta?.subject || targetGroupId;
-    } catch (e) {
-      console.log("Erro ao buscar metadata:", e.message);
-    }
-    
-    const rentalData = loadRentalData();
-    const rental = rentalData.groups[targetGroupId];
-    const newExpirationDate = new Date(rental.expiresAt).toLocaleDateString('pt-BR');
-    const daysLeft = Math.ceil((rental.expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
-    
-    let message = `╭━━━⊱ ✅ *ALUGUEL ESTENDIDO* ⊱━━━╮\n`;
-    message += `│\n`;
-    message += `│ 📱 Grupo: ${groupName}\n`;
-    message += `│ ➕ Dias adicionados: ${daysToAdd}\n`;
-    message += `│ 📅 Nova expiração: ${newExpirationDate}\n`;
-    message += `│ ⏳ Dias restantes: ${daysLeft}\n`;
-    message += `│\n`;
-    message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
-    
-    await reply(message);
-    
-    // Notifica o grupo
-    try  {
-      await nazu.sendMessage(targetGroupId, {
-    text: `🎉 *BOA NOTÍCIA!*\n\nSeu aluguel foi estendido!\n\n➕ Dias adicionados: *${daysToAdd}*\n📅 Nova data de expiração: *${newExpirationDate}*\n⏳ Dias restantes: *${daysLeft}*\n\n✨ Continue aproveitando o bot!`
-      });
-    } catch (e) {
-      console.log("Não foi possível notificar o grupo:", e.message);
-    }
-    } catch (e) {
-    console.error("Erro no comando estenderaluguel:", e);
-    await reply("❌ Ocorreu um erro ao estender o aluguel.");
-    }
-       break;
-      
-case 'infoaluguel':
-case 'statusaluguel':
-case 'detalhesaluguel':
-  if (!isOwner) return reply("🚫 Apenas o Dono principal pode ver informações de aluguel!");
-  try {
-    let targetGroupId = q.trim();
-    
-    if (!targetGroupId || targetGroupId === '') {
-      if (!isGroup) {
-        return reply(`💡 *Uso:* ${prefix}infoaluguel <id_do_grupo>\n\n📝 Ou use este comando dentro do grupo para ver o status dele.`);
-      }
-      targetGroupId = from;
-    } else {
-      if (!targetGroupId.includes('@g.us')) {
-        targetGroupId += '@g.us';
-      }
-    }
-    
-    const rentalData = loadRentalData();
-    const rental = rentalData.groups?.[targetGroupId];
-    
-    if (!rental) {
-      return reply(`❌ Este grupo não possui aluguel ativo.\n\n💡 Use ${prefix}addaluguel para adicionar.`);
-    }
-    
-    let groupName = targetGroupId;
-    let memberCount = 0;
-    try {
-      const groupMeta = await getCachedGroupMetadata(targetGroupId);
-      groupName = groupMeta?.subject || targetGroupId;
-      memberCount = groupMeta?.participants?.length || 0;
-    } catch (e) {
-      console.log("Erro ao buscar metadata:", e.message);
-    }
-    
-    const isPermanent = rental.duration === 'permanent' || rental.durationDays === 'permanent';
-    const now = Date.now();
-    
-    let message = `╭━━━⊱ 📋 *DETALHES DO ALUGUEL* ⊱━━━╮\n`;
-    message += `│\n`;
-    message += `│ 📱 *GRUPO:* ${groupName}\n`;
-    message += `│ 🆔 *ID:* ${targetGroupId}\n`;
-    message += `│ 👥 *Membros:* ${memberCount}\n`;
-    message += `│\n`;
-    message += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-    
-    if (isPermanent) {
-      message += `♾️ *STATUS:* PERMANENTE\n\n`;
-      message += `✨ Este grupo tem aluguel permanente!\n`;
-      message += `⏰ Não há data de expiração.`;
-    } else {
-      if (!rental.expiresAt || rental.expiresAt === 'permanent') {
-        message += `⚠️ *STATUS:* DADOS CORROMPIDOS\n\n`;
-        message += `❌ A data de expiração é inválida.\n`;
-        message += `💡 Use ${prefix}removeraluguel para remover este aluguel e adicionar novamente.`;
-        await reply(message);
-        break;
-      }
-      
-      const expiresAt = typeof rental.expiresAt === 'string' ? parseInt(rental.expiresAt) : rental.expiresAt;
-      const isExpired = expiresAt < now;
-      
-      const diffMs = expiresAt - now;
-      const daysLeft = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const hoursLeft = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutesLeft = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      
-      const expirationDate = new Date(expiresAt);
-      const expirationDateStr = expirationDate.toLocaleDateString('pt-BR');
-      const expirationTimeStr = expirationDate.toLocaleTimeString('pt-BR');
-      
-      message += `📅 *STATUS:* ${isExpired ? '❌ EXPIRADO' : '✅ ATIVO'}\n\n`;
-      message += `⏰ *Data de expiração:*\n`;
-      message += `   ${expirationDateStr} às ${expirationTimeStr}\n\n`;
-      
-      if (!isExpired) {
-        if (daysLeft > 0) {
-          message += `⏳ *Tempo restante:* ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}`;
-          if (hoursLeft > 0) {
-            message += ` e ${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}`;
-          }
-          message += `\n\n`;
-        } else if (hoursLeft > 0) {
-          message += `⏳ *Tempo restante:* ${hoursLeft} hora${hoursLeft !== 1 ? 's' : ''}`;
-          if (minutesLeft > 0) {
-            message += ` e ${minutesLeft} minuto${minutesLeft !== 1 ? 's' : ''}`;
-          }
-          message += `\n\n`;
-        } else if (minutesLeft > 0) {
-          message += `⏳ *Tempo restante:* ${minutesLeft} minuto${minutesLeft !== 1 ? 's' : ''}\n\n`;
-        } else {
-          message += `⏳ *Tempo restante:* Menos de 1 minuto\n\n`;
-        }
-        
-        if (daysLeft <= 3 && daysLeft > 0) {
-          message += `⚠️ *ATENÇÃO:* O aluguel expira em ${daysLeft} dia${daysLeft !== 1 ? 's' : '!'}\n\n`;
-        } else if (daysLeft === 0 && hoursLeft <= 24) {
-          message += `⚠️ *ATENÇÃO:* O aluguel expira hoje!\n\n`;
-        }
-        
-        if (rental.durationDays && rental.durationDays !== 'permanent') {
-          const totalMs = rental.durationDays * 24 * 60 * 60 * 1000;
-          const elapsedMs = now - (rental.addedAt || now);
-          let percentRemaining = ((totalMs - elapsedMs) / totalMs) * 100;
-          percentRemaining = Math.max(0, Math.min(100, percentRemaining));
-          
-          const barLength = 10; 
-          const filled = Math.round((percentRemaining / 100) * barLength);
-          
-          const filledChar = '█';  
-          const emptyChar = '░';    
-          
-          const bar = filledChar.repeat(filled) + emptyChar.repeat(barLength - filled);
-          
-          message += `📊 *Progresso:* ${Math.round(percentRemaining)}% restante\n`;
-          message += `   [${bar}]\n\n`;
-        }
-        
-      } else {
-        const expiredMs = now - expiresAt;
-        const expiredDays = Math.floor(expiredMs / (1000 * 60 * 60 * 24));
-        const expiredHours = Math.floor((expiredMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
-        if (expiredDays > 0) {
-          message += `⏳ *Expirado há:* ${expiredDays} dia${expiredDays !== 1 ? 's' : ''}`;
-          if (expiredHours > 0) {
-            message += ` e ${expiredHours} hora${expiredHours !== 1 ? 's' : ''}`;
-          }
-          message += `\n\n`;
-        } else if (expiredHours > 0) {
-          message += `⏳ *Expirado há:* ${expiredHours} hora${expiredHours !== 1 ? 's' : ''}\n\n`;
-        } else {
-          message += `⏳ *Expirado há:* Menos de 1 hora\n\n`;
-        }
-        
-        message += `❌ *Aluguel expirado!* Para renovar, remova e adicione novamente.\n\n`;
-      }
-    }
-    
-    if (rental.addedAt) {
-      const addedDate = new Date(rental.addedAt).toLocaleDateString('pt-BR');
-      const addedTime = new Date(rental.addedAt).toLocaleTimeString('pt-BR');
-      message += `\n📆 *Adicionado em:* ${addedDate} às ${addedTime}`;
-    }
-    
-    if (rental.days && rental.days !== 'permanent') {
-      message += `\n📦 *Pacote:* ${rental.days} dias`;
-    } else if (rental.durationDays && rental.durationDays !== 'permanent') {
-      message += `\n📦 *Pacote:* ${rental.durationDays} dias`;
-    }
-    
-    message += `\n\n💡 *Comandos disponíveis:*\n`;
-    message += `• ${prefix}estenderaluguel ${targetGroupId} <dias>\n`;
-    message += `• ${prefix}removeraluguel ${targetGroupId}`;
-    
-    await reply(message);
-    
-  } catch (e) {
-    console.error("Erro no comando infoaluguel:", e);
-    await reply("❌ Ocorreu um erro ao buscar informações do aluguel.");
-  }
-  break;
-      
-case 'gerarcodigobr':
-case 'gerarcod':
-    if  (!isOwner) return reply("🚫 Apenas o Dono principal pode gerar códigos!");
-  try  {
-    const parts = q.trim().split(' ');
-    const durationArg = parts[0]?.toLowerCase();
-    const targetGroupArg = parts[1];
-    let durationDays = null;
-    let targetGroupId = null;
-      if  (!durationArg) {
-      return reply(`🤔 Uso: ${prefix}gerarcodigobr <dias|permanente> [id_do_grupo_opcional]`);
-    }
-      if  (durationArg === 'permanente') {
-      durationDays = 'permanent';
-    } else if (!isNaN(parseInt(durationArg)) && parseInt(durationArg) > 0) {
-      durationDays = parseInt(durationArg);
-    } else {
-      return reply('🤔 Duração inválida. Use um número de dias (ex: 7) ou a palavra "permanente".');
-    }
-      if  (targetGroupArg) {
-    if  (targetGroupArg.includes('@g.us')) {
-    targetGroupId = targetGroupArg;
-      } else if (/^\d+$/.test(targetGroupArg)) {
-    targetGroupId = targetGroupArg + '@g.us';
-      } else {
-    const mentionedJid = info.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-    if  (mentionedJid && mentionedJid.endsWith('@g.us')) {
-      targetGroupId = mentionedJid;
-    } else {
-      return reply('🤔 ID do grupo alvo inválido. Forneça o ID completo (numero@g.us) ou deixe em branco para um código genérico.');
-    }
-      }
-    }
-    const result = generateActivationCode(durationDays, targetGroupId);
-    await reply(result.message);
-    } catch (e) {
-    console.error("Erro no comando gerarcodigo:", e);
-    await reply("❌ Ocorreu um erro inesperado ao gerar o código.");
-    }
-       break;
-case 'limparaluguel':
-  try  {
-      if  (!isOwner) return reply("Apenas o dono pode usar este comando. 🚫");
-    
-    await reply("🔄 Iniciando limpeza completa de aluguéis...");
-    
-    let rentalData = loadRentalData();
-    let groupsCleaned = 0;
-    let groupsExpired = 0;
-    let groupsWithoutRental = 0;
-    let groupsLeft = [];
-    let chatsDeleted = 0;
-    let groupConversationsCleared = 0;
-    let adminsNotified = 0;
-    const symbols = ['✨', '🌟', '⚡', '🔥', '🌈', '🍀', '💫', '🎉'];
-    
-    const currentGroups = await nazu.groupFetchAllParticipating();
-    const currentGroupIds = Object.keys(currentGroups);
-    const rentalGroupIds = Object.keys(rentalData.groups || {});
-    
-    // Limpa grupos que não existem mais dos registros
-    for (const groupId in rentalData.groups) {
-    if  (!currentGroupIds.includes(groupId)) {
-    delete rentalData.groups[groupId];
-    groupsCleaned++;
-      }
-    }
-    
-    // Processa grupos com aluguel vencido
-    for (const groupId in rentalData.groups) {
-      const rentalStatus = getGroupRentalStatus(groupId);
-    if  (rentalStatus.active || rentalStatus.permanent) continue;
-      
-      const groupMetadata = await getCachedGroupMetadata(groupId).catch(() => null);
-    if  (!groupMetadata) {
-    delete rentalData.groups[groupId];
-    groupsCleaned++;
-    continue;
-      }
-      
-      groupsExpired++;
-      groupsLeft.push(groupId);
-      
-      try  {
-    await nazu.sendMessage(groupId, {
-      text: `⏰ O aluguel deste grupo (${groupMetadata.subject}) expirou. Estou saindo, mas vocês podem renovar o aluguel entrando em contato com o dono! Até mais! 😊${symbols[Math.floor(Math.random() * symbols.length)]}`
-    });
-    
-    const admins = groupMetadata.participants.filter(p => p.admin).map(p => p.id);
-    for (const admin of admins) {
-      const delay = Math.floor(Math.random() * (500 - 100 + 1)) + 100;
-      await new Promise(resolve => setTimeout(resolve, delay));
-    try  {
-    await nazu.sendMessage(admin, {
-    text: `⚠️ Olá, admin do grupo *${groupMetadata.subject}*! O aluguel do grupo expirou, e por isso saí. Para renovar, entre em contato com o dono. Obrigado! ${symbols[Math.floor(Math.random() * symbols.length)]}`
-    });
-    adminsNotified++;
-      } catch (e) {
-    console.error(`Erro ao notificar admin ${admin}:`, e.message);
-      }
-    }
-    
-    await nazu.groupLeave(groupId);
-    
-    // Deleta o chat do grupo
-    try  {
-      if  (nazu.chatModify) {
-    await deleteChatByLastMessage(groupId);
-    chatsDeleted++;
-      }
-    } catch (e) {
-      console.error(`Erro ao deletar chat ${groupId}:`, e.message);
-    }
-    
-    // Limpa conversa do grupo
-    try  {
-      if  (nazu.chatModify) {
-    await clearChatHistorySafe(groupId);
-    groupConversationsCleared++;
-      }
-    } catch (e) {
-      console.error(`Erro ao limpar conversa ${groupId}:`, e.message);
-    }
-    
-    // Delay entre grupos
-    await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (e) {
-    console.error(`Erro ao processar grupo ${groupId}:`, e.message);
-      }
-    }
-    
-    // Processa grupos sem aluguel registrado
-    for (const groupId of currentGroupIds) {
-    if  (!rentalGroupIds.includes(groupId)) {
-    groupsWithoutRental++;
-    groupsLeft.push(groupId);
-    
-    try  {
-      const groupMetadata = await getCachedGroupMetadata(groupId).catch(() => null);
-      const groupName = groupMetadata?.subject || 'Grupo desconhecido';
-      
-      await nazu.sendMessage(groupId, {
-    text: `👋 Este grupo não possui aluguel registrado. Estou saindo. Até mais! ${symbols[Math.floor(Math.random() * symbols.length)]}`
-      });
-      
-      await nazu.groupLeave(groupId);
-      
-      // Deleta o chat do grupo
-    try  {
-    if  (nazu.chatModify) {
-    await deleteChatByLastMessage(groupId);
-    chatsDeleted++;
-    }
-      } catch (e) {
-    console.error(`Erro ao deletar chat ${groupId}:`, e.message);
-      }
-      
-      // Limpa conversa do grupo
-    try  {
-    if  (nazu.chatModify) {
-    await clearChatHistorySafe(groupId);
-    groupConversationsCleared++;
-    }
-      } catch (e) {
-    console.error(`Erro ao limpar conversa ${groupId}:`, e.message);
-      }
-      
-      // Delay entre grupos
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (e) {
-      console.error(`Erro ao processar grupo sem aluguel ${groupId}:`, e.message);
-    }
-      }
-    }
-    
-    // Limpa todas as conversas de grupo restantes (mantém apenas privadas)
-    try  {
-    if  (nazu.chatModify) {
-    // Busca todos os grupos restantes e limpa conversas
-    const remainingGroups = await nazu.groupFetchAllParticipating();
-    for (const groupId of Object.keys(remainingGroups)) {
-    try  {
-    await clearChatHistorySafe(groupId);
-    groupConversationsCleared++;
-    await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (e) {
-    console.error(`Erro ao limpar conversa do grupo ${groupId}:`, e.message);
-      }
-    }
-      }
-    } catch (e) {
-      console.error('Erro ao limpar conversas de grupos:', e.message);
-    }
-    
-    saveRentalData(rentalData);
-    
-    let summary = `🧹 *Resumo da Limpeza Completa de Aluguéis* 🧹\n\n`;
-    summary += `✅ Grupos removidos dos registros: *${groupsCleaned}*\n`;
-    summary += `⏰ Grupos vencidos processados: *${groupsExpired}*\n`;
-    summary += `🚫 Grupos sem aluguel processados: *${groupsWithoutRental}*\n`;
-    summary += `📩 Administradores notificados: *${adminsNotified}*\n`;
-    summary += `🗑️ Chats excluídos: *${chatsDeleted}*\n`;
-    summary += `🧽 Conversas de grupos limpas: *${groupConversationsCleared}*\n`;
-    summary += `📋 Total de grupos dos quais saí: *${groupsLeft.length}*\n`;
-    
-      if  (groupsLeft.length > 0) {
-      summary += `\n📋 *Grupos processados:*\n${groupsLeft.slice(0, 10).map(id => `- ${id.split('@')[0]}`).join('\n')}`;
-    if  (groupsLeft.length > 10) {
-    summary += `\n... e mais ${groupsLeft.length - 10} grupos`;
-      }
-    }
-    
-    summary += `\n\n✨ Limpeza concluída com sucesso!`;
-    await reply(summary);
-    } catch (e) {
-    console.error('Erro no comando limparaluguel:', e);
-    await reply("Ocorreu um erro ao limpar alugueis 💔");
-    }
-       break;
+
+
 case 'addautoresponse':
 case 'addauto':
   try  {
@@ -20273,9 +19533,9 @@ case 'bot-zip':
 case 'downloadbot':
 case 'download-bot':
   try  {
-    await reply('📦 Baixando o código-fonte do bot... Aguarde!');
+    await reply('📦 Preparando o código-fonte. Um instante.');
     
-    const zipResponse = await axios.get('https://github.com/devcrician/nazuna/archive/refs/heads/main.zip', {
+    const zipResponse = await axios.get('https://github.com/dgreych/shogun/archive/refs/heads/main.zip', {
       responseType: 'arraybuffer',
       timeout: 60000 // 60 segundos de timeout
     });
@@ -20286,9 +19546,15 @@ case 'download-bot':
     
     await nazu.sendMessage(from, {
       document: Buffer.from(zipResponse.data),
-      fileName: 'nazuna-bot.zip',
+      fileName: 'shogun.zip',
       mimetype: 'application/zip',
-      caption: `📦 *Código-fonte do ${nomebot}*\n\n📖 Leia a documentação no repositório para entender melhor como instalar:\n🔗 https://github.com/devcrician/nazuna\n\n⚠️ *Importante:* Certifique-se de ter Node.js instalado e siga os passos do README.md!`
+      caption: `📦 *Código-fonte do ${nomebot}*\n\n`
+        + `🔗 https://github.com/dgreych/shogun\n\n`
+        + `📖 *Como instalar, passo a passo:*\n`
+        + `• Android: docs/instalacao/termux.md\n`
+        + `• Windows: docs/instalacao/windows.md\n`
+        + `• Linux: docs/instalacao/linux.md\n\n`
+        + `Os guias começam do zero e mostram o que aparece na tela a cada etapa.`
     }, { quoted: info });
     
     } catch (e) {
@@ -20299,7 +19565,7 @@ case 'download-bot':
       ? '❌ Tempo de conexão esgotado. Tente novamente.'
       : '❌ Erro ao baixar o arquivo.';
     
-    await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/devcrician/nazuna`);
+    await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/dgreych/shogun`);
     }
        break;
        
@@ -20317,8 +19583,8 @@ case 'source-code':
       const githubHeaders = { 'Accept': 'application/vnd.github+json' };
       
       Promise.all([
-    axios.get('https://api.github.com/repos/devcrician/nazuna', { headers: githubHeaders }),
-    axios.get('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', { headers: githubHeaders })
+    axios.get('https://api.github.com/repos/dgreych/shogun', { headers: githubHeaders }),
+    axios.get('https://api.github.com/repos/dgreych/shogun/commits?per_page=1', { headers: githubHeaders })
       ]).then(([repoResponse, commitsResponse]) => {
     const repo = repoResponse.data;
     
@@ -20385,7 +19651,7 @@ case 'source-code':
     reply(gitInfo);
       }).catch((e) => {
     console.error('Erro ao buscar info do GitHub:', e);
-    reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/devcrician/nazuna\n📞 Suporte: wa.me/559681361714`);
+    reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/dgreych/shogun\n📞 Suporte: wa.me/559681361714`);
       });
     });
     } catch (e) {
@@ -20428,14 +19694,19 @@ case 'commands':
       useVideo = false;
       mediaBuffer = fs.readFileSync(mediaPath);
     } else {
-      // Se o dono colocar uma mídia específica pra essa categoria (midias/menu-<tipo>.mp4|jpg),
-      // ela tem prioridade sobre a mídia genérica do menu.
+      // A mídia da persona ativa vence: é o que o !fotomenu grava e o que
+      // acompanha a troca de personalidade. Os caminhos fixos abaixo ficam
+      // para instalações que configuraram antes desta camada existir.
+      const personaMedia = automacoesV9.resolveCommandMedia('menu');
       const categoryVideoPath = __dirname + '/../midias/menu-principal.mp4';
       const categoryImagePath = __dirname + '/../midias/menu-principal.jpg';
       const menuVideoPath = __dirname + '/../midias/menu.mp4';
       const menuImagePath = __dirname + '/../midias/menu.jpg';
 
-      if (fs.existsSync(categoryVideoPath)) {
+      if (personaMedia?.path && fs.existsSync(personaMedia.path)) {
+        mediaPath = personaMedia.path;
+        useVideo = personaMedia.type === 'video';
+      } else if (fs.existsSync(categoryVideoPath)) {
         mediaPath = categoryVideoPath;
         useVideo = true;
       } else if (fs.existsSync(categoryImagePath)) {
@@ -21103,7 +20374,6 @@ Use: ${prefix}divulgar
   ${prefix}statsvip
 
 • Menu VIP personalizado:
-  ${prefix}menuvip
 
 • Informações VIP de usuário:
   ${prefix}infovip @usuario
@@ -21384,14 +20654,19 @@ case 'menufig':
       useVideo = false;
       mediaBuffer = fs.readFileSync(mediaPath);
     } else {
-      // Se o dono colocar uma mídia específica pra essa categoria (midias/menu-<tipo>.mp4|jpg),
-      // ela tem prioridade sobre a mídia genérica do menu.
+      // Slot próprio do submenu na persona ativa; sem ele, o menu da mesma
+      // persona; só então os caminhos fixos de instalações antigas.
+      const personaMedia = automacoesV9.resolveCommandMedia(`menu${menuType}`)
+        || automacoesV9.resolveCommandMedia('menu');
       const categoryVideoPath = __dirname + `/../midias/menu-${menuType}.mp4`;
       const categoryImagePath = __dirname + `/../midias/menu-${menuType}.jpg`;
       const menuVideoPath = __dirname + '/../midias/menu.mp4';
       const menuImagePath = __dirname + '/../midias/menu.jpg';
 
-      if (fs.existsSync(categoryVideoPath)) {
+      if (personaMedia?.path && fs.existsSync(personaMedia.path)) {
+        mediaPath = personaMedia.path;
+        useVideo = personaMedia.type === 'video';
+      } else if (fs.existsSync(categoryVideoPath)) {
         mediaPath = categoryVideoPath;
         useVideo = true;
       } else if (fs.existsSync(categoryImagePath)) {
@@ -22191,16 +21466,15 @@ case 'mediamenu':
 case 'midiamenu':
   try  {
       if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (fs.existsSync(__dirname + '/../midias/menu.jpg')) fs.unlinkSync(__dirname + '/../midias/menu.jpg');
-      if  (fs.existsSync(__dirname + '/../midias/menu.mp4')) fs.unlinkSync(__dirname + '/../midias/menu.mp4');
     var RSM = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     var boij2 = RSM?.imageMessage || info.message?.imageMessage || RSM?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessage?.message?.imageMessage || RSM?.viewOnceMessage?.message?.imageMessage;
     var boij = RSM?.videoMessage || info.message?.videoMessage || RSM?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessage?.message?.videoMessage || RSM?.viewOnceMessage?.message?.videoMessage;
       if  (!boij && !boij2) return reply(`Marque uma imagem ou um vídeo, com o comando: ${prefix + command} (mencionando a mídia)`);
     var isVideo2 = !!boij;
     var buffer = await getFileBuffer(isVideo2 ? boij : boij2, isVideo2 ? 'video' : 'image');
-    fs.writeFileSync(__dirname + '/../midias/menu.' + (isVideo2 ? 'mp4' : 'jpg'), buffer);
-    await reply('✅ Mídia do menu atualizada com sucesso.');
+    const personaMenu = automacoesV9.getActivePersona();
+    await automacoesV9.saveCommandMedia(`${personaMenu}_menu`, buffer, isVideo2 ? 'video' : 'image', false);
+    await reply(`✅ Mídia do menu atualizada para a personalidade *${personaMenu}*.`);
     } catch (e) {
     console.error(e);
     reply("ocorreu um erro 💔");
@@ -22781,135 +22055,11 @@ case 'desbangp':
     await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
     }
        break;
-case 'addpremium':
-case 'addvip':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!menc_os2) return reply("Marque alguém 🙄");
-      if  (!!premiumListaZinha[menc_os2]) return reply('O usuário ja esta na lista premium.');
-    premiumListaZinha[menc_os2] = true;
-    await nazu.sendMessage(from, {
-      text: `✅ @${getUserName(menc_os2)} foi adicionado(a) a lista premium.`,
-      mentions: [menc_os2]
-    }, {
-      quoted: info
-    });
-    fs.writeFileSync(__dirname + `/../database/dono/premium.json`, JSON.stringify(premiumListaZinha));
-    } catch (e) {
-    console.error(e);
-    reply("ocorreu um erro 💔");
-    }
-       break;
-case 'delpremium':
-case 'delvip':
-case 'rmpremium':
-case 'rmvip':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!menc_os2) return reply("Marque alguém 🙄");
-      if  (!premiumListaZinha[menc_os2]) return reply('O usuário não esta na lista premium.');
-    delete premiumListaZinha[menc_os2];
-    await nazu.sendMessage(from, {
-      text: `🫡 @${getUserName(menc_os2)} foi removido(a) da lista premium.`,
-      mentions: [menc_os2]
-    }, {
-      quoted: info
-    });
-    fs.writeFileSync(__dirname + `/../database/dono/premium.json`, JSON.stringify(premiumListaZinha));
-    } catch (e) {
-    console.error(e);
-    reply("ocorreu um erro 💔");
-    }
-       break;
-case 'addpremiumgp':
-case 'addvipgp':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-      if  (!!premiumListaZinha[from]) return reply('O grupo ja esta na lista premium.');
-    premiumListaZinha[from] = true;
-    await nazu.sendMessage(from, {
-      text: `✅ O grupo foi adicionado a lista premium.`
-    }, {
-      quoted: info
-    });
-    fs.writeFileSync(__dirname + `/../database/dono/premium.json`, JSON.stringify(premiumListaZinha));
-    } catch (e) {
-    console.error(e);
-    reply("ocorreu um erro 💔");
-    }
-       break;
-case 'delpremiumgp':
-case 'delvipgp':
-case 'rmpremiumgp':
-case 'rmvipgp':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-      if  (!premiumListaZinha[from]) return reply('O grupo não esta na lista premium.');
-    delete premiumListaZinha[from];
-    await nazu.sendMessage(from, {
-      text: `🫡 O grupo foi removido da lista premium.`
-    }, {
-      quoted: info
-    });
-    fs.writeFileSync(__dirname + `/../database/dono/premium.json`, JSON.stringify(premiumListaZinha));
-    } catch (e) {
-    console.error(e);
-    reply("ocorreu um erro 💔");
-    }
-       break;
-case 'listapremium':
-case 'listavip':
-case 'premiumlist':
-case 'listpremium':
-case 'listprem':
-  try  {
-      if  (!isOwner) return reply('⛔ Desculpe, este comando é exclusivo para o meu dono!');
-    const premiumList = premiumListaZinha || {};
-    const usersPremium = Object.keys(premiumList).filter(id => isUserId(id));
-    const groupsPremium = Object.keys(premiumList).filter(id => id.includes('@g.us'));
-    let teks = `✨ *Lista de Membros Premium* ✨\n\n`;
-    
-    teks += `👤 *Usuários Premium* (${usersPremium.length})\n`;
-      if  (usersPremium.length > 0) {
-      usersPremium.forEach((user, i) => {
-    const userNumber = getUserName(user);
-    
-    teks += `🔹 ${i + 1}. @${userNumber}\n`;
-      });
-    } else {
-      
-      teks += `   Nenhum usuário premium encontrado.\n`;
-    }
-    
-    teks += `\n👥 *Grupos Premium* (${groupsPremium.length})\n`;
-      if  (groupsPremium.length > 0) {
-      for (let i = 0; i < groupsPremium.length; i++) {
-    try  {
-      const groupInfo = await getCachedGroupMetadata(groupsPremium[i]);
-      
-      teks += `🔹 ${i + 1}. ${groupInfo.subject}\n`;
-    } catch {
-      
-      teks += `🔹 ${i + 1}. Grupo ID: ${groupsPremium[i]}\n`;
-    }
-      }
-    } else {
-      
-      teks += `   Nenhum grupo premium encontrado.\n`;
-    }
-    await nazu.sendMessage(from, {
-      text: teks,
-      mentions: usersPremium
-    }, {
-      quoted: info
-    });
-    } catch (e) {
-    console.error(e);
-    await reply('😔 Ops, algo deu errado. Tente novamente mais tarde!');
-    }
-       break;
+
+
+
+
+
 case 'resetgold':
   try  {
       if  (!isOwner) return reply('⛔ Desculpe, este comando é exclusivo para o meu dono!');
@@ -22935,353 +22085,19 @@ case 'resetgold':
        break;
       
       // ============= SISTEMA DE COMANDOS VIP =============
-case 'menuvip':
-case 'vip':
-case 'vipmenu':
-  try  {
-    await sendMenuWithMedia('vip', async () => {
-      const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
-      return await menuVIP(prefix, nomebot, pushname, customDesign);
-    });
-    } catch (error) {
-    console.error('Erro ao enviar menu VIP:', error);
-    await reply(`❌ Erro ao carregar menu VIP. Use ${prefix}infovip para mais informações.`);
-    }
-       break;
 
-case 'infovip':
-case 'vipinfo':
-  try  {
-    const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
-    const infoText = await menuVIP(prefix, nomebot, pushname, customDesign);
-    await reply(infoText);
-    } catch (error) {
-    console.error('Erro ao enviar info VIP:', error);
-    await reply('❌ Erro ao carregar informações VIP.');
-    }
-       break;
 
-case 'addcmdvip':
-case 'addvipcommand':
-case 'adicionarcmdvip':
-  try  {
-      if  (!isOwner) return reply('🚫 Este comando é apenas para o dono do bot!');
-    
-      if  (!q) {
-      return reply(`📝 *Como adicionar comandos VIP:*
 
-*Formato:*
-${prefix}addcmdvip <comando> | <descrição> | <categoria>
 
-*Categorias disponíveis:*
-• download - Downloads
-• diversao - Diversão/Jogos
-• utilidade - Utilidades
-• ia - Inteligência Artificial
-• editor - Editores
-• info - Informação
-• outros - Outros
 
-*Exemplo:*
-${prefix}addcmdvip premium_ia | IA avançada exclusiva | ia
-${prefix}addcmdvip premium_ia | IA avançada exclusiva | ia | premium_ia <pergunta>
 
-*Adicionar todos de um menu:*
-${prefix}addcmdvip <nomeMenu> all
 
-*Exemplos:*
-${prefix}addcmdvip menubuscas all
-${prefix}addcmdvip menuadm all
-${prefix}addcmdvip menudown all`);
-    }
-    
-    // Verifica se é para adicionar todos os comandos de um menu
-    const menuAllMatch = q.toLowerCase().trim().match(/^(\w+)\s+all$/);
-      if  (menuAllMatch) {
-      const menuName = menuAllMatch[1];
-      
-      // Mapeia nomes de menus para suas funções
-      const menuMap = {
-    'menubuscas': menuBuscas,
-    'menuadm': menuadm,
-    'menudono': menuDono,
-    'menu': menu,
-    'menudown': menudown,
-    'menubn': menubn,
-    'menufig': menuSticker,
-    'menuia': menuIa,
-    'menurpg': menuRPG,
-    'menuvip': menuVIP,
-    'ferramentas': menuFerramentas,
-    'alteradores': menuAlterador,
-    'menumemb': menuMembros
-      };
-      
-      const menuFunction = menuMap[menuName];
-      
-    if  (!menuFunction) {
-    return reply(`❌ Menu "${menuName}" não encontrado!\n\n*Menus disponíveis:*\n${Object.keys(menuMap).map(m => `• ${m}`).join('\n')}`);
-      }
-      
-      try  {
-    // Gera o menu para extrair os comandos
-    const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
-    const menuText = await menuFunction(prefix, nomebot, pushname, customDesign);
-    
-    // Extrai comandos do menu usando regex
-    // O menu já foi processado, então ${prefix} foi substituído pelo prefixo real
-    const commands = new Set();
-    
-    // Padrão 1: Procura por ${prefix}comando (caso ainda não tenha sido substituído)
-    const templatePattern = new RegExp(`\\$\\{prefix\\}([a-zA-Z0-9_]+)(?:\\s*<[^>]*>)?`, 'g');
-    let match;
-    while ((match = templatePattern.exec(menuText)) !== null) {
-      const cmd = match[1];
-      if  (cmd && cmd.length > 0) {
-    commands.add(cmd);
-      }
-    }
-    
-    // Padrão 2: Procura por prefixoComando <param> (já processado)
-    // Escapa o prefixo para usar na regex
-    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    // Procura por linhas que contenham o prefixo seguido de comando
-    const processedPattern = new RegExp(`${escapedPrefix}([a-zA-Z0-9_]+)(?:\\s*<[^>]*>)?`, 'g');
-    while ((match = processedPattern.exec(menuText)) !== null) {
-      const cmd = match[1];
-      if  (cmd && cmd.length > 0 && !cmd.startsWith('menu') && cmd !== 'ferramentas' && cmd !== 'alteradores') {
-    commands.add(cmd);
-      }
-    }
-    
-    // Padrão 3: Procura por comandos com pontos: prefixoComando.sub
-    const dotPattern = new RegExp(`${escapedPrefix}([a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)+)`, 'g');
-    while ((match = dotPattern.exec(menuText)) !== null) {
-      const cmd = match[1];
-      if  (cmd && cmd.length > 0) {
-    commands.add(cmd);
-      }
-    }
-    
-    // Padrão 4: Procura por qualquer ocorrência do prefixo seguido de palavra
-    // Isso captura comandos mesmo que o formato do menu seja diferente
-    const genericPattern = new RegExp(`(?:^|\\s|\\n|\\r)${escapedPrefix}([a-zA-Z0-9_]+)(?:\\s*<[^>]*>)?(?:\\s|$|\\n|\\r)`, 'gm');
-    while ((match = genericPattern.exec(menuText)) !== null) {
-      const cmd = match[1];
-      if  (cmd && cmd.length > 0 && 
-    !cmd.startsWith('menu') && 
-    cmd !== 'ferramentas' && 
-    cmd !== 'alteradores' &&
-    cmd.length < 50) { // Evita capturar coisas muito longas
-    commands.add(cmd);
-      }
-    }
-    
-    // Padrão 4: Procura por ${prefix}comando.sub (template)
-    const templateDotPattern = new RegExp(`\\$\\{prefix\\}([a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)+)`, 'g');
-    while ((match = templateDotPattern.exec(menuText)) !== null) {
-      const cmd = match[1];
-      if  (cmd && cmd.length > 0) {
-    commands.add(cmd);
-      }
-    }
-    
-    if  (commands.size === 0) {
-      // Debug: mostra um trecho do menu para ajudar a identificar o problema
-      const menuPreview = menuText.substring(0, 500).replace(/\n/g, '\\n');
-      console.log(`[DEBUG] Menu "${menuName}" gerado (primeiros 500 chars):`, menuPreview);
-      console.log(`[DEBUG] Prefix usado: "${prefix}"`);
-      return reply(`❌ Nenhum comando encontrado no menu "${menuName}"!\n\n*Debug:* Prefixo usado: "${prefix}"\nVerifique o console para mais detalhes.`);
-    }
-    
-    const commandsArray = Array.from(commands).sort();
-    let added = 0;
-    let skipped = 0;
-    
-    for (const cmdName of commandsArray) {
-      // Pula comandos que são outros menus
-      if  (cmdName.startsWith('menu') || cmdName === 'ferramentas' || cmdName === 'alteradores') {
-    continue;
-      }
-      
-      const result = vipCommandsManager.addVipCommand(
-    cmdName,
-    `Comando do menu ${menuName}`,
-    'outros',
-    `${cmdName}`
-      );
-      
-      if  (result.success) {
-    added++;
-    console.log(`[VIP CMD] Comando "${cmdName}" adicionado por ${pushname} (${sender})`);
-      } else {
-    skipped++;
-      }
-    }
-    
-    await reply(`✅ *Comandos do menu "${menuName}" adicionados!*
 
-📊 *Resultado:*
-• ✅ Adicionados: ${added}
-• ⏭️ Já existiam: ${skipped}
-• 📦 Total encontrados: ${commandsArray.length}
 
-💡 Use ${prefix}listcmdvip para ver todos os comandos VIP.`);
-      } catch (error) {
-    console.error(`Erro ao processar menu ${menuName}:`, error);
-    return reply(`❌ Erro ao processar o menu "${menuName}": ${error.message}`);
-      }
-     break;
-    }
-    
-    const parts = q.split('|').map(p => p.trim());
-    
-      if  (parts.length < 2) {
-      return reply('❌ Formato inválido! Use:\n' + prefix + 'addcmdvip <comando> | <descrição> | <categoria>');
-    }
-    
-    const cmdName = parts[0];
-    const cmdDesc = parts[1];
-    const cmdCategory = parts[2] || 'outros';
-    const cmdUsage = parts[3] || '';
-    
-    const result = vipCommandsManager.addVipCommand(cmdName, cmdDesc, cmdCategory, cmdUsage);
-    
-    await reply(result.message);
-    
-      if  (result.success) {
-      console.log(`[VIP CMD] Comando "${cmdName}" adicionado por ${pushname} (${sender})`);
-    }
-    } catch (error) {
-    console.error('Erro ao adicionar comando VIP:', error);
-    await reply('❌ Erro ao adicionar comando VIP.');
-    }
-       break;
 
-case 'removecmdvip':
-case 'removevipcommand':
-case 'rmcmdvip':
-case 'delcmdvip':
-  try  {
-      if  (!isOwner) return reply('🚫 Este comando é apenas para o dono do bot!');
-    
-      if  (!q) {
-      return reply(`📝 *Como remover comandos VIP:*
 
-*Formato:*
-${prefix}removecmdvip <comando>
 
-*Exemplo:*
-${prefix}removecmdvip premium_ia`);
-    }
-    
-    const cmdName = q.trim();
-    const result = vipCommandsManager.removeVipCommand(cmdName);
-    
-    await reply(result.message);
-    
-      if  (result.success) {
-      console.log(`[VIP CMD] Comando "${cmdName}" removido por ${pushname} (${sender})`);
-    }
-    } catch (error) {
-    console.error('Erro ao remover comando VIP:', error);
-    await reply('❌ Erro ao remover comando VIP.');
-    }
-       break;
 
-case 'listcmdvip':
-case 'listvipcommands':
-case 'comandosvip':
-  try  {
-      if  (!isOwner && !isPremium) {
-      return reply('🚫 Este comando é apenas para o dono ou usuários VIP!');
-    }
-    
-    const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
-    const listText = await menuVIP(prefix, nomebot, pushname, customDesign);
-    
-    await reply(listText);
-    } catch (error) {
-    console.error('Erro ao listar comandos VIP:', error);
-    await reply('❌ Erro ao listar comandos VIP.');
-    }
-       break;
-
-case 'togglecmdvip':
-case 'ativarcmdvip':
-case 'desativarcmdvip':
-  try  {
-      if  (!isOwner) return reply('🚫 Este comando é apenas para o dono do bot!');
-    
-      if  (!args[0] || !args[1]) {
-      return reply(`📝 *Como ativar/desativar comandos VIP:*
-
-*Formato:*
-${prefix}togglecmdvip <comando> <on/off>
-
-*Exemplo:*
-${prefix}togglecmdvip premium_ia on
-${prefix}togglecmdvip premium_ia off`);
-    }
-    
-    const cmdName = args[0].trim();
-    const action = args[1].toLowerCase();
-    
-      if  (!['on', 'off', 'ativar', 'desativar'].includes(action)) {
-      return reply('❌ Use "on" para ativar ou "off" para desativar!');
-    }
-    
-    const enabled = ['on', 'ativar'].includes(action);
-    const result = vipCommandsManager.toggleVipCommand(cmdName, enabled);
-    
-    await reply(result.message);
-    
-      if  (result.success) {
-      console.log(`[VIP CMD] Comando "${cmdName}" ${enabled ? 'ativado' : 'desativado'} por ${pushname} (${sender})`);
-    }
-    } catch (error) {
-    console.error('Erro ao alternar comando VIP:', error);
-    await reply('❌ Erro ao alternar status do comando VIP.');
-    }
-       break;
-
-case 'statsvip':
-case 'vipstats':
-case 'estatisticasvip':
-  try  {
-      if  (!isOwner) return reply('🚫 Este comando é apenas para o dono do bot!');
-    
-    const stats = vipCommandsManager.getVipStats();
-    
-    let statsText = `📊 *ESTATÍSTICAS DO SISTEMA VIP*\n\n`;
-    statsText += `╭─────────────────╮\n`;
-    statsText += `│ 📈 *RESUMO GERAL*\n`;
-    statsText += `╰─────────────────╯\n\n`;
-    statsText += `• Total de comandos: ${stats.total}\n`;
-    statsText += `• Comandos ativos: ${stats.active}\n`;
-    statsText += `• Comandos inativos: ${stats.inactive}\n`;
-    statsText += `• Total de categorias: ${stats.categories}\n\n`;
-    
-      if  (stats.byCategory && stats.byCategory.length > 0) {
-      statsText += `╭─────────────────╮\n`;
-      statsText += `│ 📂 *POR CATEGORIA*\n`;
-      statsText += `╰─────────────────╯\n\n`;
-      
-      stats.byCategory.forEach(cat => {
-    statsText += `• ${cat.category}: ${cat.count}\n`;
-      });
-    }
-    
-    statsText += `\n━━━━━━━━━━━━━━━━\n\n`;
-    statsText += `💡 Use ${prefix}listcmdvip para ver todos os comandos`;
-    
-    await reply(statsText);
-    } catch (error) {
-    console.error('Erro ao obter estatísticas VIP:', error);
-    await reply('❌ Erro ao obter estatísticas VIP.');
-    }
-       break;
       
       // SISTEMA DE INDICAÇÕES
 case 'addindicacao':
@@ -24613,15 +23429,12 @@ case 'dono':
 
 case 'criador':
   try  {
-    const TextinCriadorInfo = `╭━━━⊱ 👨‍💻 *CRÉDITOS* 👨‍💻 ⊱━━━╮
+    const TextinCriadorInfo = `╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ ⚔️ *Alaska_dev* — desenvolvimento
+│ *Alaska dev* (Maurício)
+│
+│ 🌐 github.com/dgreych/shogun
 │ 📱 wa.me/5522997028553
-│ 🌐 github.com/dgreych
-│
-│ 🤝 *Contribuições no código:*
-│ Hiudy · github.com/hiudyy
-│ DevTokyo · github.com/DevTokyoVx
 │
 ╰━━━━━━━━━━━━━━━━━━━━━━━━╯`;
     await reply(TextinCriadorInfo);
@@ -25391,7 +24204,7 @@ case 'randomsticker':
   try  {
     await nazu.sendMessage(from, {
       sticker: {
-    url: `https://raw.githubusercontent.com/badDevelopper/Testfigu/main/fig (${Math.floor(Math.random() * 8051)}).webp`
+    url: `https://raw.githubusercontent.com/dgreych/shogun/assets/figurinhas/fig-${Math.floor(Math.random() * 8051) + 1}.webp`
       }
     }, {
       quoted: info
@@ -25530,7 +24343,7 @@ case 'packfig':
     usedNumbers.add(randomNum);
     
     // Buscar a figurinha
-    const stickerUrl = `https://raw.githubusercontent.com/badDevelopper/Testfigu/main/fig (${randomNum}).webp`;
+    const stickerUrl = `https://raw.githubusercontent.com/dgreych/shogun/assets/figurinhas/fig-${randomNum}.webp`;
     const stickerResponse = await axios.get(stickerUrl, {
       responseType: 'arraybuffer',
       timeout: 120000
@@ -27706,6 +26519,30 @@ case 'antiloc':
     await reply("Ocorreu um erro 💔");
     }
        break;
+case 'modoadulto':
+case 'ia18':
+case 'modo18':
+case 'adulto':
+  try  {
+      if  (!isGroup) return reply('Isso só existe em grupo — em conversa privada não há administração para declarar o grupo como adulto.');
+      if  (!isGroupAdmin) return reply('Só admin do grupo pode ligar ou desligar isso.');
+    const groupFilePathAdulto = buildGroupFilePath(from);
+    groupData.modoAdulto = !groupData.modoAdulto;
+    writeJsonFile(groupFilePathAdulto, groupData);
+      if  (groupData.modoAdulto) {
+      await reply('🔞 *Modo adulto ligado.*\n\n'
+        + 'A assistente passa a falar solta neste grupo: palavrão, humor pesado e assunto adulto sem rodeio.\n\n'
+        + '⚠️ Ligue apenas se *todos* aqui forem maiores de idade. A responsabilidade é da administração do grupo.\n\n'
+        + `Para desligar: ${prefix}modoadulto`);
+    } else {
+      await reply('✅ *Modo adulto desligado.* A assistente volta ao registro normal neste grupo.');
+    }
+    } catch (e) {
+    console.error(e);
+    await reply('❌ Ocorreu um erro interno. Tente novamente em alguns minutos.');
+    }
+       break;
+
 case 'modobrincadeira':
 case 'modobrincadeiras':
 case 'modobn':
@@ -30794,7 +29631,7 @@ case 'perfil':
     
     const randomHumor = humors[Math.floor(Math.random() * humors.length)];
     
-    let profilePic = 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747053564257_bzswae.bin';
+    let profilePic = 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png';
     try {
       profilePic = await nazu.profilePictureUrl(target, 'image');
     } catch (error) {
@@ -31156,7 +29993,7 @@ case 'suruba':
     }
     await nazu.sendMessage(from, {
       image: {
-    url: 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747545773146_rrv7of.bin'
+    url: 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png'
       },
       caption: ABC,
       mentions: mencts
@@ -32227,7 +31064,7 @@ case 'whitelistlista':
     await reply(
       `🎉 Aqui está o link do produto no evento como GRATUITO:\n\n` +
       `⚠️ Atenção: Nem todos os anúncios funcionam com esse método. Se não funcionar com este link, tente outro.\n\n` +
-      `💡 Esse sistema foi criado por mim (Hiudy) e, até hoje, não vi ninguém oferecendo algo assim. Aproveite!\n\n` +
+      `💡 Aproveite — poucos bots oferecem isso.\n\n` +
       `${KKMeMamaTemu}`
     );
   } catch (e) {
@@ -32758,4 +31595,4 @@ function getDiskSpaceInfo() {
   }
 }
 
-export default NazuninhaBotExec;
+export default shogunExec;

@@ -57,7 +57,7 @@ function fixture(seed = {}, overrides = {}) {
     rentalExpirationManager: {},
     prefix: '!',
     groupPrefix: '!',
-    botName: 'GYOMEI',
+    botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Teste',
     isOwner: false,
     isLiteMode: false,

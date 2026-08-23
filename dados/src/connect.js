@@ -253,7 +253,7 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
     mentions
     };
     if (settings.image) {
-    let profilePicUrl = 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747053564257_bzswae.bin';
+    let profilePicUrl = 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png';
     if (participants.length === 1) {
     profilePicUrl = await NazunaSock.profilePictureUrl(participants[0], 'image').catch(() => profilePicUrl);
     }

@@ -15,7 +15,7 @@ function context(overrides = {}) {
     messagesCache: new Map(),
     rentalExpirationManager: null,
     prefix: '!',
-    botName: 'Gyomei',
+    botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Mauricio',
     isOwner: false,
     isLiteMode: false,
@@ -35,10 +35,10 @@ function presenter() {
   };
 }
 
-test('catálogo possui 14 famílias e 48 tokens únicos de apresentação', () => {
-  assert.equal(MENU_COMMAND_DESCRIPTORS.length, 14);
-  assert.equal(MENU_COMMAND_TOKENS.length, 48);
-  assert.equal(new Set(MENU_COMMAND_TOKENS).size, 48);
+test('catálogo possui 13 famílias e 45 tokens únicos de apresentação', () => {
+  assert.equal(MENU_COMMAND_DESCRIPTORS.length, 13);
+  assert.equal(MENU_COMMAND_TOKENS.length, 45);
+  assert.equal(new Set(MENU_COMMAND_TOKENS).size, 45);
 });
 
 test('todos os aliases do domínio resolvem para exatamente uma família', () => {

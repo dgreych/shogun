@@ -7,7 +7,7 @@ export const NVIDIA_MODEL_CATALOG = [
   {
     id: 'nvidia/llama-3.3-nemotron-super-49b-v1',
     label: 'Nemotron Super 49B (mais completo)',
-    description: 'Mantém respostas detalhadas e a personalidade do Gyomei de forma consistente.'
+    description: 'Mantém respostas detalhadas e a personalidade do bot de forma consistente.'
   },
   {
     id: 'meta/llama-3.1-8b-instruct',
@@ -104,7 +104,7 @@ function sleep(ms) {
 /**
  * Transporte legado direto mantido exclusivamente para o contrato de rollout
  * BUNNYFY_AI_MODE=off|primary. Em exclusive ele não deve ser chamado.
- * A credencial continua vindo apenas do ambiente/configuração privada do Gyomei.
+ * A credencial continua vindo apenas do ambiente/configuração privada do bot.
  */
 export async function requestNvidiaChat({
   apiKey,
@@ -122,7 +122,7 @@ export async function requestNvidiaChat({
     throw new NvidiaApiError('NVIDIA_API_KEY não foi configurada.', {
       code: 'NVIDIA_KEY_MISSING',
       retryable: false,
-      userMessage: '🤖 A chave NVIDIA de fallback não está configurada no Gyomei.'
+      userMessage: '🤖 A chave NVIDIA de fallback não está configurada no bot.'
     });
   }
   if (!Array.isArray(messages) || messages.length === 0) {

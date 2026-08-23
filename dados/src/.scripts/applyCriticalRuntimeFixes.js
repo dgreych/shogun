@@ -29,8 +29,8 @@ function patchRuntimeIndex(source) {
 
   output = replaceRequired(
     output,
-    `import * as automacoesV9 from './utils/gyomeiRuntime.js';`,
-    `import * as automacoesV9 from './utils/gyomeiRuntime.js';\nimport { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';`,
+    `import * as automacoesV9 from './utils/shogunRuntime.js';`,
+    `import * as automacoesV9 from './utils/shogunRuntime.js';\nimport { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';`,
     'import do resolvedor de comandos'
   );
 
@@ -131,7 +131,7 @@ function patchRuntimeIa(source) {
 
 export function applyCriticalRuntimeFixes() {
   if (!fs.existsSync(RUNTIME_INDEX) || !fs.existsSync(RUNTIME_IA)) {
-    throw new Error('Os arquivos runtime ainda não foram gerados. Execute prepareRuntimeSources e finalizeGyomeiRuntime primeiro.');
+    throw new Error('Os arquivos runtime ainda não foram gerados. Execute prepareRuntimeSources e finalizeShogunRuntime primeiro.');
   }
 
   const runtimeIndex = patchRuntimeIndex(fs.readFileSync(RUNTIME_INDEX, 'utf8'));

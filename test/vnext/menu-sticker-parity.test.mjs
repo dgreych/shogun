@@ -5,9 +5,9 @@ import legacyMenuSticker from '../../dados/src/menus/menufig.js';
 import { renderStickerMenu } from '../../dist-vnext/menu/sticker.js';
 
 const cases = [
-  ['default', ['!', 'GYOMEI', 'Maurício']],
-  ['alternate-prefix', ['#', 'Gyomei Bot', 'Teste']],
-  ['custom-theme', ['.', 'GYOMEI', 'Usuário', {
+  ['default', ['!', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Maurício']],
+  ['alternate-prefix', ['#', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Teste']],
+  ['custom-theme', ['.', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Usuário', {
     header: 'BOT=#nome#|P=#prefix#',
     menuTopBorder: '<TOP>',
     bottomBorder: '<BOTTOM>',

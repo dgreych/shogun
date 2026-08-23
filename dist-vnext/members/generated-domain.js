@@ -2274,8 +2274,8 @@ async function member_217_zipbot(scope) {
             case 'downloadbot':
             case 'download-bot':
                 try {
-                    await reply('📦 Baixando o código-fonte do bot... Aguarde!');
-                    const zipResponse = await axios.get('https://github.com/devcrician/nazuna/archive/refs/heads/main.zip', {
+                    await reply('📦 Preparando o código-fonte. Um instante.');
+                    const zipResponse = await axios.get('https://github.com/dgreych/shogun/archive/refs/heads/main.zip', {
                         responseType: 'arraybuffer',
                         timeout: 60000 // 60 segundos de timeout
                     });
@@ -2284,9 +2284,15 @@ async function member_217_zipbot(scope) {
                     }
                     await nazu.sendMessage(from, {
                         document: Buffer.from(zipResponse.data),
-                        fileName: 'nazuna-bot.zip',
+                        fileName: 'shogun.zip',
                         mimetype: 'application/zip',
-                        caption: `📦 *Código-fonte do ${nomebot}*\n\n📖 Leia a documentação no repositório para entender melhor como instalar:\n🔗 https://github.com/devcrician/nazuna\n\n⚠️ *Importante:* Certifique-se de ter Node.js instalado e siga os passos do README.md!`
+                        caption: `📦 *Código-fonte do ${nomebot}*\n\n`
+                            + `🔗 https://github.com/dgreych/shogun\n\n`
+                            + `📖 *Como instalar, passo a passo:*\n`
+                            + `• Android: docs/instalacao/termux.md\n`
+                            + `• Windows: docs/instalacao/windows.md\n`
+                            + `• Linux: docs/instalacao/linux.md\n\n`
+                            + `Os guias começam do zero e mostram o que aparece na tela a cada etapa.`
                     }, { quoted: info });
                 }
                 catch (e) {
@@ -2296,7 +2302,7 @@ async function member_217_zipbot(scope) {
                         : e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT'
                             ? '❌ Tempo de conexão esgotado. Tente novamente.'
                             : '❌ Erro ao baixar o arquivo.';
-                    await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/devcrician/nazuna`);
+                    await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/dgreych/shogun`);
                 }
                 break;
         }
@@ -2324,8 +2330,8 @@ async function member_218_gitbot(scope) {
                     reply('🔍 Buscando informações do repositório...').then(() => {
                         const githubHeaders = { 'Accept': 'application/vnd.github+json' };
                         Promise.all([
-                            axios.get('https://api.github.com/repos/devcrician/nazuna', { headers: githubHeaders }),
-                            axios.get('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', { headers: githubHeaders })
+                            axios.get('https://api.github.com/repos/dgreych/shogun', { headers: githubHeaders }),
+                            axios.get('https://api.github.com/repos/dgreych/shogun/commits?per_page=1', { headers: githubHeaders })
                         ]).then(([repoResponse, commitsResponse]) => {
                             const repo = repoResponse.data;
                             // Pegar total de commits do header Link
@@ -2387,7 +2393,7 @@ async function member_218_gitbot(scope) {
                             reply(gitInfo);
                         }).catch((e) => {
                             console.error('Erro ao buscar info do GitHub:', e);
-                            reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/devcrician/nazuna\n📞 Suporte: wa.me/559681361714`);
+                            reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/dgreych/shogun\n📞 Suporte: wa.me/559681361714`);
                         });
                     });
                 }
@@ -3406,11 +3412,11 @@ async function member_479_perfil(scope) {
                     const rotulo = (txt) => `${txt}${'\u00a0'.repeat(Math.max(0, 8 - txt.length))}`;
                     const perfilText = `📋 *PERFIL COMPLETO*
       ${targetName}
-
+      
       👤 *Nome*: ${mentionedUser ? targetName : (pushname || targetName)}
       📱 *Número*: ${targetId}
       📜 *Bio*: ${bio}${bioSetAt ? `\n🕒 *Bio atualizada em*: ${bioSetAt}` : ''}
-
+      
       💰 *Valor do Pacote*: ${pacoteValue} 🫦
       😊 *Humor*: ${randomHumor}
       

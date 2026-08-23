@@ -23,7 +23,7 @@ async function member_001_roles(scope: MembersGeneratedScope): Promise<unknown> 
             await reply('⚠️ Este comando só pode ser usado em grupos.');
            break;
           }
-
+      
           const roleEntries = Object.entries(groupData.roles || {});
             if  (!roleEntries.length) {
             await reply('🪩 Nenhum rolê ativo no momento.');
@@ -345,10 +345,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
         ensureUserChallenge(me);
         const { mineBonus, workBonus, bankCapacity, fishBonus, exploreBonus, huntBonus, forgeBonus } = applyShopBonuses(me, econ);
         if (changedEconomy) saveEconomy(econ);
-
+      
           const sub = command;
           const args = q ? q.trim().toLowerCase().split(/\s+/) : [];
-
+      
           // Ramos de economia ja nativos no vNext. Atende aqui e sai; os corpos
           // legados abaixo so rodam para o que ainda nao migrou. Ver
           // src/rpg/economia/despachante.ts.
@@ -378,7 +378,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           return reply(respostaVNext.texto, respostaVNext.mencoes?.length ? { mentions: [...respostaVNext.mencoes] } : undefined);
             }
           }
-
+      
           // Tratamento especial para ranklevel/ranklvl/levels etc.
           if  (['ranklevel','ranklvl','rankinglevel','levels','toplevels'].includes(sub)) {
           // Se estiver em grupo, usamos o ranking do grupo (RPG)
@@ -2320,9 +2320,9 @@ async function member_217_zipbot(scope: MembersGeneratedScope): Promise<unknown>
       case 'downloadbot':
       case 'download-bot':
         try  {
-          await reply('📦 Baixando o código-fonte do bot... Aguarde!');
+          await reply('📦 Preparando o código-fonte. Um instante.');
           
-          const zipResponse = await axios.get('https://github.com/devcrician/nazuna/archive/refs/heads/main.zip', {
+          const zipResponse = await axios.get('https://github.com/dgreych/shogun/archive/refs/heads/main.zip', {
             responseType: 'arraybuffer',
             timeout: 60000 // 60 segundos de timeout
           });
@@ -2333,9 +2333,15 @@ async function member_217_zipbot(scope: MembersGeneratedScope): Promise<unknown>
           
           await nazu.sendMessage(from, {
             document: Buffer.from(zipResponse.data),
-            fileName: 'nazuna-bot.zip',
+            fileName: 'shogun.zip',
             mimetype: 'application/zip',
-            caption: `📦 *Código-fonte do ${nomebot}*\n\n📖 Leia a documentação no repositório para entender melhor como instalar:\n🔗 https://github.com/devcrician/nazuna\n\n⚠️ *Importante:* Certifique-se de ter Node.js instalado e siga os passos do README.md!`
+            caption: `📦 *Código-fonte do ${nomebot}*\n\n`
+              + `🔗 https://github.com/dgreych/shogun\n\n`
+              + `📖 *Como instalar, passo a passo:*\n`
+              + `• Android: docs/instalacao/termux.md\n`
+              + `• Windows: docs/instalacao/windows.md\n`
+              + `• Linux: docs/instalacao/linux.md\n\n`
+              + `Os guias começam do zero e mostram o que aparece na tela a cada etapa.`
           }, { quoted: info });
           
           } catch (e) {
@@ -2346,7 +2352,7 @@ async function member_217_zipbot(scope: MembersGeneratedScope): Promise<unknown>
             ? '❌ Tempo de conexão esgotado. Tente novamente.'
             : '❌ Erro ao baixar o arquivo.';
           
-          await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/devcrician/nazuna`);
+          await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/dgreych/shogun`);
           }
              break;
     }
@@ -2375,8 +2381,8 @@ async function member_218_gitbot(scope: MembersGeneratedScope): Promise<unknown>
             const githubHeaders = { 'Accept': 'application/vnd.github+json' };
             
             Promise.all([
-          axios.get('https://api.github.com/repos/devcrician/nazuna', { headers: githubHeaders }),
-          axios.get('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', { headers: githubHeaders })
+          axios.get('https://api.github.com/repos/dgreych/shogun', { headers: githubHeaders }),
+          axios.get('https://api.github.com/repos/dgreych/shogun/commits?per_page=1', { headers: githubHeaders })
             ]).then(([repoResponse, commitsResponse]) => {
           const repo = repoResponse.data;
           
@@ -2443,7 +2449,7 @@ async function member_218_gitbot(scope: MembersGeneratedScope): Promise<unknown>
           reply(gitInfo);
             }).catch((e) => {
           console.error('Erro ao buscar info do GitHub:', e);
-          reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/devcrician/nazuna\n📞 Suporte: wa.me/559681361714`);
+          reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/dgreych/shogun\n📞 Suporte: wa.me/559681361714`);
             });
           });
           } catch (e) {
@@ -3446,16 +3452,16 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
             }
             return '▪️';
           };
-
+          
           const rotulo = (txt) => `${txt}${'\u00a0'.repeat(Math.max(0, 8 - txt.length))}`;
-
+      
           const perfilText = `📋 *PERFIL COMPLETO*
       ${targetName}
-
+      
       👤 *Nome*: ${mentionedUser ? targetName : (pushname || targetName)}
       📱 *Número*: ${targetId}
       📜 *Bio*: ${bio}${bioSetAt ? `\n🕒 *Bio atualizada em*: ${bioSetAt}` : ''}
-
+      
       💰 *Valor do Pacote*: ${pacoteValue} 🫦
       😊 *Humor*: ${randomHumor}
       
@@ -3469,7 +3475,7 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
       ${rotulo('Rico')} ${createProgressBar(levels.rico)} ${String(levels.rico).padStart(3)}% ${getEmoji(levels.rico, 'rico')}
       ${rotulo('Gostosa')} ${createProgressBar(levels.gostosa)} ${String(levels.gostosa).padStart(3)}% ${getEmoji(levels.gostosa, 'gostosa')}
       ${rotulo('Feio')} ${createProgressBar(levels.feio)} ${String(levels.feio).padStart(3)}% ${getEmoji(levels.feio, 'feio')}`.trim();
-
+      
           // O cartão gerado trocava o rosto da pessoa por um bloco com as iniciais.
           // Aqui a foto de perfil é o conteúdo, não a moldura: do alvo quando há
           // menção ou citação, de quem chamou quando não há.
@@ -3478,7 +3484,7 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
             caption: perfilText,
             mentions: [target]
           }, { quoted: info });
-
+          
         } catch (error) {
           console.error('Erro ao processar comando perfil:', error);
           await reply('Ocorreu um erro ao gerar o perfil 💔');
@@ -3752,3 +3758,4 @@ implements VNextCommandDispatchTarget<MembersGeneratedExecutionContext> {
     return true;
   }
 }
+

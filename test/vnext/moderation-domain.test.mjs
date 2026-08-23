@@ -53,7 +53,7 @@ function fixture(overrides = {}) {
     messagesCache: {},
     rentalExpirationManager: {},
     prefix: '!',
-    botName: 'GYOMEI',
+    botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Teste',
     isOwner: false,
     isLiteMode: false,

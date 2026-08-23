@@ -9,7 +9,6 @@ import { extractJSON } from '../funcs/private/ia.js';
 import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
 import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/shogunCore.js';
-import { normalizeVipCommandsData } from '../utils/vipCommandsManager.js';
 import { buildSafeMessagePreview } from '../utils/safeCommandLog.js';
 
 const results = [];
@@ -293,16 +292,6 @@ await test('a persona padrão tem tema de menu próprio, sem herdar o da anterio
   assert.notEqual(tema.header, PERSONA_MENU_DESIGNS.gyomei?.header);
 });
 
-await test('comandos VIP normalizam bancos vazios e formatos antigos', () => {
-  const empty = normalizeVipCommandsData({});
-  assert.deepEqual(empty.commands, []);
-  assert.ok(empty.categories.ia);
-
-  const legacy = normalizeVipCommandsData([{ command: 'play', enabled: true }]);
-  assert.equal(legacy.commands.length, 1);
-  assert.equal(legacy.commands[0].command, 'play');
-});
-
 await test('setmidia reconhece imagem e GIF citados', () => {
   const image = { url: 'imagem', mediaKey: Buffer.from('x') };
   const gif = { url: 'video', mediaKey: Buffer.from('y'), gifPlayback: true };
@@ -490,6 +479,28 @@ await test('nenhum texto do bot menciona identidade anterior do projeto', () => 
   ];
   const achados = proibidos.filter((re) => re.test(fontes)).map(String);
   assert.deepEqual(achados, [], 'texto do bot nao pode citar a identidade anterior');
+});
+
+await test('update e download do código apontam para o repositório do produto', () => {
+  // O download anunciava entregar o código-fonte deste bot e baixava o de
+  // outro projeto; quem recebia instalava outra coisa achando que era esta.
+  // O update consultava os commits de lá para decidir se havia versão nova.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  assert.ok(!/devcrician/.test(fonte), 'nenhum comando pode apontar para o projeto de origem');
+  assert.ok(!/nazuna-bot\.zip/.test(fonte), 'o arquivo entregue não pode levar o nome antigo');
+  assert.ok(/dgreych\/shogun/.test(fonte), 'o destino precisa ser o repositório próprio');
+});
+
+await test('fotomenu grava na personalidade ativa e o menu lê de lá', () => {
+  // Eram dois sistemas separados: o fotomenu escrevia num arquivo fixo e o
+  // menu lia desse arquivo sem olhar a persona, então trocar a foto da
+  // personalidade ativa não mudava nada na tela.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  const bloco = fonte.slice(fonte.indexOf("case 'fotomenu':"));
+  const corpo = bloco.slice(0, bloco.indexOf("case 'audiomenu':"));
+  assert.ok(/saveCommandMedia\(`\$\{personaMenu\}_menu`/.test(corpo), 'fotomenu precisa gravar no slot da persona');
+  assert.ok(!/midias\/menu\.' \+/.test(corpo), 'não pode voltar a gravar em arquivo fixo');
+  assert.ok(fonte.split("resolveCommandMedia('menu')").length - 1 >= 2, 'menu e submenu leem a mídia da persona');
 });
 
 const failures = results.filter(item => !item.ok);

@@ -141,8 +141,8 @@ function patchIndexSource(source) {
 
   output = replaceRequired(
     output,
-    `    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality).then((respAssist) => {`,
-    `    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA', personality, tipoDaFuncao: typeof ia.makeAssistentRequest, nomeDaFuncao: ia.makeAssistentRequest && ia.makeAssistentRequest.name, previewDaFuncao: ia.makeAssistentRequest ? String(ia.makeAssistentRequest).slice(0, 200) : null, iaKeys: ia ? Object.keys(ia).slice(0, 30) : null }) + '\\n'); } catch (__diagErr) { try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA_ERRO', erro: String(__diagErr && __diagErr.stack || __diagErr) }) + '\\n'); } catch {} }\n    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality).then((respAssist) => {`,
+    `    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
+    `    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA', personality, tipoDaFuncao: typeof ia.makeAssistentRequest, nomeDaFuncao: ia.makeAssistentRequest && ia.makeAssistentRequest.name, previewDaFuncao: ia.makeAssistentRequest ? String(ia.makeAssistentRequest).slice(0, 200) : null, iaKeys: ia ? Object.keys(ia).slice(0, 30) : null }) + '\\n'); } catch (__diagErr) { try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA_ERRO', erro: String(__diagErr && __diagErr.stack || __diagErr) }) + '\\n'); } catch {} }\n    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
     'checkpoint antes da chamada da IA'
   );
 
@@ -575,23 +575,14 @@ case 'return5':
     /case 'criador':\s*\n\s*try\s*\{[\s\S]*?const TextinCriadorInfo = `[\s\S]*?`;\s*\n\s*await reply\(TextinCriadorInfo\);[\s\S]*?\n\s*break;/,
     `case 'criador':
   try {
-    const TextinCriadorInfo = \`╭━━━━⊱ 👨‍💻 *CRÉDITOS DO PROJETO* 👨‍💻 ⊱━━━━╮
+    const TextinCriadorInfo = \`╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ ⭐ *CRIADOR ORIGINAL — HIUDY (HIDUY)*
-│ Este projeto existe graças ao trabalho original dele.
-│ 📱 WhatsApp: https://wa.me/553391967445
-│ 🌐 GitHub: https://github.com/hiudyy
-│ 📸 Instagram: https://instagram.com/hiudyyy_
+│ *Alaska dev* (Maurício)
 │
-│ 🧩 *NAZUNA ATUAL — DEVTOKYO*
-│ Responsável pela base moderna usada nesta versão.
-│ 🌐 Projeto: https://github.com/DevTokyoVx/nazuna
+│ 🌐 github.com/dgreych/shogun
+│ 📱 wa.me/5522997028553
 │
-│ 🛠️ *ADAPTAÇÃO GYOMEI — ALASKA_DEV*
-│ Automações, personalidade e ajustes desta distribuição.
-│ 📱 WhatsApp: https://wa.me/5522997028553
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\`;
+╰━━━━━━━━━━━━━━━━━━━━━━━━╯\`;
     await reply(TextinCriadorInfo);
   } catch (e) {
     console.error(e);

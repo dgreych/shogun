@@ -5,9 +5,9 @@ import legacyDownloadMenu from '../../dados/src/menus/menudown.js';
 import { renderDownloadMenu } from '../../dist-vnext/menu/download.js';
 
 const cases = [
-  ['default', ['!', 'GYOMEI', 'Maurício']],
+  ['default', ['!', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Maurício']],
   ['alternate-prefix', ['#', 'Gyomei Bot', 'Teste']],
-  ['custom-theme', ['.', 'GYOMEI', 'Usuário', {
+  ['custom-theme', ['.', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Usuário', {
     header: 'BOT=#nome#|P=#prefix#',
     menuTopBorder: '<TOP>',
     bottomBorder: '<BOTTOM>',

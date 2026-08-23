@@ -130,15 +130,6 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
         liteModeAware: false,
         failureMessage: '❌ Ocorreu um erro ao carregar o menu NEXO.',
     }),
-    descriptor({
-        id: 'vip',
-        presentationKey: 'vip',
-        rendererKey: 'menuVIP',
-        tokens: ['menuvip', 'vip', 'vipmenu'],
-        ownerOnly: false,
-        liteModeAware: false,
-        failureMessage: '❌ Erro ao carregar menu VIP.',
-    }),
 ]);
 export const MENU_COMMAND_TOKENS = Object.freeze(MENU_COMMAND_DESCRIPTORS.flatMap((item) => item.tokens));
 const menuByToken = new Map();

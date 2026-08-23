@@ -36,10 +36,10 @@ assert(fs.existsSync(markPath) && fs.statSync(markPath).size > 1000, 'marca SHOG
 if (fs.existsSync(runtimeIndexPath)) {
   const runtimeIndex = fs.readFileSync(runtimeIndexPath, 'utf8');
   assert(runtimeIndex.includes("case 'criador'"), 'comando criador presente');
-  assert(runtimeIndex.includes('*SHOGUN* — sentinela independente'), 'identidade pública SHOGUN presente');
-  assert(runtimeIndex.includes('https://github.com/dgreych/shogun'), 'repositório público SHOGUN presente');
-  assert(runtimeIndex.includes('*Maurício Almeida* — criação e direção'), 'direção do produto presente');
-  assert(runtimeIndex.includes('Hiudy e DevTokyo'), 'contribuições de código preservadas');
+  assert(runtimeIndex.includes('github.com/dgreych/shogun'), 'repositório do produto presente');
+  assert(runtimeIndex.includes('*Maurício Almeida*'), 'autoria do produto presente');
+  assert(!runtimeIndex.includes('Hiudy'), 'crédito de terceiro não aparece em saída do bot');
+  assert(!/sentinela/i.test(runtimeIndex), 'sem rótulo genérico na identidade');
   assert(runtimeIndex.includes('Comando não reconhecido'), 'cartão de comando inválido presente');
   assert(runtimeIndex.includes('Talvez você procurasse'), 'sugestões de similaridade presentes');
   assert(runtimeIndex.includes('downloadQuotedCommandMedia'), 'setmidia usa download independente');

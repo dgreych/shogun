@@ -10,7 +10,7 @@ const context = Object.freeze({
   messagesCache: {},
   rentalExpirationManager: {},
   prefix: '!',
-  botName: 'GYOMEI',
+  botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
   pushName: 'Mauricio',
   isOwner: true,
   isLiteMode: false,

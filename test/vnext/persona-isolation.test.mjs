@@ -10,7 +10,7 @@ import { OBRIGACOES, resolveBotName, NOME_PADRAO } from '../../dist-vnext/voice/
  * O !changeperso troca a persona POR COMPLETO. A arquitetura anterior errava
  * nisso: a identidade base carregava traços de personalidade, então escolher
  * outra persona devolvia a nova com o sotaque da antiga — o defeito que existe
- * hoje, em que trocar para Zenitsu ainda dá menus falando como Gyomei.
+ * hoje, em que trocar para Zenitsu ainda dá menus com a voz de outra.
  */
 
 test('nenhum marcador de uma persona aparece nos floreios de outra', () => {
