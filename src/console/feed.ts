@@ -1,5 +1,5 @@
 /**
- * Feed tematico do console: um despacho Shogun por mensagem recebida.
+ * Feed tematico do console: um despacho do bot por mensagem recebida.
  *
  * A hierarquia e deliberadamente simples: natureza e origem na faixa superior,
  * conteudo primeiro no corpo, identidade depois. O tema nunca compete com a
@@ -82,7 +82,7 @@ function regua(esq: string, meio: string, dir: string): string {
 }
 
 function reguaComMarca(): string {
-  const marca = ' SHOGUN / SENTINELA ';
+  const marca = ' 𝖘𝖍𝖔𝖌𝖚𝖓 ';
   const restante = Math.max(0, LARGURA - 1 - larguraVisual(marca));
   return MOLDURA + '\u256d\u2500' + R + OURO + marca + R + MOLDURA + '\u2500'.repeat(restante) + '\u256e' + R;
 }

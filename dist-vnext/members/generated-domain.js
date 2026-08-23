@@ -2382,7 +2382,7 @@ async function member_218_gitbot(scope) {
       │ 📞 *Suporte:* wa.me/559681361714
       │
       ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
+      
       > Use *${prefix}zipbot* para baixar o código!`;
                             reply(gitInfo);
                         }).catch((e) => {
@@ -3130,11 +3130,11 @@ async function member_440_caixa(scope) {
                 const tipoBox = args[0]?.toLowerCase();
                 if (!tipoBox) {
                     return reply(`🎁 *Sistema de Caixas*
-
+      
       ${prefix}caixa diaria - Abre caixa diária grátis
       ${prefix}caixa rara - Abre caixa rara (500 gold)
       ${prefix}caixa lendaria - Abre caixa lendária (2000 gold)
-
+      
       Use ${prefix}inventario para ver seus itens!`);
                 }
                 // Precisa do sistema de economia para caixas pagas
@@ -3413,7 +3413,7 @@ async function member_479_perfil(scope) {
 
       💰 *Valor do Pacote*: ${pacoteValue} 🫦
       😊 *Humor*: ${randomHumor}
-
+      
       ━━━━━━━━━━━━━━━━━━
       🎭 *Níveis*:
       ${rotulo('Puta')} ${createProgressBar(levels.puta)} ${String(levels.puta).padStart(3)}% ${getEmoji(levels.puta, 'puta')}
@@ -3523,7 +3523,7 @@ async function member_502_regras(scope) {
                         return reply("📜 Nenhuma regra definida para este grupo ainda.");
                     }
                     let rulesMessage = `📜 *Regras do Grupo ${groupName}* 📜
-
+      
       `;
                     groupData.rules.forEach((rule, index) => {
                         rulesMessage += `${index + 1}. ${rule}

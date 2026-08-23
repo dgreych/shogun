@@ -67,7 +67,7 @@ try {
     }
     
     // Ativa modo debug se configurado
-    DEBUG_MODE = config.debug === true || process.env.NAZUNA_DEBUG === '1';
+    DEBUG_MODE = config.debug === true || process.env.SHOGUN_DEBUG === '1';
     if (DEBUG_MODE) {
     console.log('🐛 Modo DEBUG ativado - Logs detalhados habilitados');
     }
@@ -137,8 +137,7 @@ async function initializeOptimizedCaches() {
     }
 }
 const codeMode = process.argv.includes('--code')
-    || process.env.SHOGUN_CODE_MODE === '1'
-    || process.env.NAZUNA_CODE_MODE === '1';
+    || process.env.SHOGUN_CODE_MODE === '1';
 
 // Cleanup otimizado do cache de mensagens
 let cacheCleanupInterval = null;
@@ -1161,9 +1160,13 @@ async function createBotSocket(authDir) {
         setTimeout(async () => {
         try {
         const ownerJid = buildUserId(numerodono, config);
-        await NazunaSock.sendMessage(ownerJid, { 
-            text: msgBotOnConfig.message 
-        });
+        // Manda a marca junto quando o arquivo existe. Se faltar, cai no texto
+        // puro: aviso de inicialização não pode falhar por causa da arte.
+        const marca = path.join(__dirname, '..', '..', 'assets', 'brand', 'shogun-mark.png');
+        const conteudo = existsSync(marca)
+            ? { image: { url: marca }, caption: msgBotOnConfig.message }
+            : { text: msgBotOnConfig.message };
+        await NazunaSock.sendMessage(ownerJid, conteudo);
         console.log('✅ Mensagem de inicialização enviada para o dono');
         } catch (sendError) {
         console.error('❌ Erro ao enviar mensagem de inicialização:', sendError.message);

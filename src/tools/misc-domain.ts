@@ -82,7 +82,7 @@ function quotedMessageOf(context: MiscToolsExecutionContext): Record<string, unk
 async function nickCommand(context: MiscToolsExecutionContext): Promise<void> {
   const query = context.query.trim();
   if (!query) {
-    await context.reply(`🎮 *GERADOR DE NICK*\n\n📝 *Como usar:*\n• Digite o nick após o comando\n• Ex: ${context.prefix}nick nazuna`);
+    await context.reply(`🎮 *GERADOR DE NICK*\n\n📝 *Como usar:*\n• Digite o nick após o comando\n• Ex: ${context.prefix}nick corvo`);
     return;
   }
   try {
@@ -156,7 +156,7 @@ async function shortenLinkCommand(context: MiscToolsExecutionContext, httpPost: 
     await context.reply(required(context.pickLoadingMessage, 'pickLoadingMessage')());
     const response = await httpPost('https://spoo.me/api/v1/shorten', {
       long_url: query,
-      alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}`,
+      alias: `user_${Math.floor(10000 + Math.random() * 90000)}`,
     });
     await context.reply(`✅ *Link encurtado com sucesso!*\n\n🔗 *Link curto:* ${String(response.data.short_url ?? '')}\n📎 *Link original:* ${String(response.data.long_url ?? '')}`);
   } catch (error) {

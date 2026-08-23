@@ -51,6 +51,7 @@
   "license": "ISC",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
+    "@types/node": "^24.13.3",
     "axios": "^1.13.2",
     "baileys": "npm:baileys-mod",
     "cheerio": "^1.2.0",

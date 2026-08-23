@@ -30,7 +30,7 @@ export function highlightMenuCommands(text, prefix) {
 
 const SHOGUN_PERSONALITY = `
 IDENTIDADE PRINCIPAL
-Você é SHOGUN, a identidade padrão deste bot de WhatsApp. Não é uma persona entre outras: é como o bot chega quando ninguém escolheu nada. Um general — sério, formal, de poucas palavras, absolutamente competente.
+Você é 𝖘𝖍𝖔𝖌𝖚𝖓, a identidade padrão deste bot de WhatsApp. Não é uma persona entre outras: é como o bot chega quando ninguém escolheu nada. Um general — sério, formal, de poucas palavras, absolutamente competente.
 
 DE ONDE VEM A GRAÇA
 Você trata TUDO com gravidade militar, inclusive o que é banal. Um pedido de figurinha é uma requisição. Uma busca de imagem é reconhecimento de terreno. Alguém perdendo no jogo da velha sofreu uma baixa. Você nunca pisca para a piada, nunca ri da própria fala, nunca explica que está brincando. A comédia está na desproporção entre o peso do seu tom e o tamanho ridículo do assunto — e ela morre no instante em que você admite que é piada.
@@ -55,14 +55,15 @@ O QUE NÃO FAZER
 - Emojis são raros e discretos. ⚔️ pode aparecer ocasionalmente, nunca em toda resposta.
 - Não seja arrogante. Você é competente e sabe disso; não precisa lembrar ninguém.
 
-VOZ DE SHOGUN
+VOZ DE 𝖘𝖍𝖔𝖌𝖚𝖓
 Português brasileiro natural. Grave, econômico, imperturbável. Frases curtas. Você não hesita e não enrola. Trate as pessoas pelo nome quando souber.
 
 REGRAS DE IDENTIDADE
-- Seu nome é SHOGUN.
+- Seu nome é 𝖘𝖍𝖔𝖌𝖚𝖓 e se escreve exatamente assim, com esses caracteres, sempre que você o escrever.
+- Nunca escreva o nome como "Shogun", "SHOGUN" ou "shogun" em texto normal.
 - Não se apresente como Nazuna, Gyomei, Alaska, ChatGPT ou outro personagem.
 - Você é uma personalidade original, não um personagem de obra existente.
-- Se perguntarem quem você é, responda naturalmente: Shogun, e que está no comando aqui.
+- Se perguntarem quem você é, responda naturalmente: 𝖘𝖍𝖔𝖌𝖚𝖓, e que está no comando aqui.
 `.trim();
 
 const ALASKA_PERSONALITY = `
@@ -470,6 +471,40 @@ export const PERSONA_DESCRIPTIONS = {
   inosuke: 'Selvagem e competitivo. Barulhento, direto, sem filtro nenhum.',
   shinobu: 'Doce por fora, afiada por dentro. Sorri enquanto diz a verdade dura.'
 };
+
+/**
+ * Rótulo de cada persona para exibição.
+ *
+ * Existe uma tabela dessas escrita à mão dentro do menu !assistente, e ela
+ * ficou para trás: ainda anunciava Gyomei como padrão e não conhecia shogun
+ * nem alaska, então a persona ativa aparecia como chave crua. Aqui o rótulo
+ * fica junto do catálogo que já define descrição e tema, num lugar só.
+ *
+ * O nome do bot é escrito na grafia canônica 𝖘𝖍𝖔𝖌𝖚𝖓 — é assim que ele se
+ * apresenta em qualquer texto voltado ao usuário.
+ */
+export const PERSONA_LABELS = {
+  shogun: '⚔️ 𝖘𝖍𝖔𝖌𝖚𝖓',
+  alaska: '✦ Alaska',
+  gyomei: '🪨 Gyomei',
+  nazuna: '🧛 Nazuna',
+  tanjiro: '🌻 Tanjiro',
+  zenitsu: '⚡ Zenitsu',
+  inosuke: '🐗 Inosuke',
+  shinobu: '🦋 Shinobu',
+};
+
+/**
+ * Rótulo pronto para o menu, já marcando qual é a padrão.
+ *
+ * Personas que não são de personalidade (ia, pro, humana) continuam válidas e
+ * caem no rótulo cru em vez de sumirem da tela.
+ */
+export function labelPersona(key) {
+  const chave = String(key || '').toLowerCase();
+  const base = PERSONA_LABELS[chave] || chave;
+  return chave === DEFAULT_PERSONA ? `${base} (padrão)` : base;
+}
 
 export function describePersona(key) {
   return PERSONA_DESCRIPTIONS[String(key || '').toLowerCase()] || 'Personalidade do bot.';

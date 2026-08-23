@@ -102,8 +102,8 @@ function validateConfig(config) {
 
   config = {
     ...config,
-    nomedono: process.env.GYOMEI_OWNER_NAME || process.env.NOMEDONO || config.nomedono,
-    numerodono: process.env.GYOMEI_OWNER_NUMBER || process.env.NUMERODONO || config.numerodono,
+    nomedono: process.env.SHOGUN_OWNER_NAME || process.env.NOMEDONO || config.nomedono,
+    numerodono: process.env.SHOGUN_OWNER_NUMBER || process.env.NUMERODONO || config.numerodono,
   };
 
   for (const field of ['nomebot', 'prefixo', 'nomedono', 'numerodono']) {

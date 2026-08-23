@@ -29,13 +29,13 @@ async function member_001_roles(scope: MembersGeneratedScope): Promise<unknown> 
             await reply('🪩 Nenhum rolê ativo no momento.');
            break;
           }
-
+      
           const wantsPv = normalizar(args[0] || '') === 'pv';
           const sendInPv = !isGroupAdmin || wantsPv;
           const sendTarget = sendInPv ? sender : from;
           const listLines = roleEntries.map(([roleCode, roleData], index) => formatRoleSummary(roleCode, roleData, roleEntries.length > 1 ? index : null));
           const listText = `🪩 *Rolês ativos*\n\n${listLines.join('\n\n')}\n\n🙋 Reaja com ${ROLE_GOING_BASE} ou use ${groupPrefix}role.vou CODIGO\n🤷 Reaja com ${ROLE_NOT_GOING_BASE} ou use ${groupPrefix}role.nvou CODIGO`;
-
+      
           try  {
             await nazu.sendMessage(sendTarget, { text: listText });
           if  (sendInPv && sendTarget !== from) {
@@ -69,32 +69,32 @@ async function member_005_role_vou(scope: MembersGeneratedScope): Promise<unknow
             await reply('⚠️ Este comando só pode ser usado em grupos.');
            break;
           }
-
+      
           const code = sanitizeRoleCode(args[0] || '');
             if  (!code) {
             await reply(`📋 Informe o código do rolê. Exemplo: ${groupPrefix}role.vou CODIGO`);
            break;
           }
-
+      
           const roleData = groupData.roles[code];
             if  (!roleData) {
             await reply('❌ Não encontrei nenhum rolê com esse código.');
            break;
           }
-
+      
           const participants = ensureRoleParticipants(roleData);
             if  (participants.going.includes(sender)) {
             await reply(`🙋 Você já confirmou presença no rolê *${roleData.title || code}*.`);
            break;
           }
-
+      
           participants.going.push(sender);
           participants.notGoing = participants.notGoing.filter(id => id !== sender);
           participants.updatedAt = new Date().toISOString();
-
+      
           groupData.roles[code] = roleData;
           persistGroupData();
-
+      
           await reply(`✅ Presença confirmada no rolê *${roleData.title || code}*.`);
           // Atualiza anúncio principal
           await refreshRoleAnnouncement(code, roleData);
@@ -122,31 +122,31 @@ async function member_006_role_nvou(scope: MembersGeneratedScope): Promise<unkno
             await reply('⚠️ Este comando só pode ser usado em grupos.');
            break;
           }
-
+      
           const code = sanitizeRoleCode(args[0] || '');
             if  (!code) {
             await reply(`📋 Informe o código do rolê. Exemplo: ${groupPrefix}role.nvou CODIGO`);
            break;
           }
-
+      
           const roleData = groupData.roles[code];
             if  (!roleData) {
             await reply('❌ Não encontrei nenhum rolê com esse código.');
            break;
           }
-
+      
           const participants = ensureRoleParticipants(roleData);
           const wasGoing = participants.going.includes(sender);
-
+      
           participants.going = participants.going.filter(id => id !== sender);
             if  (!participants.notGoing.includes(sender)) {
             participants.notGoing.push(sender);
           }
           participants.updatedAt = new Date().toISOString();
-
+      
           groupData.roles[code] = roleData;
           persistGroupData();
-
+      
           await reply(wasGoing ? `🤷 Presença removida do rolê *${roleData.title || code}*.` : `🤷 Você já estava marcado como ausente para o rolê *${roleData.title || code}*.`);
           // Atualiza anúncio principal
           await refreshRoleAnnouncement(code, roleData);
@@ -202,7 +202,7 @@ async function member_007_role(scope: MembersGeneratedScope): Promise<unknown> {
           lines.push('');
           lines.push(`🤷 Desistiram (${notGoing.length}):`);
           lines.push(notGoing.length ? notGoing.map(id => `• @${getUserName(id)}`).join('\n') : '• —');
-
+          
           // Envia com a mídia salva se disponível
             if  (roleData.media) {
             try  {
@@ -211,7 +211,7 @@ async function member_007_role(scope: MembersGeneratedScope): Promise<unknown> {
             caption: lines.join('\n'),
             mentions: [...going, ...notGoing]
           };
-
+          
           if  (roleData.media.type === 'image') {
             payload.image = buffer;
             payload.mimetype = roleData.media.mimetype;
@@ -222,7 +222,7 @@ async function member_007_role(scope: MembersGeneratedScope): Promise<unknown> {
           payload.gifPlayback = true;
             }
           }
-
+          
           await nazu.sendMessage(from, payload, { quoted: info });
             } catch (mediaError) {
           console.log('Erro ao enviar mídia do rolê:', mediaError.message);
@@ -388,12 +388,12 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             const userEntries = Object.entries(levelingData.users || {});
             const groupUsers = userEntries.filter(([id, data]) => AllgroupMembers.includes(id));
           if  (groupUsers.length === 0) return reply('📊 Nenhum usuário do grupo encontrado no sistema de levels.');
-
+      
             const sortedUsers = groupUsers
           .map(([id, userData]) => ({ id, level: userData?.level || 1, xp: userData?.xp || 0, messages: userData?.messages || 0, commands: userData?.commands || 0, patent: userData?.patent || 'Iniciante' }))
           .sort((a, b) => (b.level !== a.level ? b.level - a.level : b.xp - a.xp))
           .slice(0, 15);
-
+      
             let text = '🏆 *RANKING DE LEVELS DO GRUPO* 🏆\n\n';
             const mentions = [];
             sortedUsers.forEach((user, i) => {
@@ -408,7 +408,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += '\n✨ Continue jogando e interagindo para subir no ranking!';
             return reply(text, { mentions });
           }
-
+      
           // Se não for grupo, serve como ranking global
           const levelingDataRank = loadLevelingSafe();
           const sortedUsers = Object.entries(levelingDataRank.users || {}).sort((a,b)=> (b[1]?.level || 1) - (a[1]?.level || 1) || (b[1]?.xp || 0) - (a[1]?.xp || 0) ).slice(0, 15);
@@ -418,7 +418,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           return reply(rankMessage, { mentions: mentionsG });
           }
           const mentioned = (menc_jid2 && menc_jid2[0]) || (q.includes('@') ? q.split(' ')[0].replace('@','') : null);
-
+      
           if  (sub === 'resetrpg') {
             if  (!(isOwner && !isSubOwner && (sender === nmrdn || isBotSender))) return reply('Apenas o Dono principal pode resetar usuários.');
           const target = (menc_jid2 && menc_jid2[0]) || null;
@@ -436,7 +436,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           saveEconomy(econ);
           return reply(`✅ Dados RPG resetados para @${getUserName(target)}.`, { mentions:[target] });
           }
-
+      
           if  (sub === 'perfilrpg') {
           // Perfil completo do RPG
           const total = (me.wallet||0) + (me.bank||0);
@@ -445,33 +445,33 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           const nextLevelXp = 100 * Math.pow(1.5, level - 1);
           const expProgress = `${exp}/${Math.floor(nextLevelXp)}`;
           const expPercent = Math.min(100, Math.floor((exp / nextLevelXp) * 100));
-
+          
           // Skills
           ensureUserSkills(me);
           const topSkills = SKILL_LIST.map(sk => ({ name: sk, level: me.skills[sk]?.level || 1 }))
             .sort((a,b) => b.level - a.level).slice(0, 3);
-
+          
           // Estatísticas gerais
           const battlesWon = me.battlesWon || 0;
           const battlesLost = me.battlesLost || 0;
           const totalBattles = battlesWon + battlesLost;
           const winRate = totalBattles > 0 ? Math.floor((battlesWon / totalBattles) * 100) : 0;
-
+          
           const achievements = Object.keys(me.achievements || {}).length;
           const pets = (me.pets || []).length;
           const premiumItems = Object.keys(me.premiumItems || {}).length;
-
+          
           // Progresso de prestige
           const prestigeLevel = me.prestige?.level || 0;
           const prestigeMultiplier = me.prestige?.bonusMultiplier || 1;
-
+          
           // Reputação
           const reputation = me.reputation?.points || 0;
           const karma = me.reputation?.karma || 0;
-
+          
           // Streak diário
           const streak = me.streak?.count || 0;
-
+          
           // Classe
           const classes = {
             'guerreiro': { emoji: '⚔️', name: 'Guerreiro' },
@@ -482,14 +482,14 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             'paladino': { emoji: '🛡️', name: 'Paladino' }
           };
           const classeInfo = me.classe ? `${classes[me.classe]?.emoji} ${classes[me.classe]?.name}` : 'Nenhuma';
-
+          
           // Clã
           let clanInfo = 'Nenhum';
             if  (me.clan && econ.clans[me.clan]) {
             const myClan = econ.clans[me.clan];
             clanInfo = myClan.name || 'Sem nome';
           }
-
+          
           // Casa
           const casas = {
             'barraca': { emoji: '⛺', name: 'Barraca' },
@@ -499,22 +499,22 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             'castelo': { emoji: '🏯', name: 'Castelo' }
           };
           const houseInfo = me.house?.type ? `${casas[me.house.type]?.emoji || ''} ${casas[me.house.type]?.name || me.house.type}` : 'Nenhuma';
-
+          
           // Família e Relacionamento
             if  (!me.family) me.family = { spouse: null, children: [], parents: [], siblings: [] };
           const familyChildren = (me.family.children || []).length;
-
+          
           // Buscar relacionamento ativo do sistema de relacionamentos
           let familySpouse = 'Solteiro(a)';
           let relationshipType = '';
           let relationshipEmoji = '';
           const mentions = [];
-
+          
           const activePair = relationshipManager.getActivePairForUser(sender);
             if  (activePair && activePair.partnerId) {
             familySpouse = `@${activePair.partnerId.split('@')[0]}`;
             mentions.push(activePair.partnerId);
-
+            
             // Determinar tipo de relacionamento
           if  (activePair.pair?.status === 'casamento') {
           relationshipType = 'Casado(a)';
@@ -527,34 +527,34 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           relationshipEmoji = '🎈';
             }
           }
-
+          
           let text = `╭━━━⊱ ⚔️ *PERFIL RPG* ⚔️ ⊱━━━╮\n`;
           text += `│ ${pushname}\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-
+          
           text += `📊 *NÍVEL & EXPERIÊNCIA*\n`;
           text += `├ Level: ${level}\n`;
           text += `├ XP: ${expProgress} (${expPercent}%)\n`;
           text += `├ Prestige: ${prestigeLevel}x (${prestigeMultiplier.toFixed(2)}x)\n`;
           text += `└ Streak: ${streak} dia${streak !== 1 ? 's' : ''}\n\n`;
-
+          
           text += `💰 *FINANÇAS*\n`;
           text += `├ Carteira: ${fmt(me.wallet)}\n`;
           text += `├ Banco: ${fmt(me.bank)}\n`;
           text += `├ Total: ${fmt(total)}\n`;
           text += `└ Emprego: ${me.job ? econ.jobCatalog[me.job]?.name || me.job : 'Desempregado(a)'}\n\n`;
-
+          
           text += `🎭 *PERSONALIZAÇÃO*\n`;
           text += `├ Classe: ${classeInfo}\n`;
           text += `├ Clã: ${clanInfo}\n`;
           text += `└ Casa: ${houseInfo}\n\n`;
-
+          
           text += `⚔️ *COMBATE*\n`;
           text += `├ Vitórias: ${battlesWon}\n`;
           text += `├ Derrotas: ${battlesLost}\n`;
           text += `├ Win Rate: ${winRate}%\n`;
           text += `└ Poder: ${me.power || 100}\n\n`;
-
+          
           text += `🛠️ *HABILIDADES (TOP 3)*\n`;
           topSkills.forEach((sk, i) => {
             const prefixChar = i === topSkills.length - 1 ? '└' : '├';
@@ -562,7 +562,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += `${prefixChar} ${skillName}: Lv.${sk.level}\n`;
           });
           text += `\n`;
-
+          
           text += `👨‍👩‍👧‍👦 *FAMÍLIA & RELACIONAMENTO*\n`;
             if  (relationshipEmoji) {
             text += `├ ${relationshipEmoji} Status: ${relationshipType}\n`;
@@ -571,21 +571,21 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += `├ 💔 Status: Solteiro(a)\n`;
           }
           text += `└ Filhos: ${familyChildren}\n\n`;
-
+          
           text += `🏆 *COLECIONÁVEIS*\n`;
           text += `├ Conquistas: ${achievements}\n`;
           text += `├ Pets: ${pets}\n`;
           text += `└ Itens Premium: ${premiumItems}\n\n`;
-
+          
           text += `⭐ *REPUTAÇÃO*\n`;
           text += `├ Pontos: ${reputation}\n`;
           text += `└ Karma: ${karma}\n\n`;
-
+          
           text += `💎 Use ${prefix}meustats para ver estatísticas detalhadas`;
-
+          
           return reply(text, mentions.length > 0 ? { mentions } : undefined);
           }
-
+          
           if  (sub === 'carteira') {
           const total = (me.wallet||0) + (me.bank||0);
           return reply(`╭━━━⊱ 👤 *PERFIL FINANCEIRO* 👤 ⊱━━━╮
@@ -607,7 +607,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │
       ╰━━━━━━━━━━━━━━━━━━━━━╯`);
           }
-
+      
           if  (sub === 'depositar' || sub === 'dep') {
           const amount = parseAmount(q.split(' ')[0], me.wallet);
             if  (!isFinite(amount) || amount <= 0) return reply('❌ Informe um valor válido (ou "all").');
@@ -634,7 +634,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           // TAXA DE SAQUE: 5%
           const taxa = Math.floor(amount * 0.05);
           const received = amount - taxa;
-          me.bank -= amount;
+          me.bank -= amount; 
           me.wallet += received;
           saveEconomy(econ);
           return reply(`╭━━━⊱ 💳 *SAQUE* 💳 ⊱━━━╮
@@ -648,7 +648,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │
       ╰━━━━━━━━━━━━━━━━━━━━━╯`);
           }
-
+      
           if  (sub === 'transferir' || sub === 'pix') {
             if  (!mentioned) return reply(`╭━━━⊱ 💸 *TRANSFERÊNCIA* 💸 ⊱━━━╮
       │
@@ -681,7 +681,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │
       ╰━━━━━━━━━━━━━━━━━━━━━━━━╯`, { mentions:[mentioned] });
           }
-
+      
           if  (sub === 'loja' || sub === 'lojarps') {
           const items = Object.entries(econ.shop||{});
             if  (items.length === 0) return reply('❌ A loja está vazia no momento.');
@@ -736,7 +736,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │
       ╰━━━━━━━━━━━━━━━━━━━━╯`);
           }
-
+      
           if  (sub === 'inventario' || sub === 'inv') {
           const entries = Object.entries(me.inventory||{}).filter(([,q])=>q>0);
           let text = '╭━━━⊱ 🎒 *INVENTÁRIO* 🎒 ⊱━━━╮\n│\n';
@@ -762,7 +762,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += '│\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯';
           return reply(text);
           }
-
+      
           // Materiais e preços
           if  (sub === 'materiais') {
           const mats = me.materials || {};
@@ -886,7 +886,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             if  (isChallengeCompleted(me) && !ch.claimed) text += `\n\n💡 Use: ${prefix}desafio coletar`;
           return reply(text);
           }
-
+      
           if  (sub === 'apostar' || sub === 'bet') {
           const cdBet = me.cooldowns?.bet || 0;
             if  (Date.now() < cdBet) return reply(`⏳ Aguarde ${timeLeft(cdBet)} para apostar novamente.`);
@@ -895,15 +895,15 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             if  (amount > me.wallet) return reply('Saldo insuficiente.');
           // CASSINO NERFADO: 3% de chance de ganhar (era 47%)
           const win = Math.random() < 0.03;
-            if  (win) {
+            if  (win) { 
             me.wallet += Math.floor(amount * 0.8); // ganha apenas 80% do apostado
             me.cooldowns.bet = Date.now() + 10*60*1000; // 10 minutos (era 3)
-            saveEconomy(econ);
-            return reply(`╭───⊃⊱ 🍀 *VITÓRIA RARA!* 🍀 ⊃⊱───╮\n│\n│ 💰 Ganhou: *+${fmt(Math.floor(amount * 0.8))}*\n│ 🎰 Sorte incrível!\n│\n╰─────────────────────╯`);
+            saveEconomy(econ); 
+            return reply(`╭───⊃⊱ 🍀 *VITÓRIA RARA!* 🍀 ⊃⊱───╮\n│\n│ 💰 Ganhou: *+${fmt(Math.floor(amount * 0.8))}*\n│ 🎰 Sorte incrível!\n│\n╰─────────────────────╯`); 
           }
-          me.wallet -= amount;
+          me.wallet -= amount; 
           me.cooldowns.bet = Date.now() + 10*60*1000; // 10 minutos (era 3)
-          saveEconomy(econ);
+          saveEconomy(econ); 
           return reply(`╭───⊃⊱ 💥 *PERDEU!* 💥 ⊃⊱───╮\n│\n│ 💸 Perdeu: *-${fmt(amount)}*\n│ 🎰 A casa sempre ganha...\n│\n╰─────────────────────╯`);
           }
           if  (sub === 'slots') {
@@ -936,13 +936,13 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           me.wallet += delta; // delta pode ser negativo
           saveEconomy(econ);
           me.cooldowns.slots = Date.now() + 8*60*1000; // 8 minutos (era 2)
-
+          
           let slotText = `╭━━━⊱ 🎰 *SLOTS* 🎰 ⊱━━━╮\n`;
           slotText += `│\n`;
           slotText += `│ ${r.join(' | ')}\n`;
           slotText += `│\n`;
           slotText += `╰━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-
+          
             if  (mult > 1) {
             slotText += `╭━━━⊱ 🎉 *GANHOU!* 🎉 ⊱━━━╮\n`;
             slotText += `│\n`;
@@ -956,10 +956,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             slotText += `│\n`;
             slotText += `╰━━━━━━━━━━━━━━━━━━━━╯`;
           }
-
+          
           return reply(slotText);
           }
-
+      
           if  (sub === 'vagas') {
           let jobs = econ.jobCatalog || {};
           // Se não houver vagas no arquivo de economia, usar catálogo padrão embutido
@@ -971,7 +971,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           "gerente": { name: "Gerente", min: 260, max: 420 }
             };
           }
-
+      
           let txt = '╭━━━⊱ 💼 *VAGAS DE EMPREGO* 💼 ⊱━━━╮\n│\n';
           Object.entries(jobs).forEach(([k, j]) => {
             txt += `│ 🔹 *${k}*\n│   ${j.name}\n│   💰 ${fmt(j.min)}-${fmt(j.max)}\n│\n`;
@@ -991,25 +991,25 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │ ${prefix}emprego vendedor
       │
       ╰━━━━━━━━━━━━━━━━━━━━━╯`);
-
+      
           const defaultJobs = {
             "estagiario": { name: "Estagiário", min: 80, max: 140 },
             "designer": { name: "Designer", min: 150, max: 250 },
             "programador": { name: "Programador", min: 200, max: 350 },
             "gerente": { name: "Gerente", min: 260, max: 420 }
           };
-
+      
           const jobCatalog = (econ.jobCatalog && Object.keys(econ.jobCatalog).length) ? econ.jobCatalog : defaultJobs;
           // Normaliza a busca da vaga ignorando acentos
           const key = findKeyIgnoringAccents(jobCatalog, rawKey) || normalizeParam(rawKey);
           const job = jobCatalog[key];
             if  (!job) return reply('❌ Vaga inexistente. Use ' + prefix + 'vagas para ver disponíveis.');
-
+      
           // If economy file had no jobCatalog, persist defaults so future queries find them
             if  (!econ.jobCatalog || Object.keys(econ.jobCatalog).length === 0) {
             econ.jobCatalog = jobCatalog;
           }
-
+      
           me.job = key;
           saveEconomy(econ);
           return reply(`╭━━━⊱ ✅ *CONTRATADO!* ✅ ⊱━━━╮
@@ -1022,18 +1022,18 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       │
       ╰━━━━━━━━━━━━━━━━━━━━━━━╯`);
           }
-          if  (sub === 'demitir') {
-          me.job = null;
-          saveEconomy(econ);
+          if  (sub === 'demitir') { 
+          me.job = null; 
+          saveEconomy(econ); 
           return reply(`╭━━━⊱ 👋 *DEMISSÃO* 👋 ⊱━━━╮
       │
       │ ✅ Você pediu demissão
       │
       │ 💼 Veja novas vagas: ${prefix}vagas
       │
-      ╰━━━━━━━━━━━━━━━━━━━━━━╯`);
+      ╰━━━━━━━━━━━━━━━━━━━━━━╯`); 
           }
-
+      
           if  (sub === 'pescar' || sub === 'fish') {
           const cd = me.cooldowns?.fish || 0; if (Date.now()<cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para pescar novamente.`);
           const base = 80 + Math.floor(Math.random()*121); // 80-200 (BALANCEADO)
@@ -1041,19 +1041,19 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           const bonus = Math.floor(base * ((fishBonus||0) + skillB)); const total = base + bonus;
           me.wallet += total; me.cooldowns.fish = Date.now() + 12*60*1000; // 12 min
           addSkillXP(me,'fishing',1); updateChallenge(me,'fish',1,true); updatePeriodChallenge(me,'fish',1,true);
-
+          
           // Adiciona peixe como ingrediente
           me.ingredients = me.ingredients || {};
           const fishQty = 2 + Math.floor(Math.random()*3); // 2-4 peixes
           me.ingredients.peixe = (me.ingredients.peixe || 0) + fishQty;
-
+          
           // Rastrear stats
             if  (!me.stats) me.stats = {};
           me.stats.totalFish = (me.stats.totalFish || 0) + 1;
           me.stats.fishCount = (me.stats.fishCount || 0) + 1;
-
+          
           saveEconomy(econ);
-
+          
           let fishText = `╭━━━⊱ 🎣 *PESCOU!* 🎣 ⊱━━━╮\n`;
           fishText += `│\n`;
           fishText += `│ 💰 Ganhou: *${fmt(total)}*\n`;
@@ -1063,38 +1063,38 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           fishText += `│ 🐟 Peixe: *+${fishQty}*\n`;
           fishText += `│\n`;
           fishText += `╰━━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
           return reply(fishText);
           }
-
+      
           if  (sub === 'explorar' || sub === 'explore') {
-          const cd = me.cooldowns?.explore || 0;
+          const cd = me.cooldowns?.explore || 0; 
             if  (Date.now()<cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para explorar novamente.`);
           const base = 100 + Math.floor(Math.random()*151); // 100-250 (BALANCEADO)
           const skillB = getSkillBonus(me,'exploring');
           const bonus = Math.floor(base * ((exploreBonus||0) + skillB));
           const total = base + bonus;
-          me.wallet += total;
+          me.wallet += total; 
           me.cooldowns.explore = Date.now() + 15*60*1000; // 15 min
-          addSkillXP(me,'exploring',1);
-          updateChallenge(me,'explore',1,true);
+          addSkillXP(me,'exploring',1); 
+          updateChallenge(me,'explore',1,true); 
           updatePeriodChallenge(me,'explore',1,true);
           // Rastrear stats
             if  (!me.stats) me.stats = {};
           me.stats.totalExplore = (me.stats.totalExplore || 0) + 1;
           me.stats.exploreCount = (me.stats.exploreCount || 0) + 1;
-
+          
           // Adiciona materiais da exploração
           const matsGain = {};
             if  (Math.random() < 0.6) matsGain.madeira = 1 + Math.floor(Math.random() * 3); // 60% chance, 1-3 madeira
             if  (Math.random() < 0.3) matsGain.corda = 1; // 30% chance, 1 corda
             if  (Math.random() < 0.4) matsGain.linha = 1 + Math.floor(Math.random() * 2); // 40% chance, 1-2 linha
             if  (Math.random() < 0.2) matsGain.cristal = 1; // 20% chance, 1 cristal (raro)
-
+          
           for (const [mk,mq] of Object.entries(matsGain)) giveMaterial(me, mk, mq);
-
+          
           saveEconomy(econ);
-
+          
           let exploreText = `╭━━━⊱ 🧭 *EXPLOROU!* 🧭 ⊱━━━╮\n`;
           exploreText += `│\n`;
           exploreText += `│ 💰 Ganhou: *${fmt(total)}*\n`;
@@ -1106,10 +1106,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           }
           exploreText += `│\n`;
           exploreText += `╰━━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
           return reply(exploreText);
           }
-
+      
           if  (sub === 'cacar' || sub === 'caçar' || sub === 'hunt') {
           const cd = me.cooldowns?.hunt || 0; if (Date.now()<cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para caçar novamente.`);
           const base = 22 + Math.floor(Math.random()*34); // 22-55 (era 45-120)
@@ -1117,20 +1117,20 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           const bonus = Math.floor(base * ((huntBonus||0) + skillB) * 0.4); const total = base + bonus; // bônus reduzido 60%
           me.wallet += total; me.cooldowns.hunt = Date.now() + 22*60*1000; // 22 min (era 6 min)
           addSkillXP(me,'hunting',1); updateChallenge(me,'hunt',1,true); updatePeriodChallenge(me,'hunt',1,true);
-
+          
           // Adiciona carne como ingrediente
           me.ingredients = me.ingredients || {};
           const meatQty = 1 + (Math.random() < 0.25 ? 1 : 0); // 1-2 carnes (25% chance de pegar 2)
           me.ingredients.carne = (me.ingredients.carne || 0) + meatQty;
-
+          
           // Adiciona materiais da caça
           const huntMats = {};
             if  (Math.random() < 0.5) huntMats.couro = 1 + Math.floor(Math.random() * 2); // 50% chance, 1-2 couro
-
+          
           for (const [mk,mq] of Object.entries(huntMats)) giveMaterial(me, mk, mq);
-
+          
           saveEconomy(econ);
-
+          
           let huntText = `╭━━━⊱ 🏹 *CAÇOU!* 🏹 ⊱━━━╮\n`;
           huntText += `│\n`;
           huntText += `│ 💰 Ganhou: *${fmt(total)}*\n`;
@@ -1143,10 +1143,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           }
           huntText += `│\n`;
           huntText += `╰━━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
           return reply(huntText);
           }
-
+      
           if  (sub === 'forjar' || sub === 'forge') {
             if  (!me.materials) me.materials = {};
             if  (!me.inventory) me.inventory = {};
@@ -1156,7 +1156,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             let text = `╭━━━⊱ ⚒️ *RECEITAS DE FORJA* ⊱━━━╮\n`;
             text += `│ 💰 Seu gold: ${fmt(me.wallet)}\n`;
             text += `╰━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-
+            
             const recipes = econ.recipes || {};
           if  (Object.keys(recipes).length === 0) {
           text += `❌ Nenhuma receita disponível no momento.`;
@@ -1165,10 +1165,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           for (const [key, recipe] of Object.entries(recipes)) {
             const item = econ.shop[key];
             if  (!item) continue;
-
+            
             text += `🔸 *${item.name || key}*\n`;
             text += `   💰 Custo: ${fmt(recipe.gold || 0)}\n`;
-
+            
             if  (recipe.requires && Object.keys(recipe.requires).length > 0) {
           const materials = Object.entries(recipe.requires).map(([mat, qty]) => `${mat} x${qty}`).join(', ');
           text += `   📦 Materiais: ${materials}\n`;
@@ -1176,11 +1176,11 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += `   💡 Forjar: ${prefix}forjar ${key}\n\n`;
           }
             }
-
+            
             text += `💡 *Dica:* Use ${prefix}materiais para ver seus materiais disponíveis`;
             return reply(text);
           }
-
+          
           // Modo 1: craft a partir de receitas
           // Normaliza o nome da receita ignorando acentos
           const craftKey = findKeyIgnoringAccents(econ.recipes || {}, rawCraftKey) || normalizeParam(rawCraftKey);
@@ -1223,19 +1223,19 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             return reply(`🔥 A forja falhou e os materiais foram perdidos.`);
           }
           }
-
+      
           if (sub === 'crime') {
-          const cd = me.cooldowns?.crime || 0;
+          const cd = me.cooldowns?.crime || 0; 
             if  (Date.now()<cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para tentar de novo.`);
           const success = Math.random() < 0.18; // 18% sucesso (era 35%)
             if  (success) {
             const base = 40 + Math.floor(Math.random()*61); // 40-100 (era 90-230)
             const skillB = getSkillBonus(me,'crime');
             const gain = Math.floor(base * (1 + skillB * 0.3)); // skill bônus reduzido
-            me.wallet += gain;
+            me.wallet += gain; 
             me.cooldowns.crime = Date.now()+30*60*1000; // 30 min
-            addSkillXP(me,'crime',1);
-            updateChallenge(me,'crimeSuccess',1,true);
+            addSkillXP(me,'crime',1); 
+            updateChallenge(me,'crimeSuccess',1,true); 
             updatePeriodChallenge(me,'crimeSuccess',1,true);
             // Rastrear stats
           if  (!me.stats) me.stats = {};
@@ -1251,8 +1251,8 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       ╰━━━━━━━━━━━━━━━━━━━━━╯`);
           } else {
             const fine = 200 + Math.floor(Math.random()*401); // multa maior: 200-600 (era 120-320)
-            const pay = Math.min(me.wallet, fine);
-            me.wallet -= pay;
+            const pay = Math.min(me.wallet, fine); 
+            me.wallet -= pay; 
             me.cooldowns.crime = Date.now()+30*60*1000; // 30 min (era 10 min)
             saveEconomy(econ);
             return reply(`╭━━━⊱ 🚔 *PEGO!* 🚔 ⊱━━━╮
@@ -1263,7 +1263,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
       ╰━━━━━━━━━━━━━━━━━━━━╯`);
           }
           }
-
+      
           // ===== SISTEMA DE COZINHAR =====
           if  (sub === 'receitas') {
           // Inicializa receitas culinárias se não existir
@@ -1280,7 +1280,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             };
             saveEconomy(econ);
           }
-
+      
           let text = '📖 *RECEITAS CULINÁRIAS*\n\n';
           for (const [key, rec] of Object.entries(econ.cookingRecipes)) {
             const ingredients = Object.entries(rec.requires).map(([ing, qty]) => `${ing} x${qty}`).join(', ');
@@ -1294,10 +1294,10 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `💡 *Dica:* Plante ingredientes com ${prefix}plantar`;
           return reply(text);
           }
-
+      
           if  (sub === 'cozinhar' || sub === 'cook') {
           const recipeKey = (args[0] || '').toLowerCase();
-
+          
           // Inicializa receitas se não existir
             if  (!econ.cookingRecipes) {
             econ.cookingRecipes = {
@@ -1311,27 +1311,27 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           macarrao: { name: '🍝 Macarrão', requires: { trigo: 3, tomate: 2 }, gold: 20, sellPrice: 90, energy: 25 }
             };
           }
-
+      
             if  (!recipeKey) {
             return reply(`👨‍🍳 *SISTEMA DE COZINHA*\n\n📖 Veja as receitas disponíveis: ${prefix}receitas\n🍳 Cozinhar: ${prefix}cozinhar <receita>\n\n💡 Exemplo: ${prefix}cozinhar pao`);
           }
-
+      
           const recipe = econ.cookingRecipes[recipeKey];
             if  (!recipe) {
             return reply(`❌ Receita não encontrada! Use ${prefix}receitas para ver todas as receitas disponíveis.`);
           }
-
+      
           // Verifica cooldown
           const cd = me.cooldowns?.cook || 0;
             if  (Date.now() < cd) {
             return reply(`⏳ Você ainda está cozinhando! Aguarde ${timeLeft(cd)}.`);
           }
-
+      
           // Verifica gold
             if  (me.wallet < recipe.gold) {
             return reply(`💰 Você precisa de ${fmt(recipe.gold)} para cozinhar ${recipe.name}. Saldo atual: ${fmt(me.wallet)}`);
           }
-
+      
           // Verifica ingredientes
           me.ingredients = me.ingredients || {};
           for (const [ing, qty] of Object.entries(recipe.requires)) {
@@ -1339,41 +1339,41 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           return reply(`📦 Ingredientes insuficientes! Você precisa de ${ing} x${qty}, mas tem apenas x${me.ingredients[ing] || 0}.\n\n🌱 Plante ingredientes com ${prefix}plantar`);
             }
           }
-
+      
           // Consome recursos
           me.wallet -= recipe.gold;
           for (const [ing, qty] of Object.entries(recipe.requires)) {
             me.ingredients[ing] -= qty;
           }
-
+      
           // Adiciona comida ao inventário
           me.cookedFood = me.cookedFood || {};
           me.cookedFood[recipeKey] = (me.cookedFood[recipeKey] || 0) + 1;
-
+      
           // Skill e desafios
           addSkillXP(me, 'cooking', 2);
           updateChallenge(me, 'cook', 1, true);
           updatePeriodChallenge(me, 'cook', 1, true);
-
+          
           // Atualiza progresso de missões diárias
           updateQuestProgress(me, 'cook', 1);
-
+      
           // Cooldown de 3 minutos
           me.cooldowns.cook = Date.now() + 3 * 60 * 1000;
-
+          
           saveEconomy(econ);
-
+      
           return reply(`👨‍🍳 *COZINHA CONCLUÍDA!*\n\n${recipe.name} preparado com sucesso!\n⚡ Energia: +${recipe.energy}\n💵 Valor de venda: ${fmt(recipe.sellPrice)}\n\n🍴 Use ${prefix}comer ${recipeKey} para consumir\n💰 Use ${prefix}vendercomida ${recipeKey} para vender`);
           }
-
+      
           // ===== SISTEMA DE PLANTAÇÃO =====
           if  (sub === 'plantacao' || sub === 'plantação' || sub === 'horta') {
           me.farm = me.farm || { plots: [], maxPlots: 4, lastExpansion: 0 };
-
+          
           const now = Date.now();
           let text = '🌾 *MINHA PLANTAÇÃO*\n\n';
           text += `📊 Terrenos: ${me.farm.plots.length}/${me.farm.maxPlots}\n\n`;
-
+      
             if  (me.farm.plots.length === 0) {
             text += '🌱 Sua plantação está vazia!\n\n';
           } else {
@@ -1381,7 +1381,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           const timeLeft = plot.readyAt - now;
           const isReady = timeLeft <= 0;
           const seed = econ.seeds?.[plot.seed] || { name: plot.seed, growTime: 600000, yield: { [plot.seed]: 1 } };
-
+          
           text += `🌱 *Terreno ${idx + 1}*\n`;
           text += `  Semente: ${seed.name}\n`;
           if  (isReady) {
@@ -1393,18 +1393,18 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `\n`;
             });
           }
-
+      
           text += `\n💡 *Comandos:*\n`;
           text += `🌱 Plantar: ${prefix}plantar <semente>\n`;
           text += `🌾 Colher: ${prefix}colher\n`;
           text += `📦 Sementes: ${prefix}sementes\n`;
-
+      
           return reply(text);
           }
-
+      
           if  (sub === 'plantar' || sub === 'plant' || sub === 'farm') {
           const seedKey = (args[0] || '').toLowerCase();
-
+          
           // Inicializa sistema de sementes
             if  (!econ.seeds) {
             econ.seeds = {
@@ -1421,7 +1421,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             };
             saveEconomy(econ);
           }
-
+      
             if  (!seedKey) {
             let text = '🌱 *SISTEMA DE PLANTAÇÃO*\n\n';
             text += '📦 *Sementes Disponíveis:*\n\n';
@@ -1437,25 +1437,25 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += `💡 Exemplo: ${prefix}plantar trigo`;
             return reply(text);
           }
-
+      
           const seed = econ.seeds[seedKey];
             if  (!seed) {
             return reply(`❌ Semente não encontrada! Use ${prefix}plantar para ver as sementes disponíveis.`);
           }
-
+      
           // Inicializa fazenda do usuário
           me.farm = me.farm || { plots: [], maxPlots: 4, lastExpansion: 0 };
-
+      
           // Verifica se tem espaço
             if  (me.farm.plots.length >= me.farm.maxPlots) {
             return reply(`🌾 Todos os seus terrenos estão ocupados! Aguarde a colheita ou expanda sua fazenda.\n\n🌾 Use ${prefix}colher para colher plantas prontas`);
           }
-
+      
           // Verifica gold
             if  (me.wallet < seed.cost) {
             return reply(`💰 Você precisa de ${fmt(seed.cost)} para plantar ${seed.name}. Saldo: ${fmt(me.wallet)}`);
           }
-
+      
           // Planta
           me.wallet -= seed.cost;
           const now = Date.now();
@@ -1464,39 +1464,39 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             plantedAt: now,
             readyAt: now + seed.growTime
           });
-
+      
           // Skill
           addSkillXP(me, 'farming', 1);
           updateChallenge(me, 'plant', 1, true);
           updatePeriodChallenge(me, 'plant', 1, true);
-
+      
           saveEconomy(econ);
-
+      
           const mins = Math.floor(seed.growTime / 60000);
           return reply(`🌱 ${seed.name} plantado com sucesso!\n\n⏱️ Estará pronto para colher em ${mins} minutos.\n🌾 Terrenos ocupados: ${me.farm.plots.length}/${me.farm.maxPlots}\n\n💡 Use ${prefix}horta para ver suas plantações`);
           }
-
+      
           if  (sub === 'colher' || sub === 'harvest') {
           me.farm = me.farm || { plots: [], maxPlots: 4, lastExpansion: 0 };
-
+      
             if  (me.farm.plots.length === 0) {
             return reply(`🌾 Você não tem nada plantado!\n\n🌱 Use ${prefix}plantar <semente> para começar a cultivar.`);
           }
-
+      
           const now = Date.now();
           const readyPlots = me.farm.plots.filter(plot => plot.readyAt <= now);
-
+      
             if  (readyPlots.length === 0) {
             const nextReady = Math.min(...me.farm.plots.map(p => p.readyAt));
             const timeLeft = Math.ceil((nextReady - now) / 60000);
             return reply(`⏳ Nenhuma planta está pronta para colher ainda.\n\n🕐 Próxima colheita em: ${timeLeft} minuto(s)\n\n💡 Use ${prefix}horta para ver o status de todas as plantações`);
           }
-
+      
           // Colhe todas as plantas prontas
           me.ingredients = me.ingredients || {};
           let harvestedText = '';
           let totalValue = 0;
-
+      
           readyPlots.forEach(plot => {
             const seed = econ.seeds?.[plot.seed];
           if  (seed && seed.yield) {
@@ -1507,34 +1507,34 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           }
             }
           });
-
+      
           // Remove plantas colhidas
           me.farm.plots = me.farm.plots.filter(plot => plot.readyAt > now);
-
+      
           // Skill e desafios
           addSkillXP(me, 'farming', readyPlots.length * 2);
           updateChallenge(me, 'harvest', readyPlots.length, true);
           updatePeriodChallenge(me, 'harvest', readyPlots.length, true);
-
+          
           // Atualiza progresso de missões diárias (coletar recursos)
           updateQuestProgress(me, 'gather', readyPlots.length);
-
+      
           saveEconomy(econ);
-
+      
           harvestedText = harvestedText.slice(0, -2); // Remove última vírgula
-
+      
           return reply(`🌾 *COLHEITA CONCLUÍDA!*\n\n✅ Plantas colhidas: ${readyPlots.length}\n📦 Ingredientes obtidos:\n${harvestedText}\n\n💵 Valor estimado: ${fmt(totalValue)}\n🌱 Terrenos livres: ${me.farm.maxPlots - me.farm.plots.length}/${me.farm.maxPlots}\n\n👨‍🍳 Use ${prefix}receitas para ver o que pode cozinhar!`);
           }
-
+      
           // ===== COMANDOS COMPLEMENTARES DE COZINHA =====
           if  (sub === 'ingredientes') {
           me.ingredients = me.ingredients || {};
           const entries = Object.entries(me.ingredients).filter(([, qty]) => qty > 0);
-
+          
             if  (entries.length === 0) {
             return reply(`📦 *INGREDIENTES*\n\nVocê não possui ingredientes.\n\n🌱 Plante com ${prefix}plantar para conseguir ingredientes!`);
           }
-
+      
           let text = '📦 *MEUS INGREDIENTES*\n\n';
           for (const [ing, qty] of entries) {
             text += `• ${ing}: x${qty}\n`;
@@ -1542,18 +1542,18 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `\n👨‍🍳 Use ${prefix}receitas para ver o que pode cozinhar`;
           return reply(text);
           }
-
+      
           if  (sub === 'comer' || sub === 'eat') {
           const foodKey = (args[0] || '').toLowerCase();
-
+          
           me.cookedFood = me.cookedFood || {};
-
+          
             if  (!foodKey) {
             const entries = Object.entries(me.cookedFood).filter(([, qty]) => qty > 0);
           if  (entries.length === 0) {
           return reply(`🍽️ Você não tem comida preparada.\n\n👨‍🍳 Cozinhe algo com ${prefix}cozinhar`);
             }
-
+            
             let text = '🍽️ *COMIDAS PREPARADAS*\n\n';
             for (const [key, qty] of entries) {
           const recipe = econ.cookingRecipes?.[key];
@@ -1567,59 +1567,59 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             text += `💰 Vender: ${prefix}vendercomida <comida>`;
             return reply(text);
           }
-
+      
             if  (!me.cookedFood[foodKey] || me.cookedFood[foodKey] <= 0) {
             return reply(`❌ Você não tem ${foodKey} preparado.\n\n👨‍🍳 Cozinhe com ${prefix}cozinhar ${foodKey}`);
           }
-
+      
           const recipe = econ.cookingRecipes?.[foodKey];
             if  (!recipe) {
             return reply('❌ Receita não encontrada.');
           }
-
+      
           // Consome a comida
           me.cookedFood[foodKey] -= 1;
-
+          
           // Adiciona energia (pode ser usado para reduzir cooldowns ou dar bônus)
           me.energy = (me.energy || 0) + recipe.energy;
-
+          
           // Skill
           addSkillXP(me, 'cooking', 1);
-
+          
           saveEconomy(econ);
-
+      
           return reply(`😋 *DELICIOSO!*\n\nVocê comeu ${recipe.name}!\n⚡ Energia: +${recipe.energy}\n💪 Energia total: ${me.energy}\n\n💡 Quanto mais energia, mais bônus você recebe!`);
           }
-
+      
           if  (sub === 'vendercomida') {
           const foodKey = (args[0] || '').toLowerCase();
-
+          
           me.cookedFood = me.cookedFood || {};
-
+          
             if  (!foodKey) {
             return reply(`💰 *VENDER COMIDA*\n\nUse: ${prefix}vendercomida <comida>\n\n💡 Veja suas comidas com ${prefix}comer`);
           }
-
+      
           const qty = parseInt(args[1]) || 1;
-
+          
             if  (!me.cookedFood[foodKey] || me.cookedFood[foodKey] < qty) {
             return reply(`❌ Você não tem ${qty}x ${foodKey}.\n\n🍽️ Você tem: ${me.cookedFood[foodKey] || 0}`);
           }
-
+      
           const recipe = econ.cookingRecipes?.[foodKey];
             if  (!recipe) {
             return reply('❌ Receita não encontrada.');
           }
-
+      
           const totalValue = recipe.sellPrice * qty;
           me.cookedFood[foodKey] -= qty;
           me.wallet += totalValue;
-
+          
           saveEconomy(econ);
-
+      
           return reply(`💰 *VENDA CONCLUÍDA!*\n\nVocê vendeu ${qty}x ${recipe.name}\n💵 Ganhou: ${fmt(totalValue)}\n💼 Carteira: ${fmt(me.wallet)}`);
           }
-
+      
           if  (sub === 'sementes') {
           // Inicializa sementes se não existir
             if  (!econ.seeds) {
@@ -1635,7 +1635,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             };
             saveEconomy(econ);
           }
-
+      
           let text = '🌱 *CATÁLOGO DE SEMENTES*\n\n';
           for (const [key, seed] of Object.entries(econ.seeds)) {
             const mins = Math.floor(seed.growTime / 60000);
@@ -1649,7 +1649,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `💡 *Dica:* Use ${prefix}horta para ver suas plantações`;
           return reply(text);
           }
-
+      
           if  (sub === 'minerar' || sub === 'mine') {
           const cd = me.cooldowns?.mine || 0;
             if  (Date.now() < cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para minerar novamente.`);
@@ -1690,7 +1690,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           const broke = pk.dur===0 && before>0;
           return reply(`⛏️ Você minerou e ganhou ${fmt(total)} ${bonus>0?`(bônus ${fmt(bonus)})`:''}!\n📦 Drops: ${dropTxt||'—'}\n🛠️ Picareta: ${pk.dur}/${me.tools.pickaxe.max}${broke?' — quebrou!':''}`);
           }
-
+      
           if  (sub === 'trabalhar' || sub === 'work') {
           const cd = me.cooldowns?.work || 0;
             if  (Date.now() < cd) return reply(`⏳ Aguarde ${timeLeft(cd)} para trabalhar novamente.`);
@@ -1708,7 +1708,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           saveEconomy(econ);
           return reply(`💼 Você trabalhou e recebeu ${fmt(total)} ${bonus>0?`(bônus ${fmt(bonus)})`:''}!`);
           }
-
+      
           // ===== Mercado entre usuários =====
           if  (sub === 'mercado') {
           const items = econ.market || [];
@@ -1776,7 +1776,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           saveEconomy(econ);
           return reply(`🛒 Compra realizada! Taxa de ${fmt(tax)} aplicada. Vendedor recebeu ${fmt(ofr.price - tax)}.`);
           }
-
+      
           // ===== Propriedades =====
           if  (sub === 'propriedades') {
           const keys = Object.keys(econ.propertiesCatalog||{});
@@ -1831,7 +1831,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             if  (Object.keys(matsGain).length>0) msg += ` | Materiais: `+Object.entries(matsGain).map(([k,q])=>`${k} x${q}`).join(', ');
           return reply(msg);
           }
-
+      
           // ===== Habilidades & Desafios Periódicos (visualização) =====
           if  (sub === 'habilidades') {
           ensureUserSkills(me);
@@ -1858,7 +1858,7 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           }
           return reply(text);
           }
-
+      
           if  (sub === 'assaltar' || sub === 'roubar') {
             if  (!mentioned) return reply('Marque alguém para assaltar.');
             if  (mentioned === sender) return reply('Você não pode assaltar a si mesmo.');
@@ -1887,24 +1887,24 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             return reply(`🚨 Você foi pego! Pagou ${fmt(pay)} de multa para @${getUserName(mentioned)}.`, { mentions:[mentioned] });
           }
           }
-
+      
           if  (sub === 'diario' || sub === 'daily') {
           const cd = me.cooldowns?.daily || 0;
           const now = Date.now();
-
+          
             if  (now < cd) {
             return reply(`⏳ Você já coletou hoje!\n\n🕐 Volte em: ${timeLeft(cd)}`);
           }
-
+          
           // Sistema de Streak (sequência diária)
             if  (!me.streak) {
             me.streak = { count: 0, lastClaim: 0, record: 0 };
           }
-
+          
           const oneDayMs = 24 * 60 * 60 * 1000;
           const twoDaysMs = 48 * 60 * 60 * 1000;
           const timeSinceLastClaim = now - me.streak.lastClaim;
-
+          
           // Verifica se manteve a sequência (coletou no dia seguinte)
             if  (timeSinceLastClaim <= twoDaysMs && timeSinceLastClaim >= oneDayMs) {
             me.streak.count += 1;
@@ -1914,17 +1914,17 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           } else {
             me.streak.count = 1;
           }
-
+          
           // Atualiza recorde
             if  (me.streak.count > me.streak.record) {
             me.streak.record = me.streak.count;
           }
-
+          
           // Calcula recompensa baseada no streak
           const baseReward = 150;
           const streakBonus = Math.min(me.streak.count * 10, 300); // Máx +300
           const totalReward = baseReward + streakBonus;
-
+          
           // Bônus especial a cada 7 dias
           let extraBonus = 0;
           let bonusMessage = '';
@@ -1932,23 +1932,23 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             extraBonus = 500;
             bonusMessage = '\n🎉 *BÔNUS DE 7 DIAS:* +500!';
           }
-
+          
           // Bônus especial a cada 30 dias
             if  (me.streak.count % 30 === 0) {
             extraBonus += 2000;
             bonusMessage += '\n🏆 *BÔNUS DE 30 DIAS:* +2000!';
           }
-
+          
           const finalReward = totalReward + extraBonus;
-
+          
           me.wallet += finalReward;
           me.streak.lastClaim = now;
           me.cooldowns.daily = now + oneDayMs;
-
+          
           // Adiciona XP
           const xpGain = 50 + (me.streak.count * 5);
           me.exp = (me.exp || 0) + xpGain;
-
+          
           // Verifica level up
           const level = me.level || 1;
           const nextLevelXp = 100 * Math.pow(1.5, level - 1);
@@ -1958,9 +1958,9 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
             me.level += 1;
             leveledUp = true;
           }
-
+          
           saveEconomy(econ);
-
+          
           let text = `╭━━━⊱ 🎁 *RECOMPENSA DIÁRIA* ⊱━━━╮\n`;
           text += `│\n`;
           text += `│ 💰 Base: +${fmt(baseReward)}\n`;
@@ -1976,20 +1976,20 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `│ 🏆 Recorde: ${me.streak.record} dia${me.streak.record !== 1 ? 's' : ''}\n`;
           text += `│\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
             if  (bonusMessage) {
             text += bonusMessage;
           }
-
+          
             if  (leveledUp) {
             text += `\n\n⚡ *LEVEL UP!* Agora você é level ${me.level}!`;
           }
-
+          
           text += `\n\n💡 Volte amanhã para manter a sequência!`;
-
+          
           return reply(text);
           }
-
+      
           if  (sub === 'toprpg') {
           const arr = Object.entries(econ.users).map(([id,u])=>[id,(u.wallet||0)+(u.bank||0)]).sort((a,b)=>b[1]-a[1]).slice(0,10);
             if  (arr.length===0) return reply('Sem dados suficientes para ranking.');
@@ -2003,9 +2003,9 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
           text += `\n✨ Continue jogando para subir no rank!`;
           return reply(text, { mentions });
           }
-
-
-
+      
+          
+      
           return reply('Comando RPG inválido. Use '+prefix+'menurpg para ver todos os comandos.');
             }
     }
@@ -2025,13 +2025,13 @@ async function member_016_conquistas(scope: MembersGeneratedScope): Promise<unkn
       case 'medalhas': {
           if  (!isGroup) return reply('⚔️ Este comando funciona apenas em grupos com Modo RPG ativo.');
           if  (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
-
+          
           const econ = loadEconomy();
           const me = getEcoUser(econ, sender);
-
+          
           me.achievements = me.achievements || {};
           me.stats = me.stats || { totalMine: 0, totalWork: 0, totalFish: 0, totalHunt: 0, totalExplore: 0, totalBattles: 0, totalWins: 0, totalCrimes: 0 };
-
+          
           const achievements = [
           { id: 'minerador', name: '⛏️ Minerador', desc: 'Minere 100 vezes', req: me.stats.totalMine >= 100, progress: `${me.stats.totalMine || 0}/100` },
           { id: 'trabalhador', name: '💼 Trabalhador', desc: 'Trabalhe 50 vezes', req: me.stats.totalWork >= 50, progress: `${me.stats.totalWork || 0}/50` },
@@ -2044,29 +2044,29 @@ async function member_016_conquistas(scope: MembersGeneratedScope): Promise<unkn
           { id: 'colecionador', name: '🐾 Colecionador', desc: 'Tenha 5 pets', req: (me.pets?.length || 0) >= 5, progress: `${me.pets?.length || 0}/5` },
           { id: 'criminoso', name: '🦹 Criminoso', desc: 'Cometa 30 crimes', req: me.stats.totalCrimes >= 30, progress: `${me.stats.totalCrimes || 0}/30` }
           ];
-
+          
           let unlockedCount = 0;
           let text = `╭━━━⊱ 🏅 *CONQUISTAS* ⊱━━━╮\n`;
           text += `│ Aventureiro: *${pushname}*\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━╯\n\n`;
-
+          
           for (const ach of achievements) {
           const unlocked = ach.req;
             if  (unlocked && !me.achievements[ach.id]) {
             me.achievements[ach.id] = Date.now();
           }
             if  (unlocked) unlockedCount++;
-
+          
           const status = unlocked ? '✅' : '🔒';
           text += `${status} ${ach.name}\n`;
           text += `   ${ach.desc}\n`;
           text += `   📊 Progresso: ${ach.progress}\n\n`;
           }
-
+          
           text += `╭━━━━━━━━━━━━━━━━━━━━╮\n`;
           text += `│ 🏆 Total: ${unlockedCount}/${achievements.length} conquistas\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
           saveEconomy(econ);
           return reply(text);
             }
@@ -2087,10 +2087,10 @@ async function member_059_reputacao(scope: MembersGeneratedScope): Promise<unkno
       case 'reputation': {
           if  (!isGroup) return reply('⚔️ Este comando funciona apenas em grupos com Modo RPG ativo.');
           if  (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
-
+          
           const econ = loadEconomy();
           const me = getEcoUser(econ, sender);
-
+          
           if  (!me.reputation) {
           me.reputation = {
             points: 0,
@@ -2100,7 +2100,7 @@ async function member_059_reputacao(scope: MembersGeneratedScope): Promise<unkno
             fame: 0
           };
           }
-
+          
           let text = `╭━━━⊱ ⭐ *REPUTAÇÃO* ⊱━━━╮\n`;
           text += `│ ${pushname}\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━╯\n\n`;
@@ -2109,14 +2109,14 @@ async function member_059_reputacao(scope: MembersGeneratedScope): Promise<unkno
           text += `👎 Votos Negativos: ${me.reputation.downvotes}\n`;
           text += `☯️ Karma: ${me.reputation.karma}\n`;
           text += `🌟 Fama: ${me.reputation.fame}\n\n`;
-
+          
           const repLevel = Math.floor(me.reputation.points / 100);
           const ranks = ['Novato', 'Conhecido', 'Respeitado', 'Famoso', 'Lendário'];
           const rank = ranks[Math.min(repLevel, ranks.length - 1)];
-
+          
           text += `🏅 Classificação: *${rank}*\n\n`;
           text += `💡 Use ${prefix}votar @user para dar reputação`;
-
+          
           saveEconomy(econ);
           return reply(text);
              break;
@@ -2138,21 +2138,21 @@ async function member_074_slots(scope: MembersGeneratedScope): Promise<unknown> 
       case 'cacaniquel': {
           if  (!isGroup) return reply('⚔️ Este comando funciona apenas em grupos com Modo RPG ativo.');
           if  (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
-
+          
           const econ = loadEconomy();
           const me = getEcoUser(econ, sender);
-
+          
           // Cooldown de 8 minutos
           const cdSlots2 = me.cooldowns?.slots2 || 0;
           if  (Date.now() < cdSlots2) return reply(`⏳ Aguarde ${timeLeft(cdSlots2)} para jogar slots novamente.`);
-
+          
           const bet = parseInt(args[0]) || 0;
           if  (bet <= 0) return reply(`🎰 *CAÇA-NÍQUEIS*\n\n💡 Uso: ${prefix}slots <valor>\n\n🎲 Alinhe 3 símbolos iguais para ganhar!`);
           if  (bet > me.wallet) return reply('❌ Saldo insuficiente!');
-
+          
           // SLOTS NERFADO: Cada posição tem preferência por símbolos diferentes
           const symbols = ['🍒', '🍋', '🍊', '🍇', '⭐', '💎', '7️⃣'];
-
+          
           const getSymbol = (position) => {
           // Cada posição tem pesos diferentes para quase nunca combinar
           const baseWeights = [25, 20, 18, 15, 12, 7, 3];
@@ -2165,24 +2165,24 @@ async function member_074_slots(scope: MembersGeneratedScope): Promise<unknown> 
           }
           return symbols[0];
           };
-
+          
           const slot1 = getSymbol(0);
           const slot2 = getSymbol(1);
           const slot3 = getSymbol(2);
-
+          
           // Multiplicadores reduzidos
           const multipliers = {
           '🍒': 1.5, '🍋': 2, '🍊': 2.5, '🍇': 3, '⭐': 5, '💎': 10, '7️⃣': 25
           };
-
+          
           me.cooldowns = me.cooldowns || {};
           me.cooldowns.slots2 = Date.now() + 8*60*1000; // 8 minutos
-
+          
           let text = `╭━━━⊱ 🎰 *SLOTS* ⊱━━━╮\n\n`;
           text += `┏━━━━━━━━━━━━━━┓\n`;
           text += `┃  ${slot1}  │  ${slot2}  │  ${slot3}  ┃\n`;
           text += `┗━━━━━━━━━━━━━━┛\n\n`;
-
+          
           if  (slot1 === slot2 && slot2 === slot3) {
           // Jackpot! (muito raro agora)
           const multi = multipliers[slot1];
@@ -2200,9 +2200,9 @@ async function member_074_slots(scope: MembersGeneratedScope): Promise<unknown> 
           me.wallet -= bet;
           text += `💀 *PERDEU!*\n💸 -${bet.toLocaleString()}\n🎰 A máquina parece viciada...`;
           }
-
+          
           text += `\n\n╰━━━━━━━━━━━━━━━━━━━━╯`;
-
+          
           saveEconomy(econ);
           return reply(text);
             }
@@ -2222,32 +2222,32 @@ async function member_082_presente(scope: MembersGeneratedScope): Promise<unknow
       case 'gift': {
           if  (!isGroup) return reply('⚔️ Este comando funciona apenas em grupos com Modo RPG ativo.');
           if  (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
-
+          
           const econ = loadEconomy();
           const me = getEcoUser(econ, sender);
-
+          
           const target = (menc_jid2 && menc_jid2[0]) || null;
           if  (!target) return reply(`🎁 *PRESENTE*\n\n💡 Uso: ${prefix}presente @user <item> <quantidade>\n\n📦 Envie itens do seu inventário para outros jogadores!`);
           if  (target === sender) return reply('❌ Você não pode enviar presentes para si mesmo!');
-
+          
           const item = (args[0] || '').toLowerCase();
           const qty = parseInt(args[1]) || 1;
-
+          
           if  (!item) return reply('❌ Informe o item que deseja enviar!');
-
+          
           me.inventory = me.inventory || {};
           if  (!me.inventory[item] || me.inventory[item] < qty) {
           return reply(`❌ Você não tem ${item} suficiente!\n\n📦 Você tem: ${me.inventory[item] || 0}`);
           }
-
+          
           const targetData = getEcoUser(econ, target);
           targetData.inventory = targetData.inventory || {};
-
+          
           me.inventory[item] -= qty;
           targetData.inventory[item] = (targetData.inventory[item] || 0) + qty;
-
+          
           saveEconomy(econ);
-
+          
           return reply(`╭━━━⊱ 🎁 *PRESENTE ENVIADO* ⊱━━━╮\n\n📦 Item: ${item}\n🔢 Quantidade: ${qty}\n👤 Para: @${target.split('@')[0]}\n\n✨ Presente entregue!\n\n╰━━━━━━━━━━━━━━━━━━━━╯`, { mentions: [target] });
             }
     }
@@ -2266,29 +2266,29 @@ async function member_086_vender(scope: MembersGeneratedScope): Promise<unknown>
       case 'sell': {
           if  (!isGroup) return reply('⚔️ Este comando funciona apenas em grupos com Modo RPG ativo.');
           if  (!groupData.modorpg) return reply(`⚔️ Modo RPG desativado! Use ${prefix}modorpg para ativar.`);
-
+          
           const econ = loadEconomy();
           const me = getEcoUser(econ, sender);
-
+          
           if  (!me.investments || !econ.stockMarket) {
           return reply('❌ Você não tem investimentos!');
           }
-
+          
           const args = q.split(' ');
           const stockType = args[0]?.toLowerCase();
           const amount = parseInt(args[1]) || 1;
-
+          
           if  (!me.investments.stocks[stockType] || me.investments.stocks[stockType] < amount) {
           return reply('❌ Você não tem ações suficientes!');
           }
-
+          
           const price = Math.floor(econ.stockMarket.prices[stockType]);
           const totalValue = price * amount;
-
+          
           me.investments.stocks[stockType] -= amount;
           me.wallet += totalValue;
           me.investments.totalProfit += totalValue;
-
+          
           let text = `╭━━━⊱ 💵 *VENDA* ⊱━━━╮\n`;
           text += `╰━━━━━━━━━━━━━━━━━━━━╯\n\n`;
           text += `✅ Ações vendidas!\n\n`;
@@ -2296,7 +2296,7 @@ async function member_086_vender(scope: MembersGeneratedScope): Promise<unknown>
           text += `📈 Quantidade: ${amount}\n`;
           text += `💰 Recebido: ${totalValue.toLocaleString()}\n`;
           text += `💼 Lucro total: ${me.investments.totalProfit.toLocaleString()}`;
-
+          
           saveEconomy(econ);
           return reply(text);
              break;
@@ -2321,31 +2321,31 @@ async function member_217_zipbot(scope: MembersGeneratedScope): Promise<unknown>
       case 'download-bot':
         try  {
           await reply('📦 Baixando o código-fonte do bot... Aguarde!');
-
+          
           const zipResponse = await axios.get('https://github.com/devcrician/nazuna/archive/refs/heads/main.zip', {
             responseType: 'arraybuffer',
             timeout: 60000 // 60 segundos de timeout
           });
-
+          
             if  (!zipResponse.data) {
             throw new Error('Resposta vazia do servidor GitHub');
           }
-
+          
           await nazu.sendMessage(from, {
             document: Buffer.from(zipResponse.data),
             fileName: 'nazuna-bot.zip',
             mimetype: 'application/zip',
             caption: `📦 *Código-fonte do ${nomebot}*\n\n📖 Leia a documentação no repositório para entender melhor como instalar:\n🔗 https://github.com/devcrician/nazuna\n\n⚠️ *Importante:* Certifique-se de ter Node.js instalado e siga os passos do README.md!`
           }, { quoted: info });
-
+          
           } catch (e) {
           console.error('Erro ao baixar zip do bot:', e);
-          const errorMsg = e.response?.status === 404
-            ? '❌ Repositório não encontrado.'
+          const errorMsg = e.response?.status === 404 
+            ? '❌ Repositório não encontrado.' 
             : e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT'
             ? '❌ Tempo de conexão esgotado. Tente novamente.'
             : '❌ Erro ao baixar o arquivo.';
-
+          
           await reply(`${errorMsg}\n\nTente acessar diretamente:\n🔗 https://github.com/devcrician/nazuna`);
           }
              break;
@@ -2373,13 +2373,13 @@ async function member_218_gitbot(scope: MembersGeneratedScope): Promise<unknown>
         try  {
           reply('🔍 Buscando informações do repositório...').then(() => {
             const githubHeaders = { 'Accept': 'application/vnd.github+json' };
-
+            
             Promise.all([
           axios.get('https://api.github.com/repos/devcrician/nazuna', { headers: githubHeaders }),
           axios.get('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', { headers: githubHeaders })
             ]).then(([repoResponse, commitsResponse]) => {
           const repo = repoResponse.data;
-
+          
           // Pegar total de commits do header Link
           let totalCommits = 0;
           const linkHeader = commitsResponse.headers.link;
@@ -2389,23 +2389,23 @@ async function member_218_gitbot(scope: MembersGeneratedScope): Promise<unknown>
           } else {
             totalCommits = commitsResponse.data.length;
           }
-
+          
           // Calcular tempo desde criação
           const createdDate = new Date(repo.created_at);
           const now = new Date();
           const diffMs = now - createdDate;
-
+          
           const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
           const horas = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutos = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
           const segundos = Math.floor((diffMs % (1000 * 60)) / 1000);
-
+          
           const tempoAtivo = `${dias} dias, ${horas} horas, ${minutos} minutos e ${segundos} segundos`;
-
+          
           const createdAt = createdDate.toLocaleDateString('pt-BR');
           const updatedAt = new Date(repo.updated_at).toLocaleDateString('pt-BR');
           const pushedAt = new Date(repo.pushed_at).toLocaleDateString('pt-BR');
-
+          
           const gitInfo = `╭━━━⊱ 🐙 *GITHUB INFO* ⊱━━━╮
       │
       │ 📦 *Repositório:* ${repo.name}
@@ -2437,9 +2437,9 @@ async function member_218_gitbot(scope: MembersGeneratedScope): Promise<unknown>
       │ 📞 *Suporte:* wa.me/559681361714
       │
       ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
-
+      
       > Use *${prefix}zipbot* para baixar o código!`;
-
+      
           reply(gitInfo);
             }).catch((e) => {
           console.error('Erro ao buscar info do GitHub:', e);
@@ -2467,29 +2467,29 @@ async function member_307_rankativos(scope: MembersGeneratedScope): Promise<unkn
       case 'rankativo':
         try  {
             if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-
+          
           // Verifica se a preservação do contador está ativada
           const preservarContadorRankativo = groupData.preservarContador === true;
-
+          
           // Verify current group members first
           let currentMembers = AllgroupMembers;
           let validUsers = [];
-
+          
           // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
             if  (!preservarContadorRankativo) {
             groupData.contador = groupData.contador.filter(user => {
           const userId = user.id;
           const isValidMember = currentMembers.includes(userId);
-
+          
           if  (!isValidMember) {
             console.log(`[RANKATIVO] Removed departed user: ${userId} (${getUserName(userId)})`);
             return false;
           }
-
+          
           validUsers.push(user);
           return true;
             });
-
+            
             // Save updated data
             fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
           } else {
@@ -2499,7 +2499,7 @@ async function member_307_rankativos(scope: MembersGeneratedScope): Promise<unkn
           return currentMembers.includes(userId);
             });
           }
-
+          
           var blue67;
           blue67 = validUsers.sort((a, b) => (a.figu == undefined ? a.figu = 0 : a.figu + a.msg + a.cmd) < (b.figu == undefined ? b.figu = 0 : b.figu + b.cmd + b.msg) ? 0 : -1);
           var menc;
@@ -2559,29 +2559,29 @@ async function member_308_rankinativos(scope: MembersGeneratedScope): Promise<un
       case 'rankinativo':
         try  {
             if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-
+          
           // Verifica se a preservação do contador está ativada
           const preservarContador = groupData.preservarContador === true;
-
+          
           // Verify current group members first
           let currentMembers = AllgroupMembers;
           let validUsers = [];
-
+          
           // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
             if  (!preservarContador) {
             groupData.contador = groupData.contador.filter(user => {
           const userId = user.id;
           const isValidMember = currentMembers.includes(userId);
-
+          
           if  (!isValidMember) {
             console.log(`[RANKINATIVO] Removed departed user: ${userId} (${getUserName(userId)})`);
             return false;
           }
-
+          
           validUsers.push(user);
           return true;
             });
-
+            
             // Save updated data
             fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
           } else {
@@ -2591,7 +2591,7 @@ async function member_308_rankinativos(scope: MembersGeneratedScope): Promise<un
           return currentMembers.includes(userId);
             });
           }
-
+          
           var blue67;
           blue67 = validUsers.sort((a, b) => {
             const totalA = (a.figu ?? 0) + a.msg + a.cmd;
@@ -2641,36 +2641,36 @@ async function member_309_checkativo(scope: MembersGeneratedScope): Promise<unkn
       case 'checkativo':
         try  {
             if  (!isGroup) return reply("Este comando só funciona em grupos.");
-
+          
           const mentionedJids = info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
           let targetUser = sender;
-
+          
           // Se mencionou alguém, usa o mencionado
             if  (mentionedJids.length > 0) {
             targetUser = mentionedJids[0];
           }
-
+          
           // Verifica se o usuário está no grupo
             if  (!AllgroupMembers.includes(targetUser)) {
             return reply("Este usuário não está no grupo.");
           }
-
+          
           // Busca os dados do usuário no contador
           const userData = (groupData.contador || []).find(u => u.id === targetUser);
           const userName = getUserName(targetUser);
-
+          
             if  (!userData) {
             return reply(`📊 *Atividade de @${userName}*\n\nNenhum dado encontrado no contador deste grupo.`, {
           mentions: [targetUser]
             });
           }
-
+          
           const messages = userData.msg || 0;
           const commands = userData.cmd || 0;
           const stickers = userData.figu || 0;
           const total = messages + commands + stickers;
-
-          const lastActivity = userData.lastActivity
+          
+          const lastActivity = userData.lastActivity 
             ? new Date(userData.lastActivity).toLocaleString('pt-BR', {
             timeZone: 'America/Sao_Paulo',
             day: '2-digit',
@@ -2680,14 +2680,14 @@ async function member_309_checkativo(scope: MembersGeneratedScope): Promise<unkn
             minute: '2-digit'
           })
             : 'N/A';
-
+          
           const checkMessage = `📊 *Atividade de @${userName}*\n\n` +
             `💬 *Mensagens:* ${messages}\n` +
             `⚒️ *Comandos:* ${commands}\n` +
             `🎨 *Figurinhas:* ${stickers}\n` +
             `📈 *Total:* ${total}\n` +
             `🕐 *Última atividade:* ${lastActivity}`;
-
+          
           await reply(checkMessage, {
             mentions: [targetUser]
           });
@@ -2711,50 +2711,50 @@ async function member_310_atividade(scope: MembersGeneratedScope): Promise<unkno
       case 'atividade':
         try  {
             if  (!isGroup) return reply("Este comando só funciona em grupos.");
-
+          
           // Verifica membros atuais do grupo
           const currentMembers = AllgroupMembers;
-
+          
           // Filtra usuários que saíram do grupo
           groupData.contador = (groupData.contador || []).filter(user => {
             return user && user.id && currentMembers.includes(user.id);
           });
-
+          
           // Salva dados atualizados
           writeJsonFile(groupFile, groupData);
             if  (isGroup) {
             optimizer.invalidateGroup(from);
           }
-
+          
           // Verifica se há usuários no contador
             if  (!groupData.contador || groupData.contador.length === 0) {
             return reply("📊 *Atividade do Grupo*\n\nNenhum usuário no contador ainda.");
           }
-
+          
           // Ordena por atividade total (mensagens + comandos + figurinhas)
           const sortedUsers = [...groupData.contador].sort((a, b) => {
             const totalA = (a.msg || 0) + (a.cmd || 0) + (a.figu || 0);
             const totalB = (b.msg || 0) + (b.cmd || 0) + (b.figu || 0);
             return totalB - totalA;
           });
-
+          
           // Monta a mensagem
           let activityMessage = `📊 *Atividade do Grupo*\n\n`;
           activityMessage += `👥 *Total de usuários:* ${sortedUsers.length}\n\n`;
-
+          
           // Lista todos os usuários com suas estatísticas
           const mentions = [];
           sortedUsers.forEach((user, index) => {
           if  (user && user.id) {
           const total = (user.msg || 0) + (user.cmd || 0) + (user.figu || 0);
-
+          
           activityMessage += `${index + 1}º @${getUserName(user.id)}\n`;
           activityMessage += `   💬 Msg: ${user.msg || 0} | ⚒️ Cmd: ${user.cmd || 0} | 🎨 Fig: ${user.figu || 0} | 📈 Total: ${total}\n\n`;
-
+          
           mentions.push(user.id);
             }
           });
-
+          
           await nazu.sendMessage(from, {
             text: activityMessage,
             mentions: mentions
@@ -3079,7 +3079,7 @@ async function member_318_statusgp(scope: MembersGeneratedScope): Promise<unknow
             "╰───────────────╯"
           ].join('\n');
           const fullCaption = (lines + schedLines + '\n' + extrasLines).trim();
-
+      
           await reply(fullCaption, { mentions: ownerJid !== "Desconhecido" ? [ownerJid] : [] });
           } catch (e) {
           console.error("Erro em statusgp:", e);
@@ -3103,7 +3103,7 @@ async function member_324_ping(scope: MembersGeneratedScope): Promise<unknown> {
           const timestamp = Date.now();
           const speedConverted = (timestamp - info.messageTimestamp * 1000) / 1000;
           const uptimeBot = formatUptime(process.uptime());
-
+          
           let statusEmoji = '🟢';
           let statusTexto = 'Excelente';
           let statusCor = '🟩';
@@ -3122,7 +3122,7 @@ async function member_324_ping(scope: MembersGeneratedScope): Promise<unknown> {
             statusTexto = 'Ruim';
             statusCor = '🟥';
           }
-
+          
           await nazu.sendMessage(from, {
             text: `╭⊱ ⚡ *STATUS DA CONEXÃO* ⚡ ⊱╮
       │
@@ -3194,21 +3194,21 @@ async function member_440_caixa(scope: MembersGeneratedScope): Promise<unknown> 
       case 'caixa':
       case 'box':
           if  (!gifts) return reply("Sistema de presentes temporariamente indisponível.");
-
+          
           const tipoBox = args[0]?.toLowerCase();
           if  (!tipoBox) {
           return reply(`🎁 *Sistema de Caixas*
-
+      
       ${prefix}caixa diaria - Abre caixa diária grátis
       ${prefix}caixa rara - Abre caixa rara (500 gold)
       ${prefix}caixa lendaria - Abre caixa lendária (2000 gold)
-
+      
       Use ${prefix}inventario para ver seus itens!`);
           }
-
+          
           // Precisa do sistema de economia para caixas pagas
           const userEco = getEcoUser(sender);
-
+          
           let resultBox;
           if  (tipoBox === 'diaria' || tipoBox === 'daily') {
           resultBox = gifts.openDailyBox(sender);
@@ -3229,7 +3229,7 @@ async function member_440_caixa(scope: MembersGeneratedScope): Promise<unknown> 
           } else {
           return reply(`❌ Tipo inválido! Use: diaria, rara ou lendaria`);
           }
-
+          
           return reply(resultBox.message);
              break;
     }
@@ -3284,10 +3284,10 @@ async function member_445_denunciar(scope: MembersGeneratedScope): Promise<unkno
       case 'report':
           if  (!reputation) return reply("Sistema de reputação temporariamente indisponível.");
           if  (!menc_os2) return reply(`❌ Marque quem você quer denunciar!\n\nUso: ${prefix}denunciar @user <motivo>`);
-
+          
           const motivoDenuncia = args.slice(1).join(' ');
           if  (!motivoDenuncia) return reply("❌ Informe o motivo da denúncia!");
-
+          
           const resultReport = reputation.reportUser(sender, menc_os2, from, motivoDenuncia);
           return reply(resultReport.message);
              break;
@@ -3307,7 +3307,7 @@ async function member_446_denuncias(scope: MembersGeneratedScope): Promise<unkno
       case 'reports':
           if  (!reputation) return reply("Sistema de reputação temporariamente indisponível.");
           if  (!isGroupAdmin && !isOwnerOrSub) return reply("❌ Apenas admins podem ver denúncias!");
-
+          
           const reportsData = reputation.getReports(from);
           return reply(reportsData);
              break;
@@ -3335,9 +3335,9 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
           const target = mentionedUser || sender;
           const targetId = getUserName(target);
           const targetName = `@${targetId}`;
-
+          
           const seed = target.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
+          
           const levels = {
             puta: Math.floor(((Math.sin(seed * 1) * 50 + 50)) % 101),
             gado: Math.floor(((Math.cos(seed * 2) * 50 + 50)) % 101),
@@ -3348,12 +3348,12 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
             gostosa: Math.floor(((Math.sin(seed * 7) * 50 + 50)) % 101),
             feio: Math.floor(((Math.cos(seed * 8) * 50 + 50)) % 101)
           };
-
+          
           const pacoteValue = `R$ ${(Math.random() * 10000 + 1).toFixed(2).replace('.', ',')}`;
-
+          
           const hora = new Date().getHours();
           let humors = ['😎 Tranquilão', '🔥 No fogo', '😴 Sonolento', '🤓 Nerd mode', '😜 Loucura total', '🧘 Zen'];
-
+          
           if (hora < 6) {
             humors = ['🌙 Vampirão', '🦉 Corujão', '👻 Assombrado', '🌃 Notívago', '🧛 Drácula'];
           } else if (hora < 12) {
@@ -3363,16 +3363,16 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
           } else {
             humors = ['🌆 Nostálgico', '🍻 Festivo', '📺 Preguiçoso', '🎮 Gamer', '🍿 Cinéfilo'];
           }
-
+          
           const randomHumor = humors[Math.floor(Math.random() * humors.length)];
-
+          
           let profilePic = 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747053564257_bzswae.bin';
           try {
             profilePic = await nazu.profilePictureUrl(target, 'image');
           } catch (error) {
             console.warn(`Falha ao obter foto do perfil de ${targetName}:`, error.message);
           }
-
+          
           let bio = 'Sem bio disponível';
           let bioSetAt = '';
           try {
@@ -3389,12 +3389,12 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
           } catch (error) {
             console.warn(`Falha ao obter status/bio de ${targetName}:`, error.message);
           }
-
+          
           const createProgressBar = (percent, size = 10) => {
         const filled = Math.min(size, Math.max(0, Math.round((percent / 100) * size)));
         return '▰'.repeat(filled) + '▱'.repeat(size - filled);
        };
-
+          
           const getEmoji = (value, type) => {
             if (type === 'puta') {
           if  (value >= 80) return '🔥🔥';
@@ -3458,7 +3458,7 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
 
       💰 *Valor do Pacote*: ${pacoteValue} 🫦
       😊 *Humor*: ${randomHumor}
-
+      
       ━━━━━━━━━━━━━━━━━━
       🎭 *Níveis*:
       ${rotulo('Puta')} ${createProgressBar(levels.puta)} ${String(levels.puta).padStart(3)}% ${getEmoji(levels.puta, 'puta')}
@@ -3500,9 +3500,9 @@ async function member_500_afk(scope: MembersGeneratedScope): Promise<unknown> {
         try  {
             if  (!isGroup) return reply("Este comando só funciona em grupos.");
           const reason = q.trim();
-
+          
           groupData.afkUsers = groupData.afkUsers || {};
-
+          
           groupData.afkUsers[sender] = {
             reason: reason || 'Não especificado',
             since: Date.now()
@@ -3565,7 +3565,7 @@ async function member_502_regras(scope: MembersGeneratedScope): Promise<unknown>
             return reply("📜 Nenhuma regra definida para este grupo ainda.");
           }
           let rulesMessage = `📜 *Regras do Grupo ${groupName}* 📜
-
+      
       `;
           groupData.rules.forEach((rule, index) => {
             rulesMessage += `${index + 1}. ${rule}

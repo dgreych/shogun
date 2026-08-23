@@ -18,7 +18,7 @@ export const MAX_FLOREIOS_POR_MENSAGEM = 1;
  * O nome vive em configuração porque vai mudar. Deixá-lo incrustado em
  * centenas de strings foi o que tornou a troca cara da última vez.
  */
-export const NOME_PADRAO = 'SHOGUN';
+export const NOME_PADRAO = '𝖘𝖍𝖔𝖌𝖚𝖓';
 
 export function resolveBotName(env: Record<string, string | undefined> = process.env): string {
   return String(env.BOT_NAME ?? '').trim() || NOME_PADRAO;

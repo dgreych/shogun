@@ -1,5 +1,5 @@
 // vNext modular em construção. O bootstrap operacional continua legado até o gate explícito de cutover.
-export { GYOMEI_R0_CONFIG, type GyomeiRuntimeConfig } from './config.js';
+export { SHOGUN_CONFIG, type ShogunRuntimeConfig } from './config.js';
 export type { AppContext } from './app/context.js';
 export {
   LegacyCommandExecutorAdapter,

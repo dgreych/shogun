@@ -232,3 +232,4 @@ export class MessageQueue {
     console.log('✅ MessageQueue finalizado');
     }
 }
+

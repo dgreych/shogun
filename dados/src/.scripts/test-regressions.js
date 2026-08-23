@@ -452,6 +452,46 @@ await test('emojimix distingue dupla inexistente de erro interno', () => {
   assert.ok(/\.trim\(\)/.test(corpo), 'espaços em "🤓 / 🙄" quebrariam os codepoints');
 });
 
+await test('o nome do bot sai na grafia canônica em todo texto voltado ao usuário', () => {
+  // O dono viu a grafia simples escapando em outputs. Como o nome aparece em
+  // lugares independentes — prompt da assistente, nome padrão da voz, rótulo
+  // de persona — cada um podia regredir sozinho, em silêncio.
+  const CANONICO = '\u{1D598}\u{1D58D}\u{1D594}\u{1D58C}\u{1D59A}\u{1D593}';
+  const core = fs.readFileSync(new URL('../utils/gyomeiCore.js', import.meta.url), 'utf8');
+  const contrato = fs.readFileSync(new URL('../../../dist-vnext/voice/contract.js', import.meta.url), 'utf8');
+
+  assert.ok(core.includes(`Você é ${CANONICO},`), 'o prompt precisa apresentar o bot na grafia canônica');
+  assert.ok(core.includes(`shogun: '⚔️ ${CANONICO}'`), 'o rótulo da persona precisa usar a grafia canônica');
+  assert.ok(contrato.includes(CANONICO), 'o nome padrão da voz precisa usar a grafia canônica');
+  assert.ok(!/Você é SHOGUN/.test(core), 'o prompt não pode voltar à grafia simples');
+});
+
+await test('o menu da assistente não fixa personalidades numa lista à mão', () => {
+  // A lista escrita à mão ficou para trás: anunciava Gyomei como padrão e não
+  // conhecia shogun nem alaska, então a persona ativa aparecia como chave crua.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  assert.ok(!/gyomei: '🪨 Gyomei \(Padrão\)'/.test(fonte), 'Gyomei não é mais a persona padrão');
+  assert.ok(/labelPersona/.test(fonte), 'o rótulo precisa vir do catálogo de personas');
+});
+
+await test('nenhum texto do bot menciona identidade anterior do projeto', () => {
+  // As personas gyomei e nazuna continuam validas e ficam de fora da checagem:
+  // sao recurso do produto, nao vestigio.
+  const fontes = ['../index.js', '../utils/database.js', '../connect.js']
+    .map((rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8'))
+    .join('\n');
+  const proibidos = [
+    /base d[ao] Nazuna/i,
+    /continuidade da Nazuna/i,
+    /vers[aã]o GYOMEI/i,
+    /GYOMEI est[aá] (desperto|online)/i,
+    /NAZUNA_(DEBUG|CODE_MODE)/,
+    /GYOMEI_(OWNER|R0_CONFIG)/,
+  ];
+  const achados = proibidos.filter((re) => re.test(fontes)).map(String);
+  assert.deepEqual(achados, [], 'texto do bot nao pode citar a identidade anterior');
+});
+
 const failures = results.filter(item => !item.ok);
 console.log(`\nRegressões: ${results.length - failures.length} aprovadas, ${failures.length} falhas.`);
 process.exit(failures.length ? 1 : 0);

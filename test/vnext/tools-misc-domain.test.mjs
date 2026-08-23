@@ -93,7 +93,7 @@ test('encurtalink preserva contrato HTTP e campos da resposta', async () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'https://spoo.me/api/v1/shorten');
   assert.equal(calls[0][1].long_url, 'https://example.com/longo');
-  assert.match(calls[0][1].alias, /^nazuna_\d{5}$/);
+  assert.match(calls[0][1].alias, /^user_\d{5}$/);
   assert.deepEqual(context.replies, [
     '⏳ carregando',
     '✅ *Link encurtado com sucesso!*\n\n🔗 *Link curto:* https://spoo.me/x\n📎 *Link original:* https://example.com/longo',

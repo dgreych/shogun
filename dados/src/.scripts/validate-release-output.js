@@ -54,7 +54,7 @@ if (fs.existsSync(runtimeIaPath)) {
 
 if (fs.existsSync(runtimeStartPath)) {
   const runtimeStart = fs.readFileSync(runtimeStartPath, 'utf8');
-  assert(runtimeStart.includes('SHOGUN — O sentinela assumiu o posto'), 'inicialização reflete o SHOGUN');
+  assert(runtimeStart.includes('\u{1D598}\u{1D58D}\u{1D594}\u{1D58C}\u{1D59A}\u{1D593} online'), 'inicialização usa a grafia canônica');
 }
 
 if (fs.existsSync(storePath)) {

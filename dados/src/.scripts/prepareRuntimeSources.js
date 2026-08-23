@@ -651,7 +651,7 @@ function patchStartSource(source) {
   output = replaceRequired(
     output,
     `    \`\${colors.bold}⛩️ SHOGUN — Conexão WhatsApp\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
-    `    \`\${colors.bold}⛩️ SHOGUN — O sentinela assumiu o posto\${colors.reset}\`,\n    \`\${colors.bold}🛡️ Disciplina, presença e prontidão em cada missão\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
+    `    \`\${colors.bold}⛩️ 𝖘𝖍𝖔𝖌𝖚𝖓 online\${colors.reset}\`,\n    \`\${colors.bold}🛡️ Moderação, mídia, jogos e economia prontos\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
     'cabeçalho de inicialização do SHOGUN'
   );
   output = output.replace('🛑 Encerrando o SHOGUN. Até a próxima patrulha!', '🛑 SHOGUN encerra a patrulha com segurança.');

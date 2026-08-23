@@ -56,7 +56,8 @@ test('SHOGUN é o nome padrão e Alaska continua uma persona fantasma isolada', 
   assert.equal(ALASKA.chave, 'alaska');
   assert.equal(ALASKA.natureza, 'fantasma');
   assert.equal(resolveBotName({}), NOME_PADRAO);
-  assert.equal(NOME_PADRAO, 'SHOGUN');
+  assert.equal(NOME_PADRAO, '𝖘𝖍𝖔𝖌𝖚𝖓');
+  assert.ok(!/SHOGUN|Shogun/.test(NOME_PADRAO), 'o nome nunca sai em letra comum');
 });
 
 test('cada persona declara sua natureza, que nem sempre é sobrenatural', () => {

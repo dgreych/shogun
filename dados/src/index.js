@@ -258,6 +258,7 @@ import {
 import { parseCustomCommandMeta, buildUsageFromParams, parseArgsFromString, escapeRegExp, validateParamValue } from './utils/helpers.js';
 import { intencaoDoComando } from '../../dist-vnext/voice/classify.js';
 import { emojiDaIntencao, gerundioDaIntencao } from '../../dist-vnext/voice/intents.js';
+import { reacaoDoComando, temaDoComando } from '../../dist-vnext/voice/reacoes.js';
 import { ALASKA } from '../../dist-vnext/voice/personas/alaska.js';
 import { aplicarFloreio } from '../../dist-vnext/voice/persona.js';
 import { despachar as despacharEconomiaRpg } from '../../dist-vnext/rpg/economia/despachante.js';
@@ -567,27 +568,25 @@ function pickCommandEmoji(command) {
   const normalized = String(command || '').toLowerCase();
   // Overrides manuais continuam vencendo: são escolhas deliberadas do dono.
   if (COMMAND_EMOJI_OVERRIDES[normalized]) return COMMAND_EMOJI_OVERRIDES[normalized];
-  // O resto passa a derivar da INTENÇÃO, não do nome. Antes, 44 overrides e 13
-  // regex cobriam 545 famílias e 92% dos comandos caíam no mesmo ⚙️ — era por
-  // isso que a reação parecia sempre igual.
+  // Depois dos overrides vem o assunto do comando, que tem várias reações por
+  // tema: comandos irmãos saem diferentes uns dos outros. A intenção fica de
+  // reserva para o que nenhum tema reconhece — ela informa mais que um neutro.
+  if (temaDoComando(normalized)) return reacaoDoComando(normalized);
   return emojiDaIntencao(intencaoDoComando(normalized));
 }
 
-// Mensagens de espera genéricas (comandos que só avisam "estou processando",
-// sem nada específico pra contar sobre o que estão fazendo). Um pool em vez
-// de string fixa dá variedade sem perder o tom do bot — guardião, disciplina,
-// serenidade — combinando com o resto da identidade do Gyomei.
+// Frases de espera para quando não há nada específico a contar sobre o que
+// está acontecendo. São curtas de propósito: aviso de espera longo atrasa a
+// leitura do que importa, que é a resposta.
 const LOADING_MESSAGES = [
-  '🪨 Um momento... o guardião está cuidando disso.',
-  '🙏 Respire fundo, já estou processando seu pedido.',
-  '⚔️ Concentração total. Só um instante.',
-  '🌊 Como a correnteza, isso já está em movimento...',
-  '🔥 Trabalhando nisso com toda a disciplina.',
-  '🛡️ Aguarde, estou cuidando de cada detalhe do seu pedido.',
-  '🕯️ Só um instante de serenidade antes da resposta.',
-  '💫 Nas sombras, já estou preparando tudo.',
-  '🌸 Paciência, guerreiro(a). Já estou nisso.',
-  '⏳ Firme e forte, processando agora mesmo.'
+  '⏳ Já estou nisso.',
+  '⚡ Um instante.',
+  '🔧 Trabalhando aqui.',
+  '📡 Buscando isso agora.',
+  '🌑 Só um momento.',
+  '⚙️ Processando.',
+  '🗡️ Resolvendo.',
+  '🔹 Aguenta um segundo.'
 ];
 
 function pickLoadingMessage(comando, assunto) {
@@ -4648,12 +4647,9 @@ Código: *${roleCode}*`,
     return;
     }
     
-    // !changeperso agora é por grupo (a pedido do dono): cada grupo pode
-    // ter sua própria identidade completa (tema do menu, nome exibido,
-    // foto E a persona da assistente), igual já funcionava pra nome/foto
-    // no sistema de personalização de grupo. Sem personalização nesse
-    // grupo (ou fora de grupo, ex: DM), cai na identidade global padrão
-    // (Gyomei), a mesma pra todo mundo.
+    // A identidade é por grupo: tema do menu, nome exibido, foto e persona da
+    // assistente. Grupo sem personalização, ou conversa privada, usa a
+    // identidade global padrão.
     const groupPersonaOverride = isGroup && isGroupCustomizationEnabled()
       ? getGroupCustomization(from)?.customPersona
       : null;
@@ -18907,7 +18903,7 @@ case 'listblackglobal':
 case 'encurtalink':
 case 'tinyurl':
   try  {
-      if  (!q) return reply(`❌️ *Forma incorreta, use está como exemplo:* ${prefix + command} https://instagram.com/hiudyyy_`);
+      if  (!q) return reply(`❌️ *Forma incorreta, use está como exemplo:* ${prefix + command} https://instagram.com/instagram`);
     await reply(pickLoadingMessage(command, q));
     const shortResponse = await axios.post("https://spoo.me/api/v1/shorten", {
       long_url: q, 
@@ -22120,7 +22116,7 @@ case 'nomedono':
 case 'nome-dono':
   try  {
       if  (!isOwner) return reply("Este comando é exclusivo para o meu dono!");
-      if  (!q) return reply(`Por favor, digite o novo nome do dono.\nExemplo: ${prefix}${command} Hiudy`);
+      if  (!q) return reply(`Por favor, digite o novo nome do dono.\nExemplo: ${prefix}${command} Mestre`);
     let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
     config.nomedono = q;
     writeJsonFile(CONFIG_FILE, config);
@@ -24617,19 +24613,15 @@ case 'dono':
 
 case 'criador':
   try  {
-    const TextinCriadorInfo = `╭━━━⊱ 👨‍💻 *CRIADORES* 👨‍💻 ⊱━━━╮
+    const TextinCriadorInfo = `╭━━━⊱ 👨‍💻 *CRÉDITOS* 👨‍💻 ⊱━━━╮
 │
-│ 💎 *Hiudy* — criação original
-│ 📱 wa.me/553391967445
-│ 🌐 github.com/hiudyy
-│
-│ 💎 *DevTokyo* — continuidade da Nazuna
-│ 📱 wa.me/5532985076326
-│ 🌐 github.com/DevTokyoVx
-│
-│ 💎 *Alaska_dev* — versão GYOMEI
+│ ⚔️ *Alaska_dev* — desenvolvimento
 │ 📱 wa.me/5522997028553
 │ 🌐 github.com/dgreych
+│
+│ 🤝 *Contribuições no código:*
+│ Hiudy · github.com/hiudyy
+│ DevTokyo · github.com/DevTokyoVx
 │
 ╰━━━━━━━━━━━━━━━━━━━━━━━━╯`;
     await reply(TextinCriadorInfo);
@@ -25418,7 +25410,7 @@ case 'mudarpack':
     let author = "";
     let packname = "";
     if (!q) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Pack`);
     }
     if (q.includes("/")) {
       author = q.split("/")[0] || "";
@@ -25428,7 +25420,7 @@ case 'mudarpack':
       author = "";
     }
     if (!packname) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Pack`);
     }
     const encmediats = await getFileBuffer(
       info.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage,
@@ -25453,7 +25445,7 @@ case 'rgtake':
     let author = "";
     let pack = "";
     if (!q) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Pack`);
     }
     if (q.includes("/")) {
       author = q.split("/")[0] || "";
@@ -25463,7 +25455,7 @@ case 'rgtake':
       author = "";
     }
     if (!pack) {
-      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Hiudy`);
+      return reply(`Formato errado, utilize:\n${prefix}${command} Autor/Pack\nEx: ${prefix}${command} By:/Pack`);
     }
   const filePath = pathz.join(USERS_DIR, 'take.json');
     const dataTake = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : {};
@@ -28802,20 +28794,16 @@ case 'personalidade':
     const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
     let groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {};
     const isAssistenteOn = groupData.assistente !== false;
-    const personalityLabels = {
-      gyomei: '🪨 Gyomei (Padrão)',
-      nazuna: '🧛 Nazuna',
-      tanjiro: '🌻 Tanjiro',
-      zenitsu: '⚡ Zenitsu',
-      inosuke: '🐗 Inosuke',
-      shinobu: '🦋 Shinobu',
+    const rotulosEspeciais = {
       humana: '👤 Humana',
       ia: '🤖 IA Normal',
       pro: '⚡ Pro (Comandos)'
     };
     const currentPersonalityKey = (isGroupCustomizationEnabled() && getGroupCustomization(from)?.customPersona)
       || automacoesV9.getActivePersona();
-    const currentPersonalityLabel = personalityLabels[currentPersonalityKey] || currentPersonalityKey;
+    const currentPersonalityLabel = rotulosEspeciais[currentPersonalityKey]
+      || automacoesV9.labelPersona?.(currentPersonalityKey)
+      || currentPersonalityKey;
 
     // Sem argumento: mostra o menu de status, nunca alterna sozinho
       if  (!q) {

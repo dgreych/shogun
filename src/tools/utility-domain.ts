@@ -40,7 +40,7 @@ async function printSiteCommand(context: UtilityToolsExecutionContext): Promise<
 
 async function zodiacSignsCommand(context: UtilityToolsExecutionContext): Promise<void> {
   await context.reply(`🔮 *Signos do Zodíaco*
-
+      
       ♈ *Áries* (21/03 - 19/04)
       ♉ *Touro* (20/04 - 20/05)
       ♊ *Gêmeos* (21/05 - 20/06)
@@ -53,7 +53,7 @@ async function zodiacSignsCommand(context: UtilityToolsExecutionContext): Promis
       ♑ *Capricórnio* (22/12 - 19/01)
       ♒ *Aquário* (20/01 - 18/02)
       ♓ *Peixes* (19/02 - 20/03)
-
+      
       Use ${context.prefix}horoscopo <signo> para ver a previsão!`);
 }
 
