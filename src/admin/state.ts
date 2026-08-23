@@ -9,7 +9,7 @@ export interface GroupStateStore {
 }
 
 /**
- * Fronteira tipada para o JSON de configuração já persistido pelo Gyomei.
+ * Fronteira tipada para o JSON de configuração já persistido pelo bot.
  *
  * O formato em disco permanece idêntico ao legado durante a migração. O que
  * muda é quem o manipula: domínios TypeScript passam a concentrar leitura,

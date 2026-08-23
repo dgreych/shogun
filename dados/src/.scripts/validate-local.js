@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 import { loadLocalEnv, ROOT_DIR } from './envLoader.js';
 import { prepareRuntimeSources } from './prepareRuntimeSources.js';
-import { finalizeGyomeiRuntime } from './finalizeGyomeiRuntime.js';
+import { finalizeShogunRuntime } from './finalizeShogunRuntime.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.dirname(__filename);
@@ -172,7 +172,7 @@ function validateDependencies() {
 function validateRuntime() {
   try {
     prepareRuntimeSources();
-    finalizeGyomeiRuntime();
+    finalizeShogunRuntime();
     ok('Fontes runtime geradas e finalizadas');
   } catch (error) {
     fail(`Falha ao gerar fontes runtime: ${error.message}`);
@@ -222,7 +222,7 @@ function validateRuntime() {
 
 async function validateMediaExtraction() {
   try {
-    const { getQuotedMediaSource } = await import('../utils/gyomeiCore.js');
+    const { getQuotedMediaSource } = await import('../utils/shogunCore.js');
     const fakeMedia = {
       url: 'https://example.invalid/media',
       mediaKey: Buffer.from('gyomei'),
@@ -314,8 +314,8 @@ for (const relative of [
   'dados/src/index.js',
   'dados/src/connect.js',
   'dados/src/.scripts/prepareRuntimeSources.js',
-  'dados/src/.scripts/finalizeGyomeiRuntime.js',
-  'dados/src/utils/gyomeiRuntime.js'
+  'dados/src/.scripts/finalizeShogunRuntime.js',
+  'dados/src/utils/shogunRuntime.js'
 ]) {
   const fullPath = path.join(ROOT_DIR, relative);
   fs.existsSync(fullPath) ? ok(`Arquivo encontrado: ${relative}`) : fail(`Arquivo ausente: ${relative}`);

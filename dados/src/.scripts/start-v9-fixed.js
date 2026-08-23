@@ -2,7 +2,7 @@
 
 import { loadLocalEnv } from './envLoader.js';
 import { prepareRuntimeSources } from './prepareRuntimeSources.js';
-import { finalizeGyomeiRuntime } from './finalizeGyomeiRuntime.js';
+import { finalizeShogunRuntime } from './finalizeShogunRuntime.js';
 import { applyCriticalRuntimeFixes } from './applyCriticalRuntimeFixes.js';
 
 try {
@@ -12,7 +12,7 @@ try {
   }
 
   prepareRuntimeSources();
-  finalizeGyomeiRuntime();
+  finalizeShogunRuntime();
   applyCriticalRuntimeFixes();
   await import('./.runtime-start.js');
 } catch (error) {

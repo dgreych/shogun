@@ -193,7 +193,7 @@ Node.js, npm, Git e FFmpeg devem aparecer aprovados. Um aviso sobre
 > aprovado, sem nenhuma linha vermelha.
 
 <p align="center">
-  <img src="img/preflight-termux.svg" alt="Saída do comando de verificação, com Node.js, npm, Git e FFmpeg aprovados" width="100%">
+  <img src="img/preflight-termux.png" alt="Saída do comando de verificação, com Node.js, npm, Git e FFmpeg aprovados" width="100%">
 </p>
 
 <sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
@@ -237,11 +237,11 @@ conectados → Conectar um aparelho** e leia o QR mostrado no Termux.
 > depois, uma mensagem chegando no WhatsApp do dono.
 
 <p align="center">
-  <img src="img/boot.svg" alt="Terminal mostrando o bot iniciando e detectando a sessão" width="100%">
+  <img src="img/boot.png" alt="Terminal mostrando o bot iniciando e detectando a sessão" width="100%">
 </p>
 
 <p align="center">
-  <img src="img/conectado.svg" alt="Terminal mostrando a conexão estabelecida" width="100%">
+  <img src="img/conectado.png" alt="Terminal mostrando a conexão estabelecida" width="100%">
 </p>
 >
 > ⚠️ **Se o QR sumir antes de você ler:** ele expira em segundos e é gerado de

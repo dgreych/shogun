@@ -8,7 +8,7 @@ import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, 
 import { extractJSON } from '../funcs/private/ia.js';
 import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
-import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/gyomeiCore.js';
+import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/shogunCore.js';
 import { normalizeVipCommandsData } from '../utils/vipCommandsManager.js';
 import { buildSafeMessagePreview } from '../utils/safeCommandLog.js';
 
@@ -457,7 +457,7 @@ await test('o nome do bot sai na grafia canônica em todo texto voltado ao usuá
   // lugares independentes — prompt da assistente, nome padrão da voz, rótulo
   // de persona — cada um podia regredir sozinho, em silêncio.
   const CANONICO = '\u{1D598}\u{1D58D}\u{1D594}\u{1D58C}\u{1D59A}\u{1D593}';
-  const core = fs.readFileSync(new URL('../utils/gyomeiCore.js', import.meta.url), 'utf8');
+  const core = fs.readFileSync(new URL('../utils/shogunCore.js', import.meta.url), 'utf8');
   const contrato = fs.readFileSync(new URL('../../../dist-vnext/voice/contract.js', import.meta.url), 'utf8');
 
   assert.ok(core.includes(`Você é ${CANONICO},`), 'o prompt precisa apresentar o bot na grafia canônica');

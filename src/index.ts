@@ -74,7 +74,7 @@ export {
   type MacrotrancheExecutionContext,
 } from './macrotranche/domain.js';
 export type { NexoPort, NexoStatus } from './nexo/contracts.js';
-export type { GyomeiClientPort } from './runtime/client.js';
+export type { ShogunClientPort } from './runtime/client.js';
 export { CompositeVNextDispatchTarget } from './runtime/composite-dispatch.js';
 export {
   CommandCompatibilityDispatch,
@@ -95,7 +95,7 @@ export {
   type LiveCommandDispatchReceipt,
 } from './runtime/live-command-dispatcher.js';
 export { LEGACY_PERSISTENCE_BOUNDARIES, type LegacyPersistencePort } from './runtime/database.js';
-export type { GyomeiRuntime } from './runtime/runtime.js';
+export type { ShogunRuntime } from './runtime/runtime.js';
 export {
   GENERATED_RUNTIME_BOUNDARIES,
   PRODUCTION_STATE_BOUNDARIES,

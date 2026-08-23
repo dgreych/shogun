@@ -2,7 +2,7 @@
 
 import { loadLocalEnv } from './envLoader.js';
 import { prepareRuntimeSources } from './prepareRuntimeSources.js';
-import { finalizeGyomeiRuntime } from './finalizeGyomeiRuntime.js';
+import { finalizeShogunRuntime } from './finalizeShogunRuntime.js';
 
 try {
   const envResult = loadLocalEnv();
@@ -11,7 +11,7 @@ try {
   }
 
   prepareRuntimeSources();
-  finalizeGyomeiRuntime();
+  finalizeShogunRuntime();
   await import('./.runtime-start.js');
 } catch (error) {
   console.error(`❌ Falha ao preparar o runtime do bot: ${error.message}`);

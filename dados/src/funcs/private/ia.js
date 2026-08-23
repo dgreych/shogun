@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import userContextDB from '../../utils/userContextDB.js';
-import * as automacoesV9 from '../../utils/gyomeiRuntime.js';
+import * as automacoesV9 from '../../utils/shogunRuntime.js';
 import {
   buildBoundedChatMessages,
   createBunnyFyAiClient,

@@ -67,7 +67,7 @@ function fixture(options = {}) {
       loadCounts.database += 1;
       return database;
     },
-    loadGyomeiRuntime: async () => {
+    loadShogunRuntime: async () => {
       loadCounts.gyomei += 1;
       return {
         PERSONA_MENU_DESIGNS: {

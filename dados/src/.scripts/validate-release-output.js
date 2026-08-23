@@ -7,7 +7,7 @@ import { ROOT_DIR } from './envLoader.js';
 const runtimeIndexPath = path.join(ROOT_DIR, 'dados', 'src', '.runtime-index.js');
 const runtimeIaPath = path.join(ROOT_DIR, 'dados', 'src', 'funcs', 'private', '.runtime-ia.js');
 const runtimeStartPath = path.join(ROOT_DIR, 'dados', 'src', '.scripts', '.runtime-start.js');
-const storePath = path.join(ROOT_DIR, 'dados', 'src', 'utils', 'gyomeiStore.js');
+const storePath = path.join(ROOT_DIR, 'dados', 'src', 'utils', 'shogunStore.js');
 const packagePath = path.join(ROOT_DIR, 'package.json');
 const bannerPath = path.join(ROOT_DIR, 'assets', 'brand', 'shogun-banner.png');
 const markPath = path.join(ROOT_DIR, 'assets', 'brand', 'shogun-mark.png');

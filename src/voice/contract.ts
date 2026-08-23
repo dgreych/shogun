@@ -8,7 +8,7 @@
  * A separação existe porque a arquitetura anterior errava nisso: a identidade
  * base carregava traços de personalidade, então trocar de persona dava a
  * persona nova com o sotaque da antiga. É o defeito que o !changeperso tem
- * hoje, em que escolher Zenitsu ainda devolve menus falando como Gyomei.
+ * hoje, em que escolher uma persona ainda devolve menus com a voz de outra.
  */
 
 /** Teto de floreio por mensagem, igual para todas as personas. */

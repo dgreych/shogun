@@ -115,7 +115,7 @@ npm run preflight
 ```
 
 <p align="center">
-  <img src="img/preflight-linux.svg" alt="Saída da verificação do ambiente" width="100%">
+  <img src="img/preflight-linux.png" alt="Saída da verificação do ambiente" width="100%">
 </p>
 
 <sub>Imagem gerada da execução real do comando. O aviso amarelo sobre

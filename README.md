@@ -5,21 +5,20 @@
 <h1 align="center">𝖘𝖍𝖔𝖌𝖚𝖓</h1>
 
 <p align="center">
-  <strong>Um bot de WhatsApp que roda no seu computador — ou num celular Android parado na gaveta.</strong>
+  <strong>Um bot para os seus grupos de WhatsApp.</strong><br>
+  Ele modera, baixa vídeo e música, faz figurinha, joga e tem um RPG inteiro.<br>
+  Roda no seu computador ou num celular Android parado na gaveta — e é de graça.
 </p>
 
 <p align="center">
-  <img alt="Node.js 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
-  <img alt="WhatsApp Baileys" src="https://img.shields.io/badge/WhatsApp-Baileys-25D366?logo=whatsapp&logoColor=white">
-  <img alt="Windows, Linux e Termux" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20Termux-ce141a">
-  <img alt="Licença ISC" src="https://img.shields.io/badge/licen%C3%A7a-ISC-deb054">
+  <img src="docs/instalacao/img/painel.png" alt="Tela do bot conectando, com arte em pixel" width="44%">
+  &nbsp;&nbsp;
+  <img src="docs/instalacao/img/feed.png" alt="Feed mostrando comandos chegando em tempo real" width="44%">
 </p>
 
 <p align="center">
-  <a href="docs/instalacao/termux.md"><strong>Instalar no Android</strong></a> ·
-  <a href="docs/instalacao/windows.md"><strong>Windows</strong></a> ·
-  <a href="docs/instalacao/linux.md"><strong>Linux</strong></a> ·
-  <a href="https://chat.whatsapp.com/Ju0zjLiBLe28eNGUu2gapY"><strong>Grupo de ajuda</strong></a>
+  <sub>Assim que ele fica quando está ligado: a tela de conexão e o
+  acompanhamento ao vivo de tudo que chega.</sub>
 </p>
 
 ---
@@ -50,9 +49,9 @@ na sua tela** a cada passo e o que fazer quando não aparece.
 </table>
 
 <p align="center">
-  <img src="docs/instalacao/img/painel.svg" alt="Painel de conexão do bot no terminal, com arte em pixel" width="46%">
+  <img src="docs/instalacao/img/painel.png" alt="Painel de conexão do bot no terminal, com arte em pixel" width="46%">
   &nbsp;&nbsp;
-  <img src="docs/instalacao/img/feed.svg" alt="Feed do terminal mostrando comandos e mensagens chegando" width="46%">
+  <img src="docs/instalacao/img/feed.png" alt="Feed do terminal mostrando comandos e mensagens chegando" width="46%">
 </p>
 
 <p align="center">
@@ -117,7 +116,7 @@ por turnos.
 ## Configuração
 
 <p align="center">
-  <img src="docs/instalacao/img/preflight.svg" alt="Saída do comando de verificação do ambiente" width="80%">
+  <img src="docs/instalacao/img/preflight-linux.png" alt="Saída do comando de verificação do ambiente" width="80%">
 </p>
 
 <p align="center">
@@ -167,7 +166,17 @@ protegida pelo `.gitignore`.
 
 ## Requisitos
 
+<p>
+  <img alt="Node.js 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
+  <img alt="WhatsApp Baileys" src="https://img.shields.io/badge/WhatsApp-Baileys-25D366?logo=whatsapp&logoColor=white">
+  <img alt="Windows, Linux e Termux" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20Termux-ce141a">
+  <img alt="Licença ISC" src="https://img.shields.io/badge/licen%C3%A7a-ISC-deb054">
+</p>
+
 Node.js 20.19 ou superior · FFmpeg · Git · um número de WhatsApp dedicado
+
+Os instaladores cuidam disso para você. A lista está aqui para quem já tem o
+ambiente montado e quer conferir.
 
 ## Licença
 

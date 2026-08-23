@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { patchVNextOwnershipHook } from '../../dados/src/.scripts/finalizeGyomeiRuntime.js';
+import { patchVNextOwnershipHook } from '../../dados/src/.scripts/finalizeShogunRuntime.js';
 import { buildMacrotrancheLegacyBridge } from '../../dados/src/.scripts/vnextMacrotrancheBridge.js';
 import { buildPreparedRuntimeCommandSource } from '../../scripts/analyze-runtime-command-surface.mjs';
 

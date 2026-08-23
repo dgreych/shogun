@@ -1,7 +1,7 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
 import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 import { DEFAULT_NVIDIA_MODEL, requestNvidiaChat } from '../../utils/nvidiaApi.js';
 
 const AI_MODES = new Set(['off', 'primary', 'exclusive']);

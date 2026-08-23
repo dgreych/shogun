@@ -15,11 +15,11 @@ function replaceRequired(source, search, replacement, description) {
 function patchIaSource(source) {
   let output = source;
 
-  if (!output.includes(`import * as automacoesV9 from '../../utils/gyomeiRuntime.js';`)) {
+  if (!output.includes(`import * as automacoesV9 from '../../utils/shogunRuntime.js';`)) {
     output = replaceRequired(
       output,
       `import userContextDB from '../../utils/userContextDB.js';`,
-      `import userContextDB from '../../utils/userContextDB.js';\nimport * as automacoesV9 from '../../utils/gyomeiRuntime.js';`,
+      `import userContextDB from '../../utils/userContextDB.js';\nimport * as automacoesV9 from '../../utils/shogunRuntime.js';`,
       'import das configurações do Gyomei na IA'
     );
   }
@@ -47,7 +47,7 @@ function patchIndexSource(source) {
   output = replaceRequired(
     output,
     `import * as ia from './funcs/private/ia.js';`,
-    `import * as ia from './funcs/private/.runtime-ia.js';\nimport * as automacoesV9 from './utils/gyomeiRuntime.js';`,
+    `import * as ia from './funcs/private/.runtime-ia.js';\nimport * as automacoesV9 from './utils/shogunRuntime.js';`,
     'imports de execução da IA e das automações'
   );
 
@@ -609,7 +609,7 @@ function patchConnectSource(source) {
   output = replaceRequired(
     output,
     `import axios from 'axios';`,
-    `import axios from 'axios';\nimport * as automacoesV9 from './utils/gyomeiRuntime.js';`,
+    `import axios from 'axios';\nimport * as automacoesV9 from './utils/shogunRuntime.js';`,
     'import das automações no connect'
   );
   output = replaceRequired(

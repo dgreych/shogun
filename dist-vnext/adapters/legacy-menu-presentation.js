@@ -41,8 +41,8 @@ async function defaultLoadMenus() {
 async function defaultLoadDatabase() {
     return import(new URL('../../dados/src/utils/database.js', import.meta.url).href);
 }
-async function defaultLoadGyomeiRuntime() {
-    return import(new URL('../../dados/src/utils/gyomeiRuntime.js', import.meta.url).href);
+async function defaultLoadShogunRuntime() {
+    return import(new URL('../../dados/src/utils/shogunRuntime.js', import.meta.url).href);
 }
 function defaultSleep(milliseconds) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -88,11 +88,11 @@ function resolveDatabase(moduleValue) {
         getMenuLerMaisText: functionOf(record, 'getMenuLerMaisText', 'Database'),
     });
 }
-function resolveGyomeiRuntime(moduleValue) {
-    const record = recordOf(moduleValue, 'Runtime Gyomei');
+function resolveShogunRuntime(moduleValue) {
+    const record = recordOf(moduleValue, 'Runtime do bot');
     return Object.freeze({
         PERSONA_MENU_DESIGNS: recordOf(record.PERSONA_MENU_DESIGNS, 'PERSONA_MENU_DESIGNS'),
-        highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime Gyomei'),
+        highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime bot'),
     });
 }
 /**
@@ -106,7 +106,7 @@ function resolveGyomeiRuntime(moduleValue) {
 export class LegacyMenuPresentationAdapter {
     #loadMenus;
     #loadDatabase;
-    #loadGyomeiRuntime;
+    #loadShogunRuntime;
     #fs;
     #mediaRoot;
     #sleep;
@@ -115,7 +115,7 @@ export class LegacyMenuPresentationAdapter {
     constructor(dependencies = {}) {
         this.#loadMenus = dependencies.loadMenus ?? defaultLoadMenus;
         this.#loadDatabase = dependencies.loadDatabase ?? defaultLoadDatabase;
-        this.#loadGyomeiRuntime = dependencies.loadGyomeiRuntime ?? defaultLoadGyomeiRuntime;
+        this.#loadShogunRuntime = dependencies.loadShogunRuntime ?? defaultLoadShogunRuntime;
         this.#fs = dependencies.fileSystem ?? {
             existsSync: (filePath) => fs.existsSync(filePath),
             readFileSync: (filePath) => fs.readFileSync(filePath),
@@ -129,11 +129,11 @@ export class LegacyMenuPresentationAdapter {
             this.#modulesPromise = Promise.all([
                 this.#loadMenus(),
                 this.#loadDatabase(),
-                this.#loadGyomeiRuntime(),
-            ]).then(([menus, database, gyomei]) => Object.freeze({
+                this.#loadShogunRuntime(),
+            ]).then(([menus, database, runtime]) => Object.freeze({
                 renderers: resolveRenderers(menus),
                 database: resolveDatabase(database),
-                gyomei: resolveGyomeiRuntime(gyomei),
+                runtime: resolveShogunRuntime(runtime),
             }));
         }
         return this.#modulesPromise;
@@ -205,7 +205,7 @@ export class LegacyMenuPresentationAdapter {
                     customMediaPath = record.customPhoto;
                 }
                 if (typeof record.customPersona === 'string' && record.customPersona) {
-                    personaDesign = modules.gyomei.PERSONA_MENU_DESIGNS[record.customPersona] ?? null;
+                    personaDesign = modules.runtime.PERSONA_MENU_DESIGNS[record.customPersona] ?? null;
                 }
             }
         }
@@ -240,7 +240,7 @@ export class LegacyMenuPresentationAdapter {
         const rawMenu = descriptor.liteModeAware
             ? await renderer(context.prefix, botName, context.pushName, context.isLiteMode, design)
             : await renderer(context.prefix, botName, context.pushName, design);
-        const menuText = modules.gyomei.highlightMenuCommands(rawMenu, context.prefix);
+        const menuText = modules.runtime.highlightMenuCommands(rawMenu, context.prefix);
         const lerMais = String(modules.database.getMenuLerMaisText() || '');
         const sendMedia = async () => {
             await socket.sendMessage(chatId, {

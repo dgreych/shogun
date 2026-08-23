@@ -8,7 +8,7 @@
  */
 
 import axios from 'axios';
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 import { pinterestSearchWithBunnyFy, socialDownloadWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
 
 // Cache simples

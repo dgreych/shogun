@@ -10,7 +10,7 @@ import {
   MACROTRANCHE_BRIDGE_MARKER,
   planMacrotrancheBridge,
 } from '../../dados/src/.scripts/vnextMacrotrancheBridge.js';
-import { patchVNextOwnershipHook } from '../../dados/src/.scripts/finalizeGyomeiRuntime.js';
+import { patchVNextOwnershipHook } from '../../dados/src/.scripts/finalizeShogunRuntime.js';
 import { buildPreparedRuntimeCommandSource } from '../../scripts/analyze-runtime-command-surface.mjs';
 import { planVNextMacrotranche } from '../../scripts/plan-vnext-macrotranche.mjs';
 import { MacrotrancheCompatibilityDomainDispatchTarget } from '../../dist-vnext/macrotranche/domain.js';
