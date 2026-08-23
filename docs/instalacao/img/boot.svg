@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="570" height="370" viewBox="0 0 570 370" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">
+  <rect width="570" height="370" rx="8" fill="#0d1117" stroke="#30363d"/>
+  <rect width="570" height="34" rx="8" fill="#161b22"/>
+  <rect y="26" width="570" height="8" fill="#161b22"/>
+  <circle cx="18" cy="17" r="5" fill="#ff5f57"/>
+  <circle cx="36" cy="17" r="5" fill="#febc2e"/>
+  <circle cx="54" cy="17" r="5" fill="#28c840"/>
+  <text x="285" y="22" fill="#8b949e" text-anchor="middle" font-size="12">npm start</text>
+  <text x="16" y="56" fill="#39c5cf">⛩️ 𝖘𝖍𝖔𝖌𝖚𝖓 online</text>
+  <text x="16" y="76" fill="#39c5cf">🛡️ Moderação, mídia, jogos e economia prontos</text>
+  <text x="16" y="96" fill="#39c5cf">📦 Versão: 2.0.0</text>
+  <text x="16" y="116" fill="#c9d1d9">============================================</text>
+  <text x="16" y="136" fill="#39c5cf">📷 Sessão de QR Code detectada. Conectando automaticamente...</text>
+  <text x="16" y="156" fill="#39c5cf">📷 Iniciando com QR Code</text>
+  <text x="16" y="176" fill="#3fb950">✅ Cache JID→LID carregado: 128 entradas</text>
+  <text x="16" y="196" fill="#c9d1d9">Iniciando...</text>
+  <text x="16" y="216" fill="#39c5cf">📱 Usando versão do WhatsApp: 2.3000.1044006379</text>
+  <text x="16" y="236" fill="#39c5cf">🔄 Conexão aberta. Inicializando sistema de otimização...</text>
+  <text x="16" y="256" fill="#c9d1d9">[CaptchaIndex] Carregado 0 captchas pendentes do índice</text>
+  <text x="16" y="276" fill="#c9d1d9">🤖 Verificando sub-bots cadastrados...</text>
+  <text x="16" y="296" fill="#c9d1d9">                                                                </text>
+  <text x="16" y="316" fill="#c9d1d9">--</text>
+  <text x="16" y="336" fill="#39c5cf">⛩️ 𝖘𝖍𝖔𝖌𝖚𝖓 online</text>
+  <text x="16" y="356" fill="#39c5cf">🛡️ Moderação, mídia, jogos e economia prontos</text>
+</svg>

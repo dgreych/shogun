@@ -85,7 +85,7 @@ function linhaFundo(conteudo, corTexto = OSSO) {
 }
 function linhaCampo(marca, rotulo, valor, corValor) {
     const valorSeguro = textoSeguroParaTerminal(valor) || '\u2014';
-    const prefixo = `  ${marca}  ${rotulo.toUpperCase().padEnd(9)} `;
+    const prefixo = `  ${marca}  ${rotulo.toLowerCase().padEnd(9)} `;
     const disponivel = LARGURA - larguraVisual(prefixo);
     const conteudo = cortar(valorSeguro, disponivel);
     const sobra = disponivel - larguraVisual(conteudo);
@@ -93,7 +93,7 @@ function linhaCampo(marca, rotulo, valor, corValor) {
         + ' '.repeat(Math.max(0, sobra)) + R + MOLDURA + '\u2502' + R;
 }
 function linhaCabecalho(comando, contexto, horario) {
-    const titulo = comando ? ' ORDEM RECEBIDA ' : ' DESPACHO RECEBIDO ';
+    const titulo = comando ? ' COMANDO ' : ' MENSAGEM ';
     const fundoTitulo = comando ? FUNDO_OURO : FUNDO_OSSO;
     const direita = `${contexto}  \u00b7  ${horario} `;
     const miolo = LARGURA - larguraVisual(titulo) - larguraVisual(direita);
@@ -108,18 +108,16 @@ export function renderEventoFeed(evento) {
         reguaComMarca(),
         linhaCabecalho(evento.comando, contexto, horario),
         regua('\u251c', '\u2500', '\u2524'),
-        linhaCampo('\u203a', 'conteúdo', evento.conteudo, OSSO),
+        linhaCampo('\u203a', 'texto', evento.conteudo, OSSO),
     ];
     if (evento.emGrupo) {
-        linhas.push(linhaCampo('\u25c7', 'grupo', evento.grupo || 'desconhecido', BRASA));
-        linhas.push(linhaCampo('\u25cf', 'usuário', evento.usuario || 'sem nome', OSSO));
+        linhas.push(linhaCampo('\u25c7', 'no grupo', evento.grupo || 'sem nome', BRASA));
+        linhas.push(linhaCampo('\u25cf', 'de', evento.usuario || 'alguém', OSSO));
     }
     else {
-        linhas.push(linhaCampo('\u25cf', 'usuário', evento.usuario || 'sem nome', OSSO));
+        linhas.push(linhaCampo('\u25cf', 'de', evento.usuario || 'alguém', OSSO));
         linhas.push(linhaCampo('\u25cb', 'número', evento.numero || '\u2014', FUMACA));
     }
-    linhas.push(regua('\u251c', '\u2500', '\u2524'));
-    linhas.push(linhaFundo('REGISTRO LOCAL  /  FLUXO MONITORADO', FUMACA));
     linhas.push(regua('\u2570', '\u2500', '\u256f'));
     return linhas.join('\n');
 }

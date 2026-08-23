@@ -24,7 +24,45 @@
 
 ---
 
-## Comece em três minutos
+## 👉 Nunca instalou nada assim? Comece por aqui
+
+Escolha onde o bot vai rodar. Cada guia começa do zero, mostra **o que aparece
+na sua tela** a cada passo e o que fazer quando não aparece.
+
+<table>
+<tr>
+<td align="center" width="33%">
+<a href="docs/instalacao/termux.md"><strong>📱 Android</strong></a><br>
+<sub>Celular reserva na tomada</sub><br>
+<sub>15 a 35 min</sub>
+</td>
+<td align="center" width="33%">
+<a href="docs/instalacao/windows.md"><strong>🪟 Windows</strong></a><br>
+<sub>10 ou 11, no seu PC</sub><br>
+<sub>10 a 20 min</sub>
+</td>
+<td align="center" width="33%">
+<a href="docs/instalacao/linux.md"><strong>🐧 Linux</strong></a><br>
+<sub>Desktop, mini PC ou servidor</sub><br>
+<sub>10 a 20 min</sub>
+</td>
+</tr>
+</table>
+
+<p align="center">
+  <img src="docs/instalacao/img/painel.svg" alt="Painel de conexão do bot no terminal, com arte em pixel" width="46%">
+  &nbsp;&nbsp;
+  <img src="docs/instalacao/img/feed.svg" alt="Feed do terminal mostrando comandos e mensagens chegando" width="46%">
+</p>
+
+<p align="center">
+  <sub>À esquerda, a tela de conexão. À direita, o feed ao vivo — cada comando
+  e mensagem que chega aparece assim no seu terminal.</sub>
+</p>
+
+---
+
+## Já usa terminal? Comece em três minutos
 
 ```bash
 git clone https://github.com/dgreych/shogun.git
@@ -34,7 +72,7 @@ npm start
 ```
 
 Leia o QR no WhatsApp, mande `!menu` no grupo e pronto. Se a palavra "terminal"
-já assusta, comece pelo [guia da sua plataforma](#instalação) — ele explica cada
+já assusta, comece pelo [guia da sua plataforma](#-nunca-instalou-nada-assim-comece-por-aqui) — ele explica cada
 tela, sem pressupor nada.
 
 ## Como funciona
@@ -76,16 +114,15 @@ que evoluem e ranking. Cada grupo tem a própria economia.
 **E jogos.** Velha, forca, quiz, roleta, caça-palavras e uma taverna de duelos
 por turnos.
 
-## Instalação
+## Configuração
 
-Os guias começam do zero: onde baixar, o que digitar, **o que deve aparecer na
-tela** e o que fazer quando não aparece.
+<p align="center">
+  <img src="docs/instalacao/img/preflight.svg" alt="Saída do comando de verificação do ambiente" width="80%">
+</p>
 
-| Onde vai rodar | Bom para | Guia |
-| --- | --- | --- |
-| **Android** (Termux) | celular reserva ligado na tomada | [Passo a passo](docs/instalacao/termux.md) |
-| **Windows** 10 ou 11 | computador pessoal | [Passo a passo](docs/instalacao/windows.md) |
-| **Linux** | mini PC, servidor ou desktop | [Passo a passo](docs/instalacao/linux.md) |
+<p align="center">
+  <sub><code>npm run preflight</code> confere tudo que o bot precisa antes de você começar.</sub>
+</p>
 
 O instalador pergunta seu nome, seu número com país e DDD, o nome do bot e o
 prefixo dos comandos. Nada disso sai do seu aparelho.

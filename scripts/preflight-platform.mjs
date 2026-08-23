@@ -32,7 +32,7 @@ function probe(label, command, args, required = true) {
   return false;
 }
 
-console.log('\n⛩️  Inspeção do posto SHOGUN\n');
+console.log('\n⛩️  Verificação do ambiente\n');
 
 const nodeVersion = versionTuple(process.versions.node);
 if (atLeast(nodeVersion, MIN_NODE)) console.log(`✅ Node.js — v${process.versions.node}`);
@@ -61,8 +61,8 @@ for (const warning of warnings) console.log(`⚠️ ${warning}`);
 for (const failure of failures) console.log(`❌ ${failure}`);
 
 if (failures.length) {
-  console.log('\n🚫 O posto ainda não está pronto. Corrija os itens acima e repita npm run preflight.\n');
+  console.log('\n🚫 O ambiente ainda não está pronto. Corrija os itens acima e repita npm run preflight.\n');
   process.exit(1);
 }
 
-console.log('\n🛡️ Posto aprovado para preparar o SHOGUN.\n');
+console.log('\n🛡️ Ambiente pronto. Siga para a configuração.\n');

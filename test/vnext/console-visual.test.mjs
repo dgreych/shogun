@@ -81,7 +81,7 @@ test('cartoes de grupo e privado fecham a mesma largura visual', () => {
 
   for (const evento of eventos) {
     const linhas = renderEventoFeed(evento).split('\n');
-    assert.equal(linhas.length, 9);
+    assert.equal(linhas.length, 7);
     assert.ok(linhas.every((linha) => larguraVisual(linha) === 62),
       linhas.map((linha) => `${larguraVisual(linha)} ${semAnsi(linha)}`).join('\n'));
   }
@@ -100,7 +100,7 @@ test('conteudo externo nao injeta ANSI nem quebra a geometria do terminal', () =
     horario: '18:13:02',
   });
   assert.equal(cartao.includes('\u001b[2J'), false);
-  assert.equal(cartao.split('\n').length, 9);
+  assert.equal(cartao.split('\n').length, 7);
 });
 
 test('fluxo legado usa o renderer novo e nao conserva a caixa antiga', () => {

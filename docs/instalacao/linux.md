@@ -114,6 +114,13 @@ npm run setup
 npm run preflight
 ```
 
+<p align="center">
+  <img src="img/preflight-linux.svg" alt="Saída da verificação do ambiente" width="100%">
+</p>
+
+<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
+configuração é esperado antes da etapa seguinte.</sub>
+
 Com os itens obrigatórios aprovados, inicie:
 
 ```bash

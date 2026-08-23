@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="755" height="350" viewBox="0 0 755 350" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">
+  <rect width="755" height="350" rx="8" fill="#0d1117" stroke="#30363d"/>
+  <rect width="755" height="34" rx="8" fill="#161b22"/>
+  <rect y="26" width="755" height="8" fill="#161b22"/>
+  <circle cx="18" cy="17" r="5" fill="#ff5f57"/>
+  <circle cx="36" cy="17" r="5" fill="#febc2e"/>
+  <circle cx="54" cy="17" r="5" fill="#28c840"/>
+  <text x="377.5" y="22" fill="#8b949e" text-anchor="middle" font-size="12">Termux</text>
+  <text x="16" y="56" fill="#3fb950">~/shogun $ npm run preflight</text>
+  <text x="16" y="76" fill="#c9d1d9"></text>
+  <text x="16" y="96" fill="#c9d1d9">&gt; node scripts/preflight-platform.mjs</text>
+  <text x="16" y="116" fill="#c9d1d9"></text>
+  <text x="16" y="136" fill="#39c5cf">⛩️  Verificação do ambiente</text>
+  <text x="16" y="156" fill="#c9d1d9"></text>
+  <text x="16" y="176" fill="#3fb950">✅ Node.js — v26.7.0</text>
+  <text x="16" y="196" fill="#3fb950">✅ npm — 11.19.0</text>
+  <text x="16" y="216" fill="#3fb950">✅ Git — git version 2.43.0</text>
+  <text x="16" y="236" fill="#3fb950">✅ FFmpeg — ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers</text>
+  <text x="16" y="256" fill="#3fb950">✅ Plataforma detectada — linux/x64</text>
+  <text x="16" y="276" fill="#3fb950">✅ Dependências locais encontradas</text>
+  <text x="16" y="296" fill="#d29922">⚠️ Configuração local ainda não criada; execute npm run setup.</text>
+  <text x="16" y="316" fill="#c9d1d9"></text>
+  <text x="16" y="336" fill="#39c5cf">🛡️ Ambiente pronto. Siga para a configuração.</text>
+</svg>

@@ -121,6 +121,13 @@ npm run setup
 npm run preflight
 ```
 
+<p align="center">
+  <img src="img/preflight-windows.svg" alt="Saída da verificação do ambiente" width="100%">
+</p>
+
+<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
+configuração é esperado antes da etapa seguinte.</sub>
+
 Se todos os itens obrigatórios estiverem aprovados, inicie:
 
 ```powershell
