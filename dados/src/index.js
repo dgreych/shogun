@@ -260,6 +260,7 @@ import { intencaoDoComando } from '../../dist-vnext/voice/classify.js';
 import { emojiDaIntencao, gerundioDaIntencao } from '../../dist-vnext/voice/intents.js';
 import { ALASKA } from '../../dist-vnext/voice/personas/alaska.js';
 import { aplicarFloreio } from '../../dist-vnext/voice/persona.js';
+import { despachar as despacharEconomiaRpg } from '../../dist-vnext/rpg/economia/despachante.js';
 import {
   PACKAGE_JSON_PATH,
   CONFIG_FILE,
@@ -6244,6 +6245,37 @@ case 'resetrpg':
 
     const sub = command;
     const args = q ? q.trim().toLowerCase().split(/\s+/) : [];
+
+    // Ramos de economia ja nativos no vNext. Atende aqui e sai; os corpos
+    // legados abaixo so rodam para o que ainda nao migrou. Ver
+    // src/rpg/economia/despachante.ts.
+    {
+      const respostaVNext = despacharEconomiaRpg(
+    { econ, usuario: me, bonus: { mineBonus, workBonus, bankCapacity, fishBonus, exploreBonus, huntBonus, forgeBonus }, sub, args },
+    {
+      economia: { fmt, getUserName, saveEconomy },
+      acaso: { agora: () => Date.now(), aleatorio: () => Math.random(), timeLeft },
+      texto: { parseAmount, findKeyIgnoringAccents, normalizeParam },
+      progressao: { getSkillBonus, addSkillXP, updateChallenge, updatePeriodChallenge, isChallengeCompleted, giveMaterial },
+      habilidade: { SKILL_LIST, skillXpForNext, ensureUserSkills },
+    },
+    {
+      prefixo: prefix,
+      remetente: sender,
+      pushname,
+      mencionado: (menc_jid2 && menc_jid2[0]) || null,
+      membrosDoGrupo: AllgroupMembers || [],
+      consultaBruta: q || '',
+      permissaoReset: { isOwner, isSubOwner, remetente: sender, donoPrincipal: nmrdn, enviadoPeloBot: isBotSender },
+      parAtivo: relationshipManager?.getActivePairForUser?.(sender) || null,
+      capacidadeBanco: bankCapacity,
+    },
+      );
+      if (respostaVNext) {
+    return reply(respostaVNext.texto, respostaVNext.mencoes?.length ? { mentions: [...respostaVNext.mencoes] } : undefined);
+      }
+    }
+
     // Tratamento especial para ranklevel/ranklvl/levels etc.
     if  (['ranklevel','ranklvl','rankinglevel','levels','toplevels'].includes(sub)) {
     // Se estiver em grupo, usamos o ranking do grupo (RPG)
@@ -30850,44 +30882,34 @@ case 'perfil':
       return '▪️';
     };
     
-    const perfilText = `*📋 Perfil completo de ${targetName} 📋*
+    const rotulo = (txt) => `${txt}${'\u00a0'.repeat(Math.max(0, 8 - txt.length))}`;
 
-👤 *Nome*: ${pushname || 'Desconhecido'}
+    const perfilText = `📋 *PERFIL COMPLETO*
+${targetName}
+
+👤 *Nome*: ${mentionedUser ? targetName : (pushname || targetName)}
 📱 *Número*: ${targetId}
 📜 *Bio*: ${bio}${bioSetAt ? `\n🕒 *Bio atualizada em*: ${bioSetAt}` : ''}
+
 💰 *Valor do Pacote*: ${pacoteValue} 🫦
 😊 *Humor*: ${randomHumor}
 
+━━━━━━━━━━━━━━━━━━
 🎭 *Níveis*:
-  ${getEmoji(levels.puta, 'puta')} ┃ Puta: ${levels.puta}% ${createProgressBar(levels.puta)}
-  ${getEmoji(levels.gado, 'gado')} ┃ Gado: ${levels.gado}% ${createProgressBar(levels.gado)}
-  ${getEmoji(levels.corno, 'corno')} ┃ Corno: ${levels.corno}% ${createProgressBar(levels.corno)}
-  ${getEmoji(levels.sortudo, 'sortudo')} ┃ Sorte: ${levels.sortudo}% ${createProgressBar(levels.sortudo)}
-  ${getEmoji(levels.carisma, 'carisma')} ┃ Carisma: ${levels.carisma}% ${createProgressBar(levels.carisma)}
-  ${getEmoji(levels.rico, 'rico')} ┃ Rico: ${levels.rico}% ${createProgressBar(levels.rico)}
-  ${getEmoji(levels.gostosa, 'gostosa')} ┃ Gostosa: ${levels.gostosa}% ${createProgressBar(levels.gostosa)}
-  ${getEmoji(levels.feio, 'feio')} ┃ Feio: ${levels.feio}% ${createProgressBar(levels.feio)}`.trim();
-    
-    const profileCard = await socialCardWithBunnyFy('profile', {
-      // pushname é de quem chamou o comando. Ao perfilar outra pessoa ele
-      // colocaria o nome errado no cartão, com a foto certa.
-      name: String((mentionedUser ? targetName : pushname) || targetName).slice(0, 48),
-      handle: targetName.slice(0, 48),
-      bio: String(bio || '').slice(0, 160),
-      level: Math.max(0, Math.floor(levels.carisma / 10)),
-      xp: levels.carisma,
-      nextLevelXp: 100,
-      stats: [
-        { label: 'Sorte', value: `${levels.sortudo}%` },
-        { label: 'Carisma', value: `${levels.carisma}%` },
-        { label: 'Riqueza', value: `${levels.rico}%` },
-        { label: 'Humor', value: randomHumor.slice(0, 24) }
-      ],
-      theme: 'ocean'
-    }, { legacyFallback: async () => null }).catch(() => null);
+${rotulo('Puta')} ${createProgressBar(levels.puta)} ${String(levels.puta).padStart(3)}% ${getEmoji(levels.puta, 'puta')}
+${rotulo('Gado')} ${createProgressBar(levels.gado)} ${String(levels.gado).padStart(3)}% ${getEmoji(levels.gado, 'gado')}
+${rotulo('Corno')} ${createProgressBar(levels.corno)} ${String(levels.corno).padStart(3)}% ${getEmoji(levels.corno, 'corno')}
+${rotulo('Sorte')} ${createProgressBar(levels.sortudo)} ${String(levels.sortudo).padStart(3)}% ${getEmoji(levels.sortudo, 'sortudo')}
+${rotulo('Carisma')} ${createProgressBar(levels.carisma)} ${String(levels.carisma).padStart(3)}% ${getEmoji(levels.carisma, 'carisma')}
+${rotulo('Rico')} ${createProgressBar(levels.rico)} ${String(levels.rico).padStart(3)}% ${getEmoji(levels.rico, 'rico')}
+${rotulo('Gostosa')} ${createProgressBar(levels.gostosa)} ${String(levels.gostosa).padStart(3)}% ${getEmoji(levels.gostosa, 'gostosa')}
+${rotulo('Feio')} ${createProgressBar(levels.feio)} ${String(levels.feio).padStart(3)}% ${getEmoji(levels.feio, 'feio')}`.trim();
+
+    // O cartão gerado trocava o rosto da pessoa por um bloco com as iniciais.
+    // Aqui a foto de perfil é o conteúdo, não a moldura: do alvo quando há
+    // menção ou citação, de quem chamou quando não há.
     await nazu.sendMessage(from, {
-      image: profileCard?.ok ? profileCard.buffer : { url: profilePic },
-      ...(profileCard?.ok ? { mimetype: profileCard.mime } : {}),
+      image: { url: profilePic },
       caption: perfilText,
       mentions: [target]
     }, { quoted: info });

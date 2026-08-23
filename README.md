@@ -38,13 +38,21 @@ O SHOGUN fala sério até quando a missão é criar uma figurinha. Essa é a gra
 
 ## Escolha seu posto
 
+Nunca usou um terminal? Comece pelo guia completo da sua plataforma. Ele mostra
+onde baixar cada ferramenta, o que tocar, o que deve aparecer na tela e como
+chegar ao primeiro `!menu`. Não é preciso saber programar.
+
 | Onde vai rodar | Melhor para | Guia |
 | --- | --- | --- |
-| Windows 10/11 | computador pessoal e primeira instalação | [Instalar no Windows](docs/instalacao/windows.md) |
-| Linux | computador, mini PC ou servidor | [Instalar no Linux](docs/instalacao/linux.md) |
-| Termux | Android dedicado ou aparelho reserva | [Instalar no Termux](docs/instalacao/termux.md) |
+| Windows 10/11 | computador pessoal e primeira instalação | [Do PowerShell ao primeiro menu](docs/instalacao/windows.md) |
+| Linux | computador, mini PC ou servidor | [Do Terminal ao primeiro menu](docs/instalacao/linux.md) |
+| Termux | Android dedicado ou aparelho reserva | [Do download do Termux ao bot](docs/instalacao/termux.md) |
 
-## Instalação rápida
+## Instalação rápida para quem já usa terminal
+
+Se palavras como Node.js, Git ou FFmpeg são novas para você, use os guias da
+tabela acima. Os blocos abaixo são apenas o atalho para quem já tem o ambiente
+preparado.
 
 ### Linux
 
@@ -74,9 +82,12 @@ pkg install -y git
 git clone https://github.com/dgreych/shogun.git
 cd shogun
 bash scripts/install-termux.sh
-termux-wake-lock
 npm start
 ```
+
+Para manter o Android acordado e preparar inicialização após reiniciar, siga as
+etapas de bateria, Termux:API e Termux:Boot no
+[guia completo do Android](docs/instalacao/termux.md).
 
 O instalador abre um pequeno quartel de configuração. Ele pede seu nome, seu número com país e DDD, o nome do bot e o prefixo dos comandos. Nenhuma senha ou sessão é enviada ao repositório.
 

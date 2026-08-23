@@ -60,7 +60,7 @@ function patchIndexSource(source) {
 
   output = replaceRequired(
     output,
-    `    info.key.fromMe || \n    isBotSender;`,
+    /    info\.key\.fromMe \|\|[ \t]*\r?\n    isBotSender;/,
     `    info.key.fromMe || \n    isBotSender ||\n    automacoesV9.isAdditionalOwner(sender);`,
     'privilégio dos donos adicionais'
   );

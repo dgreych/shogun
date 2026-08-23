@@ -385,6 +385,27 @@ await test('gateway BunnyFy limita mensagens antes de qualquer transporte', () =
   assert.ok(messages.every(message => typeof message.content === 'string' && message.content.length > 0));
 });
 
+await test('perfil usa a foto de perfil da pessoa, nunca um cartão gerado', () => {
+  // O cartão trocava o rosto por um bloco com as iniciais. O comando existe
+  // para mostrar a pessoa; a foto é o conteúdo, não a moldura.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  const bloco = fonte.slice(fonte.indexOf("case 'perfil':"));
+  const corpo = bloco.slice(0, bloco.indexOf('Erro ao processar comando perfil'));
+  assert.ok(/image: \{ url: profilePic \}/.test(corpo), 'o envio precisa usar a foto de perfil');
+  assert.ok(!/socialCardWithBunnyFy\('profile'/.test(corpo), 'o cartão não pode voltar a substituir a foto');
+});
+
+await test('perfil de outra pessoa nunca mostra o nome de quem deu o comando', () => {
+  // pushname é sempre de quem chamou. Usado direto, o perfil de alguém marcado
+  // saía com o nome errado — o bug que já voltou uma vez.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  const bloco = fonte.slice(fonte.indexOf("case 'perfil':"));
+  const corpo = bloco.slice(0, bloco.indexOf('Erro ao processar comando perfil'));
+  assert.ok(!/\*Nome\*: \$\{pushname \|\| 'Desconhecido'\}/.test(corpo), 'Nome não pode vir de pushname puro');
+  assert.ok(/\*Nome\*: \$\{mentionedUser \? targetName/.test(corpo), 'Nome precisa seguir o alvo');
+  assert.ok(/const target = mentionedUser \|\| sender;/.test(corpo), 'o alvo precisa respeitar menção e citação');
+});
+
 const failures = results.filter(item => !item.ok);
 console.log(`\nRegressões: ${results.length - failures.length} aprovadas, ${failures.length} falhas.`);
 process.exit(failures.length ? 1 : 0);

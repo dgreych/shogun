@@ -1,59 +1,293 @@
-# Instalar o SHOGUN no Termux
+# SHOGUN no Android: do download ao primeiro comando
 
-Use um Android reserva quando possível. O sistema pode encerrar aplicativos em segundo plano para economizar bateria.
+Este guia começa do zero. Você não precisa conhecer programação nem ter usado
+um terminal antes. Faça uma etapa por vez e só passe para a próxima quando vir
+o resultado indicado.
 
-## 1. Instalar o Termux certo
+> **Tempo da primeira instalação:** normalmente 15 a 35 minutos. Use Wi-Fi,
+> deixe o aparelho carregando e reserve pelo menos 2 GB livres.
 
-Use a versão do F-Droid ou do GitHub oficial. A versão antiga da Play Store não é adequada.
+## Antes de abrir o portão
 
-## 2. Abrir o quartel
+Você vai precisar de:
 
-No Termux:
+- um aparelho com Android 7 ou mais recente;
+- WhatsApp funcionando no número que será conectado;
+- internet estável durante a instalação;
+- o navegador do celular;
+- de preferência, um aparelho reserva para deixar o SHOGUN em serviço.
+
+O SHOGUN funciona como um aparelho conectado à sua conta. Quando possível,
+comece com um número e um grupo de testes antes de colocá-lo numa comunidade.
+
+## Etapa 1 — baixar o Termux verdadeiro
+
+O Termux é o aplicativo que abre o pequeno “quartel” onde o SHOGUN vai rodar.
+Não use cópias encontradas em sites de APK e não use a edição antiga da Play
+Store.
+
+### Caminho recomendado: F-Droid
+
+1. No Android, abra a página oficial
+   [Termux no F-Droid](https://f-droid.org/packages/com.termux/).
+2. Desça até **Versões** e toque em **Baixar APK** na versão sugerida.
+   Você não precisa instalar a loja F-Droid para baixar esse APK.
+3. O Android pode avisar que o navegador não tem permissão para instalar
+   aplicativos. Toque em **Configurações**, habilite **Permitir desta fonte**
+   para esse navegador e volte.
+4. Toque em **Instalar**. Quando terminar, desative novamente a permissão do
+   navegador se quiser manter o aparelho mais fechado.
+
+### Alternativa: GitHub oficial
+
+Use apenas a página [Releases do Termux](https://github.com/termux/termux-app/releases).
+Em Android 7 ou mais recente, baixe uma variante `apt-android-7`. Se não souber
+a arquitetura do aparelho, escolha o arquivo `universal.apk`.
+
+> Escolha uma fonte e permaneça nela. Termux, Termux:API e Termux:Boot precisam
+> vir todos do F-Droid ou todos do GitHub. Misturar fontes causa erro de
+> assinatura e o Android recusa a instalação dos complementos.
+
+## Etapa 2 — conhecer a tela preta
+
+1. Abra o **Termux** pelo ícone recém-instalado.
+2. Na primeira abertura, aguarde a linha de texto com um sinal `$` aparecer.
+   Esse sinal quer dizer: “pronto para receber um comando”.
+3. Para colar um comando, mantenha o dedo pressionado na tela e toque em
+   **Paste/Colar**. Depois toque na tecla **Enter** do teclado.
+
+Você sempre vai copiar **somente o conteúdo dentro da caixa**, uma caixa por
+vez. Não copie o sinal `$`, números de etapa ou explicações.
+
+## Etapa 3 — atualizar o quartel
+
+Cole este primeiro comando e pressione Enter:
 
 ```bash
 pkg update -y
+```
+
+Várias linhas vão passar pela tela. Isso é normal. Aguarde até o `$` aparecer
+novamente. Se o Termux perguntar qual configuração manter, aceite a opção
+padrão pressionando Enter.
+
+Agora instale a ferramenta que vai buscar o SHOGUN:
+
+```bash
 pkg install -y git
+```
+
+Espere o `$` voltar.
+
+## Etapa 4 — baixar o SHOGUN
+
+Cole:
+
+```bash
 git clone https://github.com/dgreych/shogun.git
+```
+
+Quando aparecer `done` e o `$` voltar, entre na pasta que acabou de chegar:
+
+```bash
 cd shogun
+```
+
+O terminal não mostra uma animação ao entrar. Você pode confirmar o lugar com:
+
+```bash
+pwd
+```
+
+O fim da linha deve ser `/shogun`.
+
+## Etapa 5 — preparar o bot
+
+Cole:
+
+```bash
 bash scripts/install-termux.sh
 ```
 
-O instalador prepara Node.js, FFmpeg, as dependências e a configuração local.
+O instalador prepara Node.js, FFmpeg e os componentes do SHOGUN. Pode parecer
+parado durante alguns minutos; não feche o Termux. A instalação chegou ao ponto
+certo quando aparecer o título **Quartel de configuração do SHOGUN**.
 
-## 3. Evitar que o Android durma no posto
+### Responder à configuração
 
-Instale também o aplicativo Termux:API se quiser usar o bloqueio de suspensão. Depois:
+O assistente faz quatro perguntas. Digite a resposta e pressione Enter em cada
+uma:
+
+1. **Como o SHOGUN deve chamar você?** — por exemplo, `Mauricio`.
+2. **Seu número com país e DDD** — somente dígitos. Exemplo fictício:
+   `5511999999999` (`55` do Brasil, DDD e número; sem `+`, espaço ou traço).
+3. **Nome do bot** — pressione Enter para manter `SHOGUN`.
+4. **Prefixo de comando** — pressione Enter para manter `!`.
+
+Ao final, você deve ver **Configuração local salva** e **SHOGUN pronto**. O
+arquivo com esses dados fica apenas no aparelho e não entra no repositório.
+
+Se digitou algo errado, não reinstale tudo. Rode:
+
+```bash
+npm run setup
+```
+
+## Etapa 6 — fazer a inspeção antes de sair
+
+Cole:
+
+```bash
+npm run preflight
+```
+
+Node.js, npm, Git e FFmpeg devem aparecer aprovados. Um aviso sobre
+`termux-wake-lock` não impede o primeiro teste; cuidaremos disso depois.
+
+## Etapa 7 — conectar o WhatsApp no mesmo celular
+
+Inicie o SHOGUN:
+
+```bash
+npm start
+```
+
+Na primeira vez, o terminal oferece três opções. Como WhatsApp e Termux estão
+no mesmo celular, digite `2` para **código de pareamento** e pressione Enter.
+Quando ele pedir o telefone, informe novamente país + DDD + número, somente
+dígitos.
+
+Um código curto aparecerá no terminal. Anote-o ou copie-o antes de sair da tela.
+Agora:
+
+1. abra o WhatsApp sem encerrar o Termux;
+2. toque no menu de três pontos;
+3. abra **Aparelhos conectados** ou **Dispositivos conectados**;
+4. toque em **Conectar um aparelho**;
+5. escolha **Conectar com número de telefone**;
+6. digite o código mostrado pelo SHOGUN.
+
+Volte ao Termux. Aguarde a confirmação de conexão. Na próxima abertura, essa
+sessão será reconhecida automaticamente e não será necessário parear de novo.
+
+### Se o WhatsApp estiver em outro aparelho
+
+Digite `1` para usar QR Code. No aparelho que tem o WhatsApp, abra **Aparelhos
+conectados → Conectar um aparelho** e leia o QR mostrado no Termux.
+
+## Etapa 8 — a primeira missão
+
+Com o SHOGUN conectado, abra uma conversa de teste no WhatsApp e envie:
+
+```text
+!menu
+```
+
+Se o menu chegou, a instalação está concluída. Antes de dar cargo de
+administrador, teste comandos simples e leia o guia de
+[primeiros passos](../primeiros-passos.md).
+
+## Etapa 9 — impedir que o Android encerre o posto
+
+O Android economiza bateria fechando aplicativos em segundo plano. Para o
+SHOGUN permanecer conectado, faça as duas proteções abaixo.
+
+### Retirar a otimização de bateria
+
+Nas configurações do Android, procure **Aplicativos → Termux → Bateria** e
+escolha algo como **Sem restrições**, **Não otimizar** ou **Permitir atividade
+em segundo plano**. O nome muda conforme a marca do celular.
+
+### Ativar o bloqueio de suspensão
+
+Instale o aplicativo **Termux:API** pela mesma fonte usada para o Termux. Depois
+abra o Termux e rode:
 
 ```bash
 pkg install -y termux-api
+```
+
+Ative a proteção:
+
+```bash
 termux-wake-lock
 ```
 
-Nas configurações do Android, retire o Termux da otimização de bateria.
-
-## 4. Conectar o WhatsApp
+Se o Android pedir confirmação, permita. Para liberar a proteção quando o bot
+estiver parado, use:
 
 ```bash
-npm start
+termux-wake-unlock
 ```
 
-Se o WhatsApp está no mesmo celular, escolha **código de pareamento**. Anote o código exibido, abra **Aparelhos conectados → Conectar com número de telefone** e digite-o.
+## Sua rotina depois da instalação
 
-## 5. Voltar outro dia
+### Abrir o SHOGUN outro dia
+
+Abra o Termux e use, um por vez:
 
 ```bash
 cd shogun
+```
+
+```bash
 termux-wake-lock
+```
+
+```bash
 npm start
 ```
 
-Para encerrar, pressione `Ctrl+C` e depois use `termux-wake-unlock`.
+### Parar com segurança
 
-## Inicializar depois de reiniciar o celular
+Volte ao Termux e pressione `Ctrl+C`. Na fileira extra do Termux, toque em
+`CTRL` e depois na letra `C`. Quando o `$` reaparecer, o processo parou.
 
-O SHOGUN não altera seu `.bashrc`. Essa proteção evita loops e terminais presos.
+### Atualizar o SHOGUN
 
-Se quiser inicialização automática, instale o aplicativo Termux:Boot e crie manualmente `~/.termux/boot/start-shogun`:
+Pare o bot com `Ctrl+C`, confirme que está na pasta `shogun` e rode:
+
+```bash
+git pull --ff-only
+```
+
+```bash
+npm ci --no-audit --no-fund
+```
+
+```bash
+npm start
+```
+
+Não apague `dados/database/qr-code/`: essa pasta contém a sessão conectada.
+
+## Opcional — iniciar após reiniciar o celular
+
+Só faça isto depois de ter iniciado manualmente, conectado o WhatsApp e
+confirmado `!menu`.
+
+1. Instale **Termux:Boot** pela mesma fonte usada para o Termux.
+2. Toque uma vez no ícone **Termux:Boot**. Essa primeira abertura autoriza o
+   complemento a agir no próximo reinício.
+3. Volte ao Termux e instale o editor usado nesta etapa:
+
+```bash
+pkg install -y nano
+```
+
+4. Crie a pasta:
+
+```bash
+mkdir -p ~/.termux/boot
+```
+
+5. Abra o arquivo:
+
+```bash
+nano ~/.termux/boot/start-shogun
+```
+
+6. Cole exatamente:
 
 ```bash
 #!/data/data/com.termux/files/usr/bin/bash
@@ -62,10 +296,35 @@ cd "$HOME/shogun"
 npm start >> "$HOME/shogun/termux-boot.log" 2>&1
 ```
 
-Depois torne o arquivo executável:
+7. Salve tocando em `CTRL`, depois `O`, Enter, `CTRL` e `X`.
+8. Torne o arquivo executável:
 
 ```bash
 chmod 700 ~/.termux/boot/start-shogun
 ```
 
-Faça primeiro uma execução manual completa e confirme `!menu` antes de ativar o boot.
+O SHOGUN não altera `.bashrc` e não ativa isso sozinho. Para conferir depois
+de reiniciar, abra o Termux e veja:
+
+```bash
+tail -n 40 ~/shogun/termux-boot.log
+```
+
+## Socorro rápido
+
+- **`pkg` ou downloads falham:** troque de Wi-Fi/dados móveis, reabra o Termux
+  e repita apenas o comando que falhou.
+- **`cd: shogun: No such file or directory`:** o download não terminou ou você
+  está em outro lugar. Rode `cd`, depois repita a etapa 4.
+- **O instalador parece parado:** mantenha o aplicativo aberto; a primeira
+  instalação pode levar vários minutos.
+- **O código expirou:** pare com `Ctrl+C`, rode `npm start` e gere outro.
+- **O bot cai com a tela apagada:** revise a bateria, rode
+  `termux-wake-lock` e mantenha a notificação do Termux ativa.
+- **Termux:API ou Termux:Boot não instala:** provavelmente as fontes foram
+  misturadas. Todos os aplicativos Termux precisam vir da mesma fonte.
+- **Apareceu um erro que você não entende:** rode `npm run preflight` e procure
+  a seção correspondente em [solução de problemas](../solucao-de-problemas.md).
+
+Nunca envie a pasta de sessão, seu código de pareamento ou uma captura contendo
+credenciais. Para pedir ajuda, copie apenas a mensagem de erro.

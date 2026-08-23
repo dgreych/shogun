@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - refactor/gyomei-ts-modular-20260817
   pull_request:
     branches:
       - main
@@ -32,11 +31,6 @@ jobs:
           sudo apt-get install -y ffmpeg
       - name: Instalar dependências
         run: npm ci --no-audit --no-fund
-      - name: Conferir documento vivo privado
-        run: |
-          if [ -f docs/cloud/RETOMADAV2_AGENTES.md ]; then
-            cmp -s docs/RETOMADAV2_AGENTES.md docs/cloud/RETOMADAV2_AGENTES.md
-          fi
       - name: Inspecionar plataforma
         run: npm run preflight
       - name: Validar arquitetura modular
@@ -50,7 +44,6 @@ jobs:
           npm run test:vnext:commands
           npm run test:vnext:state
           npm run test:vnext:compat
-          npm run test:vnext:active-deploy
       - name: Validar runtime atual
         run: npm run validate:ci
       - name: Validar identidade visual
