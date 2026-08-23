@@ -33,7 +33,8 @@ na sua tela** a cada passo e o que fazer quando não aparece.
 <td align="center" width="33%">
 <a href="docs/instalacao/termux.md"><strong>📱 Android</strong></a><br>
 <sub>Celular reserva na tomada</sub><br>
-<sub>15 a 35 min</sub>
+<sub>15 a 35 min</sub><br>
+<sub><a href="https://f-droid.org/repo/com.termux_1022.apk">baixar o Termux</a></sub>
 </td>
 <td align="center" width="33%">
 <a href="docs/instalacao/windows.md"><strong>🪟 Windows</strong></a><br>
@@ -60,6 +61,19 @@ na sua tela** a cada passo e o que fazer quando não aparece.
 </p>
 
 ---
+
+## Vai rodar no Android?
+
+Antes de tudo, instale o **Termux** — é o aplicativo onde o bot roda. Toque e o
+download começa:
+
+**[⬇️ Baixar Termux (F-Droid)](https://f-droid.org/repo/com.termux_1022.apk)**
+ · [alternativa no GitHub](https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_universal.apk)
+
+> Não use a versão da Play Store: está parada há anos e não funciona para isso.
+
+Depois siga o [guia do Android](docs/instalacao/termux.md), que explica o resto
+tela por tela.
 
 ## Já usa terminal? Comece em três minutos
 

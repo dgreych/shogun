@@ -39,23 +39,34 @@ O Termux é o aplicativo que abre a linha de comando onde o bot vai rodar.
 Não use cópias encontradas em sites de APK e não use a edição antiga da Play
 Store.
 
-### Caminho recomendado: F-Droid
+### Baixe o APK
 
-1. No Android, abra a página oficial
-   [Termux no F-Droid](https://f-droid.org/packages/com.termux/).
-2. Desça até **Versões** e toque em **Baixar APK** na versão sugerida.
-   Você não precisa instalar a loja F-Droid para baixar esse APK.
-3. O Android pode avisar que o navegador não tem permissão para instalar
-   aplicativos. Toque em **Configurações**, habilite **Permitir desta fonte**
-   para esse navegador e volte.
-4. Toque em **Instalar**. Quando terminar, desative novamente a permissão do
-   navegador se quiser manter o aparelho mais fechado.
+Toque no link e o download começa. Os dois servem; o do F-Droid costuma estar
+numa versão mais nova.
 
-### Alternativa: GitHub oficial
+| Fonte | Link direto | Observação |
+| --- | --- | --- |
+| **F-Droid** (recomendado) | [Baixar Termux](https://f-droid.org/repo/com.termux_1022.apk) | Versão mais recente. Não precisa instalar a loja F-Droid |
+| **GitHub oficial** | [Baixar Termux](https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_universal.apk) | Arquivo `universal`, funciona em qualquer aparelho |
 
-Use apenas a página [Releases do Termux](https://github.com/termux/termux-app/releases).
-Em Android 7 ou mais recente, baixe uma variante `apt-android-7`. Se não souber
-a arquitetura do aparelho, escolha o arquivo `universal.apk`.
+Se algum link estiver fora do ar ou você quiser conferir se saiu versão nova,
+as páginas oficiais são
+[F-Droid](https://f-droid.org/packages/com.termux/) e
+[GitHub Releases](https://github.com/termux/termux-app/releases).
+
+> ⚠️ **Não baixe o Termux da Play Store.** A versão de lá está congelada há
+> anos e não funciona para isso. Também não use sites de APK genéricos.
+
+### Instalar o arquivo baixado
+
+1. Abra o arquivo baixado. O Android costuma mostrar a notificação de download
+   concluído — toque nela.
+2. Vai aparecer um aviso de que o navegador não tem permissão para instalar
+   aplicativos. Toque em **Configurações**, ligue **Permitir desta fonte** e
+   volte com o botão de voltar.
+3. Toque em **Instalar** e aguarde.
+4. Se quiser deixar o aparelho mais fechado, volte às configurações e desligue
+   essa permissão depois da instalação.
 
 > Escolha uma fonte e permaneça nela. Termux, Termux:API e Termux:Boot precisam
 > vir todos do F-Droid ou todos do GitHub. Misturar fontes causa erro de
