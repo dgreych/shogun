@@ -406,6 +406,52 @@ await test('perfil de outra pessoa nunca mostra o nome de quem deu o comando', (
   assert.ok(/const target = mentionedUser \|\| sender;/.test(corpo), 'o alvo precisa respeitar menção e citação');
 });
 
+await test('perfil migrado repete a correção no domínio que atende produção', () => {
+  // O runtime vNext atende `perfil` antes do switch legado. Testar apenas
+  // index.js deixou o código gerado antigo continuar escolhendo o remetente e
+  // renderizando o cartão genérico mesmo com o legado correto.
+  const fonte = fs.readFileSync(new URL('../../../src/members/generated-domain.ts', import.meta.url), 'utf8');
+  const inicio = fonte.indexOf('async function member_479_perfil');
+  const fim = fonte.indexOf('async function member_500_afk', inicio);
+  const corpo = fonte.slice(inicio, fim);
+  assert.ok(inicio >= 0 && fim > inicio, 'a família perfil precisa existir no domínio Members');
+  assert.ok(/menc_os2/.test(corpo), 'o domínio precisa receber a menção ou citação já normalizada');
+  assert.ok(/const mentionedUser = menc_os2 \|\| null;/.test(corpo), 'o alvo não pode ser lido de campos inexistentes de info');
+  assert.ok(/const target = mentionedUser \|\| sender;/.test(corpo), 'a menção precisa vencer o remetente');
+  assert.ok(/image: \{ url: profilePic \}/.test(corpo), 'o domínio precisa enviar a foto real do alvo');
+  assert.ok(!/socialCardWithBunnyFy\('profile'/.test(corpo), 'o cartão genérico não pode existir no domínio ativo');
+  assert.ok(/\*Nome\*: \$\{mentionedUser \? targetName/.test(corpo), 'o nome precisa acompanhar o alvo mencionado');
+});
+
+await test('emojimix não carrega segredo no código nem depende do Tenor', () => {
+  // A chave do Tenor estava escrita no arquivo. Foi revogada — todo pedido
+  // passou a voltar 403 e o comando morreu — e o repositório tem espelho
+  // público, então era também segredo exposto. Um defeito só, duas caras.
+  const fonte = fs.readFileSync(new URL('../funcs/utils/emojimix.js', import.meta.url), 'utf8');
+  assert.ok(!/AIza[0-9A-Za-z_-]{10,}/.test(fonte), 'não pode haver chave de API no código');
+  assert.ok(!/tenor\.googleapis\.com/.test(fonte), 'o Tenor exige chave e ficou para trás');
+  assert.ok(/gstatic\.com\/android\/keyboard\/emojikitchen/.test(fonte), 'deve usar o endpoint público');
+});
+
+await test('emojimix cobre as duas ordens e as duas notações de codepoint', () => {
+  // O par existe numa ordem só, e o seletor de variação é preservado em uns
+  // emojis e omitido em outros: u2764-ufe0f_u1f525 existe, u2764_u1f525 não.
+  const fonte = fs.readFileSync(new URL('../funcs/utils/emojimix.js', import.meta.url), 'utf8');
+  assert.ok(/\[emoji2, emoji1\]/.test(fonte), 'precisa tentar a ordem invertida');
+  assert.ok(/0xfe0f/.test(fonte), 'precisa tratar o seletor de variação');
+  assert.ok(/Promise\.any/.test(fonte), 'as levas devem ser sondadas em paralelo');
+});
+
+await test('emojimix distingue dupla inexistente de erro interno', () => {
+  // Dizer "erro interno" para uma dupla que simplesmente não existe faz o
+  // usuário achar que o bot quebrou e repetir o comando à toa.
+  const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+  const bloco = fonte.slice(fonte.indexOf("case 'emojimix':"));
+  const corpo = bloco.slice(0, bloco.indexOf("case 'ttp':"));
+  assert.ok(/EmojiMixError/.test(corpo), 'o handler precisa reconhecer a falha esperada');
+  assert.ok(/\.trim\(\)/.test(corpo), 'espaços em "🤓 / 🙄" quebrariam os codepoints');
+});
+
 const failures = results.filter(item => !item.ok);
 console.log(`\nRegressões: ${results.length - failures.length} aprovadas, ${failures.length} falhas.`);
 process.exit(failures.length ? 1 : 0);

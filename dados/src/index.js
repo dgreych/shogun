@@ -25092,10 +25092,12 @@ case 'qc':
        
 case 'emojimix':
   try  {
+    // Aparar é necessário: quem digita "🤓 / 🙄" mandaria o espaço junto e
+    // nenhum codepoint bateria.
     var emoji1;
-    emoji1 = q.split(`/`)[0];
+    emoji1 = (q.split(`/`)[0] || '').trim();
     var emoji2;
-    emoji2 = q.split(`/`)[1];
+    emoji2 = (q.split(`/`)[1] || '').trim();
       if  (!q || !emoji1 || !emoji2) return reply(`Formato errado, utilize:\n${prefix}${command} emoji1/emoji2\nEx: ${prefix}${command} 🤓/🙄`);
     var datzc;
     datzc = await emojiMix(emoji1, emoji2);
@@ -25110,6 +25112,9 @@ case 'emojimix':
       quoted: info
     });
     } catch (e) {
+    // Nem toda dupla existe no Emoji Kitchen. Dizer "erro interno" nesse caso
+    // faz o usuário achar que o bot quebrou e tentar de novo à toa.
+      if  (e?.name === 'EmojiMixError') return reply('😕 Essa dupla de emojis não existe na fábrica. Tenta outra combinação!');
     console.error(e);
     await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
     }

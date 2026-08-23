@@ -248,7 +248,7 @@ async function member_007_role(scope: MembersGeneratedScope): Promise<unknown> {
 
 async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unknown> {
   const command = String(scope.command || "").trim().toLowerCase();
-  let { AllgroupMembers, PICKAXE_TIER_MULT, SKILL_LIST, addSkillXP, applyShopBonuses, ensureEconomyDefaults, ensureUserChallenge, ensureUserPeriodChallenges, ensureUserSkills, findKeyIgnoringAccents, fmt, getActivePickaxe, getEcoUser, getSkillBonus, getUserName, giveMaterial, groupData, isBotSender, isChallengeCompleted, isGroup, isOwner, isPeriodCompleted, isSubOwner, loadEconomy, loadLevelingSafe, menc_jid2, nmrdn, normalizeParam, parseAmount, prefix, pushname, q, relationshipManager, reply, saveEconomy, sender, skillXpForNext, timeLeft, updateChallenge, updatePeriodChallenge, updateQuestProgress } = scope;
+  let { AllgroupMembers, PICKAXE_TIER_MULT, SKILL_LIST, addSkillXP, applyShopBonuses, despacharEconomiaRpg, ensureEconomyDefaults, ensureUserChallenge, ensureUserPeriodChallenges, ensureUserSkills, findKeyIgnoringAccents, fmt, getActivePickaxe, getEcoUser, getSkillBonus, getUserName, giveMaterial, groupData, isBotSender, isChallengeCompleted, isGroup, isOwner, isPeriodCompleted, isSubOwner, loadEconomy, loadLevelingSafe, menc_jid2, nmrdn, normalizeParam, parseAmount, prefix, pushname, q, relationshipManager, reply, saveEconomy, sender, skillXpForNext, timeLeft, updateChallenge, updatePeriodChallenge, updateQuestProgress } = scope;
   try {
     switch (command) {
       case 'perfilrpg':
@@ -348,6 +348,37 @@ async function member_014_perfilrpg(scope: MembersGeneratedScope): Promise<unkno
 
           const sub = command;
           const args = q ? q.trim().toLowerCase().split(/\s+/) : [];
+
+          // Ramos de economia ja nativos no vNext. Atende aqui e sai; os corpos
+          // legados abaixo so rodam para o que ainda nao migrou. Ver
+          // src/rpg/economia/despachante.ts.
+          {
+            const respostaVNext = despacharEconomiaRpg(
+          { econ, usuario: me, bonus: { mineBonus, workBonus, bankCapacity, fishBonus, exploreBonus, huntBonus, forgeBonus }, sub, args },
+          {
+            economia: { fmt, getUserName, saveEconomy },
+            acaso: { agora: () => Date.now(), aleatorio: () => Math.random(), timeLeft },
+            texto: { parseAmount, findKeyIgnoringAccents, normalizeParam },
+            progressao: { getSkillBonus, addSkillXP, updateChallenge, updatePeriodChallenge, isChallengeCompleted, giveMaterial },
+            habilidade: { SKILL_LIST, skillXpForNext, ensureUserSkills },
+          },
+          {
+            prefixo: prefix,
+            remetente: sender,
+            pushname,
+            mencionado: (menc_jid2 && menc_jid2[0]) || null,
+            membrosDoGrupo: AllgroupMembers || [],
+            consultaBruta: q || '',
+            permissaoReset: { isOwner, isSubOwner, remetente: sender, donoPrincipal: nmrdn, enviadoPeloBot: isBotSender },
+            parAtivo: relationshipManager?.getActivePairForUser?.(sender) || null,
+            capacidadeBanco: bankCapacity,
+          },
+            );
+            if (respostaVNext) {
+          return reply(respostaVNext.texto, respostaVNext.mencoes?.length ? { mentions: [...respostaVNext.mencoes] } : undefined);
+            }
+          }
+
           // Tratamento especial para ranklevel/ranklvl/levels etc.
           if  (['ranklevel','ranklvl','rankinglevel','levels','toplevels'].includes(sub)) {
           // Se estiver em grupo, usamos o ranking do grupo (RPG)
@@ -3289,21 +3320,19 @@ async function member_446_denuncias(scope: MembersGeneratedScope): Promise<unkno
 
 async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown> {
   const command = String(scope.command || "").trim().toLowerCase();
-  let { from, getUserName, info, nazu, pushname, reply, sender, socialCardWithBunnyFy } = scope;
+  let { from, getUserName, info, menc_os2, nazu, pushname, reply, sender } = scope;
   try {
     switch (command) {
       case 'perfil':
         try {
-          let target = sender;
-          let mentionedUser = null;
-
-          if (info.mentionedJid && info.mentionedJid.length > 0) {
-            mentionedUser = info.mentionedJid[0];
-          } else if (info.quoted && info.quoted.participant) {
-            mentionedUser = info.quoted.participant;
-          }
-
-          target = mentionedUser || sender;
+          // O alvo já vinha sendo lido de info.mentionedJid e info.quoted, que não
+          // existem: o Baileys põe menção e citação em
+          // info.message.extendedTextMessage.contextInfo. Por isso o comando sempre
+          // caía no próprio remetente, em silêncio, e marcar alguém não fazia nada.
+          // menc_os2 já resolve isso na entrada da mensagem: menção primeiro, senão
+          // o autor da mensagem citada.
+          const mentionedUser = menc_os2 || null;
+          const target = mentionedUser || sender;
           const targetId = getUserName(target);
           const targetName = `@${targetId}`;
 
@@ -3418,42 +3447,34 @@ async function member_479_perfil(scope: MembersGeneratedScope): Promise<unknown>
             return '▪️';
           };
 
-          const perfilText = `*📋 Perfil completo de ${targetName} 📋*
+          const rotulo = (txt) => `${txt}${'\u00a0'.repeat(Math.max(0, 8 - txt.length))}`;
 
-      👤 *Nome*: ${pushname || 'Desconhecido'}
+          const perfilText = `📋 *PERFIL COMPLETO*
+      ${targetName}
+
+      👤 *Nome*: ${mentionedUser ? targetName : (pushname || targetName)}
       📱 *Número*: ${targetId}
       📜 *Bio*: ${bio}${bioSetAt ? `\n🕒 *Bio atualizada em*: ${bioSetAt}` : ''}
+
       💰 *Valor do Pacote*: ${pacoteValue} 🫦
       😊 *Humor*: ${randomHumor}
 
+      ━━━━━━━━━━━━━━━━━━
       🎭 *Níveis*:
-        ${getEmoji(levels.puta, 'puta')} ┃ Puta: ${levels.puta}% ${createProgressBar(levels.puta)}
-        ${getEmoji(levels.gado, 'gado')} ┃ Gado: ${levels.gado}% ${createProgressBar(levels.gado)}
-        ${getEmoji(levels.corno, 'corno')} ┃ Corno: ${levels.corno}% ${createProgressBar(levels.corno)}
-        ${getEmoji(levels.sortudo, 'sortudo')} ┃ Sorte: ${levels.sortudo}% ${createProgressBar(levels.sortudo)}
-        ${getEmoji(levels.carisma, 'carisma')} ┃ Carisma: ${levels.carisma}% ${createProgressBar(levels.carisma)}
-        ${getEmoji(levels.rico, 'rico')} ┃ Rico: ${levels.rico}% ${createProgressBar(levels.rico)}
-        ${getEmoji(levels.gostosa, 'gostosa')} ┃ Gostosa: ${levels.gostosa}% ${createProgressBar(levels.gostosa)}
-        ${getEmoji(levels.feio, 'feio')} ┃ Feio: ${levels.feio}% ${createProgressBar(levels.feio)}`.trim();
+      ${rotulo('Puta')} ${createProgressBar(levels.puta)} ${String(levels.puta).padStart(3)}% ${getEmoji(levels.puta, 'puta')}
+      ${rotulo('Gado')} ${createProgressBar(levels.gado)} ${String(levels.gado).padStart(3)}% ${getEmoji(levels.gado, 'gado')}
+      ${rotulo('Corno')} ${createProgressBar(levels.corno)} ${String(levels.corno).padStart(3)}% ${getEmoji(levels.corno, 'corno')}
+      ${rotulo('Sorte')} ${createProgressBar(levels.sortudo)} ${String(levels.sortudo).padStart(3)}% ${getEmoji(levels.sortudo, 'sortudo')}
+      ${rotulo('Carisma')} ${createProgressBar(levels.carisma)} ${String(levels.carisma).padStart(3)}% ${getEmoji(levels.carisma, 'carisma')}
+      ${rotulo('Rico')} ${createProgressBar(levels.rico)} ${String(levels.rico).padStart(3)}% ${getEmoji(levels.rico, 'rico')}
+      ${rotulo('Gostosa')} ${createProgressBar(levels.gostosa)} ${String(levels.gostosa).padStart(3)}% ${getEmoji(levels.gostosa, 'gostosa')}
+      ${rotulo('Feio')} ${createProgressBar(levels.feio)} ${String(levels.feio).padStart(3)}% ${getEmoji(levels.feio, 'feio')}`.trim();
 
-          const profileCard = await socialCardWithBunnyFy('profile', {
-            name: String(pushname || targetName).slice(0, 48),
-            handle: targetName.slice(0, 48),
-            bio: String(bio || '').slice(0, 160),
-            level: Math.max(0, Math.floor(levels.carisma / 10)),
-            xp: levels.carisma,
-            nextLevelXp: 100,
-            stats: [
-              { label: 'Sorte', value: `${levels.sortudo}%` },
-              { label: 'Carisma', value: `${levels.carisma}%` },
-              { label: 'Riqueza', value: `${levels.rico}%` },
-              { label: 'Humor', value: randomHumor.slice(0, 24) }
-            ],
-            theme: 'ocean'
-          }, { legacyFallback: async () => null }).catch(() => null);
+          // O cartão gerado trocava o rosto da pessoa por um bloco com as iniciais.
+          // Aqui a foto de perfil é o conteúdo, não a moldura: do alvo quando há
+          // menção ou citação, de quem chamou quando não há.
           await nazu.sendMessage(from, {
-            image: profileCard?.ok ? profileCard.buffer : { url: profilePic },
-            ...(profileCard?.ok ? { mimetype: profileCard.mime } : {}),
+            image: { url: profilePic },
             caption: perfilText,
             mentions: [target]
           }, { quoted: info });

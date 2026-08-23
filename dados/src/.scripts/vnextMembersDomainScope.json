@@ -588,6 +588,7 @@
     "botVersion",
     "buildGroupFilePath",
     "commandStats",
+    "despacharEconomiaRpg",
     "ensureEconomyDefaults",
     "ensureRoleParticipants",
     "ensureUserChallenge",
