@@ -47,7 +47,7 @@ const platformName = isTermux ? 'Termux/Android' : `${process.platform}/${proces
 console.log(`✅ Plataforma detectada — ${platformName}`);
 
 if (isTermux && !probe('termux-wake-lock', 'termux-wake-lock', [], false)) {
-  warnings.push('Use pkg install termux-api e o aplicativo Termux:API para manter o aparelho acordado.');
+  warnings.push('Atualize o pacote termux-tools (pkg install termux-tools). O comando termux-wake-lock não exige o aplicativo Termux:API.');
 }
 
 const configPath = path.join(ROOT, 'dados', 'src', 'config.json');
