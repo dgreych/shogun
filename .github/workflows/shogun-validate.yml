@@ -59,7 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node: ['20.19.0', '22', '24']
     steps:
       - name: Baixar o repositório
@@ -80,7 +80,48 @@ jobs:
           node --check dados/src/.scripts/start-v9-fixed.js
           node --check dados/src/connect.js
           node --check dados/src/index.js
+          bash -n scripts/install-linux.sh
+          bash -n scripts/install-macos.sh
+          bash -n scripts/install-termux.sh
       - name: Conferir configuração neutra
         run: node -e "const c=require('./dados/src/config.example.json'); if(c.nomebot!=='SHOGUN'||c.numerodono!=='55DDDNUMERO') process.exit(1)"
       - name: Construir arquitetura modular
         run: npm run build:vnext
+
+  contrato-termux:
+    name: Contrato Termux/Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+      - name: Preparar Node.js mínimo suportado
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+      - name: Preparar FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Instalar dependências como clone limpo
+        run: npm ci --no-audit --no-fund
+      - name: Validar script Android
+        run: |
+          bash -n scripts/install-termux.sh
+          grep -q 'nodejs-lts' scripts/install-termux.sh
+          grep -q 'ffmpeg' scripts/install-termux.sh
+          grep -q 'termux-tools' scripts/install-termux.sh
+      - name: Exercitar ramificação Termux do preflight
+        env:
+          TERMUX_VERSION: ci
+          PREFIX: /tmp/shogun-termux-prefix
+        run: |
+          mkdir -p "$PREFIX/bin"
+          touch "$PREFIX/bin/termux-wake-lock"
+          node scripts/preflight-platform.mjs
+      - name: Validar entradas do runtime
+        run: |
+          node --check dados/src/.scripts/start-v9-fixed.js
+          node --check dados/src/connect.js
+          node --check dados/src/index.js
