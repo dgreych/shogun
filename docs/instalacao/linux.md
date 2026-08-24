@@ -1,19 +1,31 @@
-# SHOGUN no Linux: do terminal ao primeiro menu
+<h1 align="center">🐧 SHOGUN no Linux</h1>
+<p align="center"><strong>Instalação em desktop ou servidor, com cada etapa verificável.</strong></p>
 
-Este guia atende computadores e servidores Linux. Se é sua primeira vez,
-Ubuntu ou Debian oferecem o caminho mais simples. Reserve cerca de 20 minutos.
+<p align="center">
+  <img alt="Linux" src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=111111">
+  <img alt="Node 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
+  <img alt="Tempo" src="https://img.shields.io/badge/primeira%20instala%C3%A7%C3%A3o-10%E2%80%9320%20min-6b2637">
+</p>
 
-## Etapa 1 — abrir o Terminal
+## Rota completa
 
-No Ubuntu, pressione `Ctrl+Alt+T`. Em outras distribuições, procure o aplicativo
-**Terminal** no menu. Copie uma caixa por vez, cole com `Ctrl+Shift+V` e
-pressione Enter.
+| Etapa | Ação | Sinal de sucesso |
+| --- | --- | --- |
+| **1** | instalar Git e FFmpeg | versões aparecem no terminal |
+| **2** | instalar Node.js | `node --version` ≥ 20.19 |
+| **3** | clonar o SHOGUN | pasta `~/shogun` criada |
+| **4** | executar instalador | setup concluído |
+| **5** | rodar preflight | requisitos obrigatórios aprovados |
+| **6** | conectar WhatsApp | feed do bot ativo |
+| **7** | testar | `!menu` responde |
 
-## Etapa 2 — instalar Git e FFmpeg
+---
 
-Use somente o bloco da sua distribuição.
+## 1 · Prepare o sistema
 
-### Ubuntu, Debian, Linux Mint e derivados
+Use **somente** o bloco correspondente à sua distribuição.
+
+### Ubuntu · Debian · Linux Mint
 
 ```bash
 sudo apt update
@@ -32,161 +44,188 @@ sudo dnf install -y git ffmpeg curl
 sudo pacman -Syu --needed git ffmpeg curl
 ```
 
-Quando `sudo` pedir a senha, digite mesmo que nenhum caractere apareça e
-pressione Enter. Isso é uma proteção normal do Linux.
+> [!NOTE]
+> Quando `sudo` pede a senha, nenhum caractere aparece enquanto você digita. Isso é normal. O terminal não travou, ele só decidiu que feedback visual era luxo.
 
-## Etapa 3 — instalar Node.js LTS
+---
 
-O SHOGUN exige Node.js 20.19 ou mais recente e recomenda a linha LTS 22 ou 24.
-Se sua distribuição já oferece uma dessas versões, instale `nodejs` e `npm`
-pelo gerenciador de pacotes dela. Caso contrário, siga o método mostrado na
-página oficial [Baixar Node.js](https://nodejs.org/en/download).
+## 2 · Instale Node.js
 
-Não use Node.js 18. Depois de instalar, feche e abra o Terminal.
+O SHOGUN exige **Node.js 20.19.0 ou superior**. Para uma instalação nova, prefira uma linha LTS atual suportada pelo projeto.
 
-## Etapa 4 — conferir o terreno
+Se sua distribuição já oferece uma versão adequada, instale `nodejs` e `npm` pelo gerenciador de pacotes. Caso contrário, use o método indicado na página oficial do Node.js.
 
-Rode um por vez:
+Depois confira:
 
 ```bash
 node --version
-```
-
-```bash
 npm --version
-```
-
-```bash
 git --version
-```
-
-```bash
 ffmpeg -version
 ```
 
-Cada comando deve mostrar uma versão. Para Node.js, espere algo como `v22...`
-ou `v24...`.
+Se Node mostrar `v18`, ainda não terminou esta etapa.
 
-## Etapa 5 — baixar o SHOGUN
+---
 
-Volte à sua pasta pessoal:
-
-```bash
-cd
-```
-
-Baixe o projeto:
+## 3 · Baixe o projeto
 
 ```bash
+cd ~
 git clone https://github.com/dgreych/shogun.git
-```
-
-Entre na pasta:
-
-```bash
 cd shogun
 ```
 
-## Etapa 6 — preparar e configurar
+Confira:
+
+```bash
+pwd
+```
+
+O caminho deve terminar em `/shogun`.
+
+---
+
+## 4 · Execute o instalador
 
 ```bash
 bash scripts/install-linux.sh
 ```
 
-O instalador baixa os componentes e faz quatro perguntas:
+O instalador executa o preflight, instala as dependências travadas em `package-lock.json` e abre a configuração inicial.
 
-1. como o SHOGUN deve chamar você;
-2. seu número com país e DDD, somente dígitos — exemplo fictício
-   `5511999999999`;
-3. nome do bot — pressione Enter para manter `SHOGUN`;
-4. prefixo — pressione Enter para manter `!`.
+<table>
+<tr><td><strong>Seu nome</strong></td><td>identificação local do dono</td></tr>
+<tr><td><strong>Número</strong></td><td>país + DDD + número, somente dígitos</td></tr>
+<tr><td><strong>Nome do bot</strong></td><td>nome desta instalação</td></tr>
+<tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
+</table>
 
-Quando aparecer **SHOGUN pronto**, a configuração local está protegida e a
-instalação terminou. Para refazer apenas as perguntas:
+Para refazer apenas o setup depois:
 
 ```bash
 npm run setup
 ```
 
-## Etapa 7 — inspeção e conexão
+---
+
+## 5 · Verifique antes de iniciar
 
 ```bash
 npm run preflight
 ```
 
 <p align="center">
-  <img src="img/preflight-linux.png" alt="Saída da verificação do ambiente" width="100%">
+  <img src="img/preflight-linux.png" alt="Preflight do SHOGUN no Linux" width="92%">
 </p>
 
-<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
-configuração é esperado antes da etapa seguinte.</sub>
+O comando verifica Node.js, npm, Git, FFmpeg, configuração e dependências locais.
 
-Com os itens obrigatórios aprovados, inicie:
+---
+
+## 6 · Inicie e conecte
 
 ```bash
 npm start
 ```
 
-Escolha `1` para QR Code. No telefone, abra WhatsApp → menu de três pontos →
-**Aparelhos conectados/Dispositivos conectados → Conectar um aparelho** e leia
-o QR do terminal.
+Escolha **QR Code** ou **código de pareamento** no painel.
 
-Se o WhatsApp estiver no mesmo equipamento ou o QR não couber, reinicie com
-`Ctrl+C`, escolha `2` e use o código de pareamento.
+<p align="center">
+  <img src="img/painel.png" alt="Painel de conexão do SHOGUN" width="82%">
+</p>
 
-## Etapa 8 — confirmar a primeira missão
+No telefone, para QR, abra **WhatsApp → Aparelhos conectados → Conectar um aparelho**. Se QR não for conveniente, reinicie o fluxo e escolha pareamento por código.
 
-Numa conversa de teste, envie:
+A sessão criada é reutilizada nas próximas inicializações enquanto continuar válida.
+
+---
+
+## 7 · Teste de aceite
+
+Envie em um grupo de teste:
 
 ```text
 !menu
 ```
 
-Se o menu chegou, o posto está pronto. O Terminal precisa permanecer aberto
-enquanto o SHOGUN estiver em serviço.
+Se escolheu outro prefixo, substitua `!`.
 
-## Sua rotina
+**Recebeu resposta?** O núcleo instalou, conectou e está despachando comandos.
 
-Para parar, pressione `Ctrl+C`.
+---
 
-Para voltar outro dia:
+## Uso diário
+
+### Parar
+
+`Ctrl+C`
+
+### Iniciar de novo
 
 ```bash
 cd ~/shogun
-```
-
-```bash
 npm start
 ```
 
-Para atualizar, pare o processo e rode:
+### Atualizar
 
 ```bash
+cd ~/shogun
 git pull --ff-only
-```
-
-```bash
 npm ci --no-audit --no-fund
-```
-
-```bash
+npm run preflight
 npm start
 ```
 
-## Servidor ligado continuamente
+> [!TIP]
+> Em servidor que ficará ligado continuamente, faça primeiro a instalação manual e confirme `!menu`. Só depois configure supervisão de processo. Isso separa problema de instalação de problema de serviço, uma pequena gentileza para o seu futuro eu.
 
-Primeiro conclua a instalação manual e confirme `!menu`. Depois consulte
-[Implantação em servidor](../../DEPLOY.md) para manter o processo supervisionado.
-Não publique a pasta de sessão nem o arquivo de configuração ao mover o bot.
+Veja **[Implantação em servidor](../../DEPLOY.md)** para uma instalação pública supervisionada.
 
-## Socorro rápido
+---
 
-- **`sudo: command not found`:** sua distribuição usa outro método de
-  administração; consulte a documentação dela ou peça ao administrador para
-  instalar Git, Node.js e FFmpeg.
-- **Node mostra `v18`:** atualize para Node.js 22 ou 24 e reabra o Terminal.
-- **Permissão negada no instalador:** rode com `bash scripts/install-linux.sh`,
-  exatamente como na etapa 6.
-- **A pasta `shogun` já existe:** use `cd ~/shogun`; não clone por cima.
-- **Ainda não funcionou:** rode `npm run preflight` e consulte
-  [solução de problemas](../solucao-de-problemas.md).
+## Diagnóstico
+
+<details>
+<summary><strong><code>sudo: command not found</code></strong></summary>
+<br>
+Sua distribuição usa outro método de administração ou você está num ambiente restrito. Instale Git, Node.js e FFmpeg pelo mecanismo adequado ao sistema antes de continuar.
+</details>
+
+<details>
+<summary><strong>Node ainda mostra v18</strong></summary>
+<br>
+Instale uma versão compatível e abra um novo terminal. Depois confirme com <code>node --version</code> e <code>npm run preflight</code>.
+</details>
+
+<details>
+<summary><strong>Permissão negada no instalador</strong></summary>
+<br>
+Use <code>bash scripts/install-linux.sh</code>. Não é necessário marcar o arquivo executável para esse fluxo.
+</details>
+
+<details>
+<summary><strong>A pasta <code>shogun</code> já existe</strong></summary>
+<br>
+Entre nela com <code>cd ~/shogun</code>; não clone outra cópia por cima.
+</details>
+
+---
+
+## 🔐 Proteja o estado local
+
+A sessão e a configuração devem sobreviver às atualizações:
+
+```text
+dados/database/
+dados/src/config.json
+.env.local
+```
+
+> [!CAUTION]
+> Nunca publique a pasta de sessão. Ela contém material de autenticação do WhatsApp vinculado.
+
+Para diagnóstico adicional, rode `npm run preflight` e consulte **[Solução de problemas](../solucao-de-problemas.md)**.
+
+<p align="center"><a href="../../README.md">← Voltar à página principal</a></p>
