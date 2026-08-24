@@ -6,8 +6,8 @@
 
 <p align="center">
   <strong>Um bot para os seus grupos de WhatsApp.</strong><br>
-  Ele modera, baixa vídeo e música, faz figurinha, joga e tem um RPG inteiro.<br>
-  Roda no seu computador ou num celular Android parado na gaveta — e é de graça.
+  Ele modera, trabalha com mídia, faz figurinhas, joga e mantém um RPG inteiro.<br>
+  Roda no seu computador ou num celular Android pelo Termux.
 </p>
 
 <p align="center">
@@ -17,33 +17,36 @@
 </p>
 
 <p align="center">
-  <sub>Assim que ele fica quando está ligado: a tela de conexão e o
-  acompanhamento ao vivo de tudo que chega.</sub>
+  <sub>O painel de conexão e o acompanhamento ao vivo do bot em execução.</sub>
 </p>
 
 ---
 
 ## 👉 Nunca instalou nada assim? Comece por aqui
 
-Escolha onde o bot vai rodar. Cada guia começa do zero, mostra **o que aparece
-na sua tela** a cada passo e o que fazer quando não aparece.
+Escolha onde o bot vai rodar. Os guias seguem os scripts e o fluxo que existem de fato neste repositório público.
 
 <table>
 <tr>
-<td align="center" width="33%">
+<td align="center" width="25%">
 <a href="docs/instalacao/termux.md"><strong>📱 Android</strong></a><br>
-<sub>Celular reserva na tomada</sub><br>
+<sub>Termux</sub><br>
 <sub>15 a 35 min</sub><br>
-<sub><a href="https://f-droid.org/repo/com.termux_1022.apk">baixar o Termux</a></sub>
+<sub><a href="https://f-droid.org/packages/com.termux/">obter Termux</a></sub>
 </td>
-<td align="center" width="33%">
+<td align="center" width="25%">
 <a href="docs/instalacao/windows.md"><strong>🪟 Windows</strong></a><br>
-<sub>10 ou 11, no seu PC</sub><br>
+<sub>Windows 10 ou 11</sub><br>
 <sub>10 a 20 min</sub>
 </td>
-<td align="center" width="33%">
+<td align="center" width="25%">
 <a href="docs/instalacao/linux.md"><strong>🐧 Linux</strong></a><br>
-<sub>Desktop, mini PC ou servidor</sub><br>
+<sub>Desktop ou servidor</sub><br>
+<sub>10 a 20 min</sub>
+</td>
+<td align="center" width="25%">
+<a href="docs/instalacao/macos.md"><strong>🍎 macOS</strong></a><br>
+<sub>Intel ou Apple Silicon</sub><br>
 <sub>10 a 20 min</sub>
 </td>
 </tr>
@@ -55,38 +58,30 @@ na sua tela** a cada passo e o que fazer quando não aparece.
   <img src="docs/instalacao/img/feed.png" alt="Feed do terminal mostrando comandos e mensagens chegando" width="46%">
 </p>
 
-<p align="center">
-  <sub>À esquerda, a tela de conexão. À direita, o feed ao vivo — cada comando
-  e mensagem que chega aparece assim no seu terminal.</sub>
-</p>
-
 ---
 
 ## Vai rodar no Android?
 
-Antes de tudo, instale o **Termux** — é o aplicativo onde o bot roda. Toque e o
-download começa:
+Para a linha tradicional do Termux, prefira uma das fontes oficiais abaixo:
 
-**[⬇️ Baixar Termux (F-Droid)](https://f-droid.org/repo/com.termux_1022.apk)**
- · [alternativa no GitHub](https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_universal.apk)
+**[F-Droid](https://f-droid.org/packages/com.termux/)** · **[GitHub Releases](https://github.com/termux/termux-app/releases)**
 
-> Não use a versão da Play Store: está parada há anos e não funciona para isso.
+A edição do Google Play voltou a existir, mas segue uma linha experimental com diferenças de compatibilidade. O guia do SHOGUN usa a linha tradicional de F-Droid/GitHub para reduzir variações de ambiente.
 
-Depois siga o [guia do Android](docs/instalacao/termux.md), que explica o resto
-tela por tela.
+Depois siga o [guia do Android](docs/instalacao/termux.md), que corresponde ao instalador `scripts/install-termux.sh` e ao painel real do bot.
 
 ## Já usa terminal? Comece em três minutos
 
 ```bash
 git clone https://github.com/dgreych/shogun.git
 cd shogun
-bash scripts/install-linux.sh   # Windows: install-windows.ps1 · Android: install-termux.sh
+bash scripts/install-linux.sh   # macOS: install-macos.sh · Android: install-termux.sh
 npm start
 ```
 
-Leia o QR no WhatsApp, mande `!menu` no grupo e pronto. Se a palavra "terminal"
-já assusta, comece pelo [guia da sua plataforma](#-nunca-instalou-nada-assim-comece-por-aqui) — ele explica cada
-tela, sem pressupor nada.
+No Windows, use `powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1`.
+
+O primeiro boot abre o painel de conexão e oferece QR Code ou código de pareamento. Se a palavra "terminal" já assusta, comece pelo [guia da sua plataforma](#-nunca-instalou-nada-assim-comece-por-aqui).
 
 ## Como funciona
 
@@ -94,38 +89,21 @@ tela, sem pressupor nada.
 flowchart LR
   A[Seu WhatsApp] <--> B[𝖘𝖍𝖔𝖌𝖚𝖓<br/>no seu aparelho]
   B --> C[Grupos<br/>moderação e jogos]
-  B --> D[Downloads<br/>YouTube, TikTok e mais]
-  B -.opcional.-> E[API de IA<br/>imagem e transcrição]
+  B --> D[Mídia<br/>downloads e figurinhas]
+  B -.opcional.-> E[APIs externas<br/>IA e mídia avançada]
 ```
 
-A sessão e os dados dos grupos ficam **no seu aparelho**. Nada de servidor de
-terceiro, salvo as APIs que você mesmo configurar.
+A sessão e os dados dos grupos ficam **no aparelho onde você executa o bot**. Integrações externas só entram quando o recurso correspondente é configurado.
 
 ## O que ele faz
 
-**Cuida do grupo.** Boas-vindas, anti-link, anti-flood e advertências com
-banimento automático na terceira. Moderadores com permissões próprias, separadas
-das do administrador do WhatsApp. Silenciar quem está atrapalhando, abrir e
-fechar o grupo por horário.
+**Cuida do grupo.** Boas-vindas, anti-link, anti-flood, advertências, moderação e automações de administração.
 
-**Resolve mídia.** Baixa de YouTube, TikTok, Instagram, Twitter, Facebook,
-Pinterest e Kwai. Vídeo vira áudio, áudio vira texto, imagem vira figurinha e
-figurinha vira imagem. Faz figurinha animada de vídeo curto e mistura dois
-emojis num só.
+**Trabalha com mídia.** O runtime inclui fluxos de download, conversão, áudio, imagem e figurinhas. Recursos que dependem da BunnyFy ou de outro serviço externo precisam da integração correspondente configurada.
 
-**Gera imagem por IA.** Texto vira imagem, remove fundo, aumenta resolução. O
-roteador escolhe o modelo pelo tipo de pedido: pedido rápido vai para o modelo
-rápido, pedido caprichado vai para o modelo de qualidade.
+**Conversa e gera mídia por IA quando configurado.** O núcleo local não exige chave de IA para iniciar. Recursos externos permanecem opcionais.
 
-**Conversa.** A assistente responde quando mencionada. Cada grupo escolhe a
-personalidade, e ela muda o tom das respostas e o visual dos menus junto.
-
-**Tem um RPG inteiro.** Trabalho, mineração, pesca, caça, forja, plantio,
-cozinha, propriedades que rendem por dia, mercado entre jogadores, habilidades
-que evoluem e ranking. Cada grupo tem a própria economia.
-
-**E jogos.** Velha, forca, quiz, roleta, caça-palavras e uma taverna de duelos
-por turnos.
+**Tem economia, RPG e jogos.** O bot mantém sistemas persistentes por grupo e comandos interativos no próprio WhatsApp.
 
 ## Configuração
 
@@ -134,16 +112,15 @@ por turnos.
 </p>
 
 <p align="center">
-  <sub><code>npm run preflight</code> confere tudo que o bot precisa antes de você começar.</sub>
+  <sub><code>npm run preflight</code> confere Node.js, npm, Git, FFmpeg e detecta a plataforma antes do boot.</sub>
 </p>
 
-O instalador pergunta seu nome, seu número com país e DDD, o nome do bot e o
-prefixo dos comandos. Nada disso sai do seu aparelho.
+O instalador pergunta seu nome, seu número com país e DDD, o nome do bot e o prefixo dos comandos. A configuração local é escrita em `dados/src/config.json`.
 
 ## Manutenção
 
 ```bash
-npm run preflight   # confere Node.js, npm, Git, FFmpeg e a plataforma
+npm run preflight   # confere o ambiente
 npm run setup       # refaz a configuração inicial
 npm start           # inicia o bot
 ```
@@ -156,41 +133,32 @@ git pull --ff-only && npm ci --no-audit --no-fund && npm start
 
 ## Dúvidas frequentes
 
-**Preciso de um número separado?** Sim. Use um chip só do bot — ele conecta
-como aparelho vinculado e responde por essa conta.
+**Preciso de um número separado?** É fortemente recomendado. O bot conecta como aparelho vinculado e responde por essa conta.
 
-**Preciso deixar o computador ligado?** Sim, enquanto quiser o bot no ar. Por
-isso muita gente usa um Android antigo na tomada.
+**Preciso deixar o aparelho ligado?** Sim, enquanto quiser o bot no ar. No Android, use `termux-wake-lock` e retire o Termux da otimização agressiva de bateria.
 
-**Funciona sem chave de IA?** Funciona. Moderação, downloads, figurinhas, jogos
-e RPG não dependem de IA. Só geração de imagem e transcrição precisam.
+**Funciona sem chave de IA?** Sim. O núcleo do bot inicia e conecta sem chave de IA. Recursos que chamam provedores externos dependem da configuração daquele provedor.
 
-**Vão banir meu número?** O bot usa a conexão oficial de aparelhos vinculados.
-O que causa bloqueio é comportamento: disparo em massa e spam. Use com bom
-senso.
-
-**Meus dados vão para algum servidor?** Não. Sessão, bancos e configuração
-ficam no aparelho onde o bot roda.
+**O Termux precisa do aplicativo Termux:API para `termux-wake-lock`?** Não. O wake lock vem das ferramentas do próprio Termux; se o comando estiver ausente, atualize `termux-tools`.
 
 ## Segurança
 
-A pasta `dados/database/qr-code/` guarda a sessão do WhatsApp. **Quem tem essa
-pasta entra na sua conta**: não compacte, não envie, não publique. Ela já está
-protegida pelo `.gitignore`.
+A pasta `dados/database/qr-code/` guarda a sessão do WhatsApp. **Quem obtiver essa pasta pode comprometer a sessão vinculada.** Não compacte, não envie e não publique. Ela já está protegida pelo `.gitignore`.
 
 ## Requisitos
 
 <p>
   <img alt="Node.js 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
   <img alt="WhatsApp Baileys" src="https://img.shields.io/badge/WhatsApp-Baileys-25D366?logo=whatsapp&logoColor=white">
-  <img alt="Windows, Linux e Termux" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20Termux-ce141a">
+  <img alt="Windows, Linux, macOS e Termux" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Termux-ce141a">
   <img alt="Licença ISC" src="https://img.shields.io/badge/licen%C3%A7a-ISC-deb054">
 </p>
 
-Node.js 20.19 ou superior · FFmpeg · Git · um número de WhatsApp dedicado
+Node.js 20.19 ou superior · FFmpeg · Git · um número de WhatsApp para a sessão do bot
 
-Os instaladores cuidam disso para você. A lista está aqui para quem já tem o
-ambiente montado e quer conferir.
+## Portabilidade verificada
+
+O workflow público valida o lockfile e a construção do projeto em Windows, Linux e macOS. O contrato do Termux é validado separadamente no CI, e o instalador Android usa apenas pacotes disponíveis no ecossistema Termux.
 
 ## Licença
 
