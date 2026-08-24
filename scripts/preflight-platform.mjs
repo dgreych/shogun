@@ -46,8 +46,11 @@ const isTermux = Boolean(process.env.TERMUX_VERSION) || fs.existsSync('/data/dat
 const platformName = isTermux ? 'Termux/Android' : `${process.platform}/${process.arch}`;
 console.log(`✅ Plataforma detectada — ${platformName}`);
 
-if (isTermux && !probe('termux-wake-lock', 'termux-wake-lock', [], false)) {
-  warnings.push('Use pkg install termux-api e o aplicativo Termux:API para manter o aparelho acordado.');
+if (isTermux) {
+  const prefix = process.env.PREFIX || '/data/data/com.termux/files/usr';
+  const wakeLockPath = path.join(prefix, 'bin', 'termux-wake-lock');
+  if (fs.existsSync(wakeLockPath)) console.log('✅ termux-wake-lock — disponível');
+  else warnings.push('termux-wake-lock não foi encontrado. Atualize termux-tools com: pkg install termux-tools. Não é necessário instalar Termux:API para esse comando.');
 }
 
 const configPath = path.join(ROOT, 'dados', 'src', 'config.json');

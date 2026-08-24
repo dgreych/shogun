@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 pkg update -y
-pkg install -y git nodejs-lts ffmpeg
+pkg install -y git nodejs-lts ffmpeg termux-tools
 
 node scripts/preflight-platform.mjs
 
@@ -15,4 +15,7 @@ npm ci --no-audit --no-fund
 
 npm run setup
 
-echo "SHOGUN pronto. Use termux-wake-lock e depois npm start."
+node --check dados/src/.scripts/start-v9-fixed.js
+node --check dados/src/connect.js
+
+echo "SHOGUN pronto. Execute termux-wake-lock e depois npm start."

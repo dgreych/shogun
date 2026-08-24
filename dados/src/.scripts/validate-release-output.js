@@ -37,7 +37,7 @@ if (fs.existsSync(runtimeIndexPath)) {
   const runtimeIndex = fs.readFileSync(runtimeIndexPath, 'utf8');
   assert(runtimeIndex.includes("case 'criador'"), 'comando criador presente');
   assert(runtimeIndex.includes('github.com/dgreych/shogun'), 'repositório do produto presente');
-  assert(runtimeIndex.includes('*Maurício Almeida*'), 'autoria do produto presente');
+  assert(runtimeIndex.includes('*Alaska dev* (Maurício)'), 'autoria do produto presente no cartão real do criador');
   assert(!runtimeIndex.includes('Hiudy'), 'crédito de terceiro não aparece em saída do bot');
   assert(!/sentinela/i.test(runtimeIndex), 'sem rótulo genérico na identidade');
   assert(runtimeIndex.includes('Comando não reconhecido'), 'cartão de comando inválido presente');
@@ -68,6 +68,7 @@ if (fs.existsSync(packagePath)) {
   assert(packageData.name === 'shogun-whatsapp', 'pacote identificado como SHOGUN');
   assert(packageData.version === '2.0.0', 'versão principal definida como 2.0.0');
   assert(String(packageData.description || '').startsWith('SHOGUN é seu sentinela'), 'descrição independente presente');
+  assert(packageData.author === 'Maurício Almeida', 'autoria canônica declarada no pacote');
   assert(packageData.engines?.node === '>=20.19.0', 'piso real do Node.js declarado');
   assert(Boolean(packageData.scripts?.preflight), 'inspeção multiplataforma disponível');
 }

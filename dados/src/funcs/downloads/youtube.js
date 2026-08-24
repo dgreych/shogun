@@ -7,7 +7,7 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 import { downloadYoutubeAudioForPlay, downloadYoutubeVideoForPlay } from '../../services/bunnyfy/youtubeGateway.js';
 
 const DOWNLOAD_TIMEOUT = 180000;
