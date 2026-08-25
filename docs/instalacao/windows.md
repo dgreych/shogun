@@ -1,198 +1,274 @@
-# SHOGUN no Windows: instalação para iniciantes
+<h1 align="center">🪟 SHOGUN no Windows</h1>
+<p align="center"><strong>Do PowerShell ao primeiro <code>!menu</code>, sem pular as partes que normalmente viram problema depois.</strong></p>
 
-Este caminho serve para Windows 10 e 11. Reserve cerca de 20 minutos, use uma
-conta que possa instalar programas e mantenha o computador conectado à internet.
+<p align="center">
+  <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white">
+  <img alt="Node 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
+  <img alt="Tempo" src="https://img.shields.io/badge/primeira%20instala%C3%A7%C3%A3o-10%E2%80%9320%20min-6b2637">
+</p>
 
-## Etapa 1 — abrir o PowerShell
+## Rota completa
 
-1. Abra o menu **Iniciar**.
-2. Digite `PowerShell`.
-3. Abra **Windows PowerShell**. Não é necessário abrir como administrador para
-   rodar o SHOGUN.
+| Etapa | Ação | Sinal de sucesso |
+| --- | --- | --- |
+| **1** | abrir PowerShell | prompt disponível |
+| **2** | instalar Git, Node e FFmpeg | comandos mostram versões |
+| **3** | clonar o projeto | pasta `shogun` criada |
+| **4** | rodar o instalador | setup concluído |
+| **5** | executar preflight | requisitos obrigatórios aprovados |
+| **6** | conectar WhatsApp | feed do bot ativo |
+| **7** | testar | `!menu` responde |
 
-Você vai copiar uma caixa por vez, colar com o botão direito ou `Ctrl+V` e
-pressionar Enter. Espere o cursor voltar antes de seguir.
+---
 
-## Etapa 2 — instalar as ferramentas
+## 1 · Abra o PowerShell
 
-O Windows 10/11 atualizado inclui o `winget`, instalador oficial do sistema.
-Confira:
+No menu **Iniciar**, procure por **PowerShell**. Para executar o SHOGUN normalmente não é necessário abrir como administrador.
+
+Você pode colar os comandos com `Ctrl+V`. Execute um bloco de cada vez e espere o prompt voltar.
+
+---
+
+## 2 · Instale as ferramentas
+
+Primeiro confira se o `winget` está disponível:
 
 ```powershell
 winget --version
 ```
 
-Se o comando não existir, instale ou atualize **Instalador de Aplicativo** pela
-Microsoft Store, feche o PowerShell e abra-o de novo.
+Se não estiver, atualize o **Instalador de Aplicativo** pela Microsoft Store e abra uma nova janela do PowerShell.
 
-Instale o Git:
+### Git
 
 ```powershell
 winget install --id Git.Git -e --source winget
 ```
 
-Instale o Node.js LTS:
+### Node.js LTS
 
 ```powershell
 winget install --id OpenJS.NodeJS.LTS -e --source winget
 ```
 
-Instale o FFmpeg:
+### FFmpeg
 
 ```powershell
 winget install --id Gyan.FFmpeg -e --source winget
 ```
 
-Aceite os termos quando o Windows pedir. Feche completamente o PowerShell e
-abra uma janela nova para que os novos comandos sejam reconhecidos.
+Feche o PowerShell e abra outro depois das instalações. O Windows precisa reconstruir o `PATH`, porque descobrir imediatamente que um programa acabou de ser instalado seria aparentemente pedir demais.
 
-Se preferir instalar clicando, use somente as páginas oficiais de
-[Node.js](https://nodejs.org/en/download),
-[Git](https://git-scm.com/install/windows) e
-[FFmpeg](https://ffmpeg.org/download.html). Escolha Node.js 22 ou 24 LTS e
-lembre-se de adicionar FFmpeg ao `PATH`.
-
-## Etapa 3 — conferir o terreno
-
-Na janela nova, rode um por vez:
+### Confira
 
 ```powershell
 node --version
-```
-
-```powershell
 npm --version
-```
-
-```powershell
 git --version
-```
-
-```powershell
 ffmpeg -version
 ```
 
-Cada comando deve mostrar uma versão. Se algum disser “não é reconhecido”,
-reinicie o computador uma vez antes de reinstalar.
+> [!IMPORTANT]
+> O SHOGUN exige **Node.js 20.19.0 ou superior**. Node 22/24 LTS é uma boa escolha para instalação nova.
 
-## Etapa 4 — baixar o SHOGUN
+---
 
-Escolha uma pasta simples. Este comando vai para sua pasta de usuário:
+## 3 · Baixe o projeto
 
 ```powershell
 Set-Location $HOME
-```
-
-Baixe o projeto:
-
-```powershell
 git clone https://github.com/dgreych/shogun.git
-```
-
-Entre no quartel:
-
-```powershell
 Set-Location shogun
 ```
 
-## Etapa 5 — preparar e configurar
+Se a pasta já existir, não clone por cima:
+
+```powershell
+Set-Location "$HOME\shogun"
+```
+
+---
+
+## 4 · Execute o instalador do SHOGUN
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 ```
 
-O preparo baixa os componentes do bot e depois faz quatro perguntas:
+O instalador verifica o ambiente, cria `.env.local` a partir de `.env.example`
+se ele ainda não existir, instala as dependências travadas pelo projeto e abre
+o setup. Integrações externas ficam desligadas por padrão.
 
-1. como o SHOGUN deve chamar você;
-2. seu número com país e DDD, somente dígitos — exemplo fictício
-   `5511999999999`;
-3. nome do bot — pressione Enter para manter `SHOGUN`;
-4. prefixo — pressione Enter para manter `!`.
+<table>
+<tr><td><strong>Seu nome</strong></td><td>identificação do dono principal desta instância</td></tr>
+<tr><td><strong>Número</strong></td><td>país + DDD + número do dono principal, somente dígitos</td></tr>
+<tr><td><strong>Nome do bot</strong></td><td>nome desta instalação</td></tr>
+<tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
+</table>
 
-Espere aparecer **SHOGUN pronto**. Para corrigir uma resposta depois, use:
+### O que “dono” significa aqui
+
+```text
+projeto SHOGUN
+    └── sua instalação no Windows
+        ├── dono principal -> número informado no setup
+        ├── sessão WhatsApp
+        └── grupos -> administradores próprios
+```
+
+O número configurado é o **dono principal desta cópia do bot** e recebe os
+privilégios reservados ao dono. Isso não muda a autoria do projeto e não é a
+mesma coisa que ser administrador de um grupo do WhatsApp.
+
+Para refazer apenas essa configuração depois:
 
 ```powershell
 npm run setup
 ```
 
-## Etapa 6 — inspeção e conexão
+Para entender BunnyFy, NVIDIA, VEX e quais chaves são opcionais, consulte
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
+
+---
+
+## 5 · Faça a inspeção antes do boot
 
 ```powershell
 npm run preflight
 ```
 
 <p align="center">
-  <img src="img/preflight-windows.png" alt="Saída da verificação do ambiente" width="100%">
+  <img src="img/preflight-windows.png" alt="Preflight do SHOGUN no Windows" width="92%">
 </p>
 
-<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
-configuração é esperado antes da etapa seguinte.</sub>
+O preflight verifica Node.js, npm, Git, FFmpeg, arquivos locais, dono principal
+e o estado das integrações sem imprimir tokens. Avisos sobre APIs opcionais não
+impedem o núcleo de iniciar quando esses recursos não estão sendo usados.
 
-Se todos os itens obrigatórios estiverem aprovados, inicie:
+> [!NOTE]
+> Você não precisa de uma chave de API para chegar ao primeiro `!menu`. Configure
+> integrações externas depois que o núcleo estiver funcionando.
+
+---
+
+## 6 · Inicie e conecte o WhatsApp
 
 ```powershell
 npm start
 ```
 
-Escolha `1` para QR Code. No telefone, abra WhatsApp → menu de três pontos →
-**Aparelhos conectados/Dispositivos conectados → Conectar um aparelho** e leia
-o QR da tela do computador.
+O painel oferece **QR Code** e **código de pareamento**.
 
-Se a câmera não puder ler a tela, pare com `Ctrl+C`, inicie novamente, escolha
-`2` e siga o código de pareamento.
+<p align="center">
+  <img src="img/painel.png" alt="Painel de conexão do SHOGUN" width="82%">
+</p>
 
-## Etapa 7 — confirmar a primeira missão
+Para QR Code, no telefone abra **WhatsApp → Aparelhos conectados → Conectar um aparelho**.
 
-Numa conversa de teste, envie:
+Se preferir não usar a câmera, reinicie o fluxo e escolha o código de pareamento. Depois que a sessão for criada, ela é reaproveitada nos próximos boots enquanto continuar válida.
+
+---
+
+## 7 · Prove que terminou
+
+Envie em um grupo de teste:
 
 ```text
 !menu
 ```
 
-Recebeu o menu? O posto está pronto. O PowerShell precisa permanecer aberto
-enquanto o SHOGUN estiver em serviço.
+Se escolheu outro prefixo, use-o no lugar de `!`.
 
-## Sua rotina
+> [!TIP]
+> O PowerShell precisa permanecer aberto enquanto o processo estiver rodando. Fechar a janela encerra essa execução do bot.
 
-Para parar com segurança, clique no PowerShell e pressione `Ctrl+C`.
+---
 
-Para voltar outro dia:
+## APIs opcionais
+
+Depois que `!menu` estiver funcionando, abra `.env.local` somente se quiser
+ativar recursos externos. A matriz atual está em
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
+
+Resumo:
+
+- núcleo + WhatsApp: sem chave de API;
+- BunnyFy: URL + credencial de consumidor quando ativada;
+- NVIDIA direta: `NVIDIA_API_KEY` apenas para IA direta/fallback;
+- VEX: `VEX_API_KEY` + `VEX_SITE` apenas no fallback legado correspondente.
+
+Nunca coloque chaves internas de providers da BunnyFy no bot.
+
+---
+
+## Uso diário
+
+### Parar
+
+Pressione `Ctrl+C`.
+
+### Iniciar novamente
 
 ```powershell
 Set-Location "$HOME\shogun"
-```
-
-```powershell
 npm start
 ```
 
-Para atualizar, pare o bot e rode:
+### Atualizar
 
 ```powershell
+Set-Location "$HOME\shogun"
 git pull --ff-only
-```
-
-```powershell
 npm ci --no-audit --no-fund
-```
-
-```powershell
+npm run preflight
 npm start
 ```
 
-Não copie apenas `node_modules` para outro PC. Em uma máquina nova, clone o
-projeto e execute o instalador novamente. Preserve com cuidado a pasta local de
-sessão; ela vale como uma chave do WhatsApp.
+---
 
-## Socorro rápido
+## Diagnóstico
 
-- **Execução de scripts foi desabilitada:** use exatamente o comando com
-  `-ExecutionPolicy Bypass` mostrado na etapa 5; ele vale apenas para esse
-  instalador.
-- **`ffmpeg` não é reconhecido:** feche todas as janelas do PowerShell e abra
-  outra. Se persistir, reinstale o FFmpeg e reinicie o Windows.
-- **O QR ficou pequeno:** maximize a janela ou use código de pareamento.
-- **A pasta `shogun` já existe:** entre nela com `Set-Location shogun`; não
-  clone por cima.
-- **Ainda não funcionou:** rode `npm run preflight` e consulte
-  [solução de problemas](../solucao-de-problemas.md).
+<details>
+<summary><strong>PowerShell diz que execução de scripts foi desabilitada</strong></summary>
+<br>
+Use o comando do instalador exatamente com <code>-ExecutionPolicy Bypass</code>. Ele aplica a exceção ao processo usado para essa instalação.
+</details>
+
+<details>
+<summary><strong><code>ffmpeg</code>, <code>node</code> ou <code>git</code> não é reconhecido</strong></summary>
+<br>
+Feche todas as janelas do PowerShell, abra outra e teste novamente. Se persistir, reinicie o Windows uma vez e rode <code>npm run preflight</code> antes de reinstalar qualquer coisa.
+</details>
+
+<details>
+<summary><strong>O QR ficou pequeno ou ilegível</strong></summary>
+<br>
+Maximize a janela ou use o código de pareamento.
+</details>
+
+<details>
+<summary><strong>A pasta <code>shogun</code> já existe</strong></summary>
+<br>
+Entre nela com <code>Set-Location "$HOME\shogun"</code>. Não clone outra cópia por cima.
+</details>
+
+---
+
+## 🔐 Proteja a instalação
+
+Arquivos privados importantes:
+
+```text
+.env.local
+dados/src/config.json
+dados/database/qr-code/
+```
+
+> [!CAUTION]
+> Não envie esses arquivos para suporte, GitHub, Drive ou outras pessoas. A
+> sessão contém material de autenticação e os demais podem conter configuração
+> privada ou credenciais.
+
+Para diagnóstico adicional, execute `npm run preflight` e consulte **[Solução de problemas](../solucao-de-problemas.md)**.
+
+<p align="center"><a href="../../README.md">← Voltar à página principal</a></p>

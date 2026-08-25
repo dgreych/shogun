@@ -7,6 +7,14 @@ foreach ($command in @("git", "node", "npm", "ffmpeg")) {
   }
 }
 
+if (-not (Test-Path ".env.local")) {
+  Copy-Item ".env.example" ".env.local"
+  Write-Host "🔐 .env.local criado a partir de .env.example. APIs opcionais continuam desativadas." -ForegroundColor Cyan
+}
+else {
+  Write-Host "🔐 .env.local existente preservado." -ForegroundColor Cyan
+}
+
 node scripts/preflight-platform.mjs
 
 $previousGitConfigCount = $env:GIT_CONFIG_COUNT
@@ -25,4 +33,4 @@ finally {
   $env:GIT_CONFIG_VALUE_0 = $previousGitConfigValue
 }
 
-Write-Host "SHOGUN pronto. Inicie com: npm start" -ForegroundColor Green
+Write-Host "SHOGUN pronto. Rode 'npm run preflight' e depois 'npm start'." -ForegroundColor Green
