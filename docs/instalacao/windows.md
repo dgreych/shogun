@@ -95,20 +95,39 @@ Set-Location "$HOME\shogun"
 powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 ```
 
-O instalador verifica o ambiente, instala as dependências travadas pelo projeto e abre o setup.
+O instalador verifica o ambiente, cria `.env.local` a partir de `.env.example`
+se ele ainda não existir, instala as dependências travadas pelo projeto e abre
+o setup. Integrações externas ficam desligadas por padrão.
 
 <table>
-<tr><td><strong>Seu nome</strong></td><td>identificação local do dono</td></tr>
-<tr><td><strong>Número</strong></td><td>país + DDD + número, somente dígitos</td></tr>
+<tr><td><strong>Seu nome</strong></td><td>identificação do dono principal desta instância</td></tr>
+<tr><td><strong>Número</strong></td><td>país + DDD + número do dono principal, somente dígitos</td></tr>
 <tr><td><strong>Nome do bot</strong></td><td>nome desta instalação</td></tr>
 <tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
 </table>
+
+### O que “dono” significa aqui
+
+```text
+projeto SHOGUN
+    └── sua instalação no Windows
+        ├── dono principal -> número informado no setup
+        ├── sessão WhatsApp
+        └── grupos -> administradores próprios
+```
+
+O número configurado é o **dono principal desta cópia do bot** e recebe os
+privilégios reservados ao dono. Isso não muda a autoria do projeto e não é a
+mesma coisa que ser administrador de um grupo do WhatsApp.
 
 Para refazer apenas essa configuração depois:
 
 ```powershell
 npm run setup
 ```
+
+Para entender BunnyFy, NVIDIA, VEX e quais chaves são opcionais, consulte
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
 
 ---
 
@@ -122,7 +141,13 @@ npm run preflight
   <img src="img/preflight-windows.png" alt="Preflight do SHOGUN no Windows" width="92%">
 </p>
 
-O preflight verifica Node.js, npm, Git, FFmpeg e os arquivos locais necessários para iniciar.
+O preflight verifica Node.js, npm, Git, FFmpeg, arquivos locais, dono principal
+e o estado das integrações sem imprimir tokens. Avisos sobre APIs opcionais não
+impedem o núcleo de iniciar quando esses recursos não estão sendo usados.
+
+> [!NOTE]
+> Você não precisa de uma chave de API para chegar ao primeiro `!menu`. Configure
+> integrações externas depois que o núcleo estiver funcionando.
 
 ---
 
@@ -156,6 +181,23 @@ Se escolheu outro prefixo, use-o no lugar de `!`.
 
 > [!TIP]
 > O PowerShell precisa permanecer aberto enquanto o processo estiver rodando. Fechar a janela encerra essa execução do bot.
+
+---
+
+## APIs opcionais
+
+Depois que `!menu` estiver funcionando, abra `.env.local` somente se quiser
+ativar recursos externos. A matriz atual está em
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
+
+Resumo:
+
+- núcleo + WhatsApp: sem chave de API;
+- BunnyFy: URL + credencial de consumidor quando ativada;
+- NVIDIA direta: `NVIDIA_API_KEY` apenas para IA direta/fallback;
+- VEX: `VEX_API_KEY` + `VEX_SITE` apenas no fallback legado correspondente.
+
+Nunca coloque chaves internas de providers da BunnyFy no bot.
 
 ---
 
@@ -212,12 +254,20 @@ Entre nela com <code>Set-Location "$HOME\shogun"</code>. Não clone outra cópia
 
 ---
 
-## 🔐 Proteja a sessão
+## 🔐 Proteja a instalação
 
-A sessão vinculada fica em `dados/database/qr-code/`.
+Arquivos privados importantes:
+
+```text
+.env.local
+dados/src/config.json
+dados/database/qr-code/
+```
 
 > [!CAUTION]
-> Não envie essa pasta para suporte, GitHub, Drive ou outras pessoas. Ela contém material de autenticação da conta conectada.
+> Não envie esses arquivos para suporte, GitHub, Drive ou outras pessoas. A
+> sessão contém material de autenticação e os demais podem conter configuração
+> privada ou credenciais.
 
 Para diagnóstico adicional, execute `npm run preflight` e consulte **[Solução de problemas](../solucao-de-problemas.md)**.
 
