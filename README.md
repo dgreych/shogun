@@ -23,6 +23,8 @@
   &nbsp;•&nbsp;
   <a href="#-como-ele-se-organiza"><strong>Arquitetura</strong></a>
   &nbsp;•&nbsp;
+  <a href="docs/configuracao-da-instancia.md"><strong>Configuração</strong></a>
+  &nbsp;•&nbsp;
   <a href="docs/primeiros-passos.md"><strong>Primeiros passos</strong></a>
   &nbsp;•&nbsp;
   <a href="docs/solucao-de-problemas.md"><strong>Problemas</strong></a>
@@ -38,6 +40,7 @@
 
 O SHOGUN foi pensado para grupos que querem mais do que meia dúzia de respostas automáticas. Ele combina administração, mídia, interação entre membros, economia persistente, RPG e recursos opcionais de IA sem transformar a instalação numa peregrinação por quinze serviços obrigatórios.
 
+- **o núcleo inicia sem chave de API**;
 - **funciona sem IA** e ganha recursos extras quando integrações são configuradas;
 - **mantém sessão e dados localmente** no aparelho onde está rodando;
 - **trata Termux como plataforma de verdade**, não como nota de rodapé;
@@ -143,7 +146,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 npm start
 ```
 
-A primeira execução abre o fluxo de conexão e oferece **QR Code** ou **código de pareamento**. Depois disso, a sessão é reaproveitada nas próximas inicializações.
+Os instaladores preservam um `.env.local` existente ou criam um automaticamente a partir de `.env.example`, com integrações externas desligadas por padrão. A primeira execução abre o fluxo de conexão e oferece **QR Code** ou **código de pareamento**. Depois disso, a sessão é reaproveitada nas próximas inicializações.
 
 ---
 
@@ -169,9 +172,10 @@ O bot continua responsável pelo fluxo do WhatsApp e pelo estado do grupo. Integ
 
 <table>
 <tr>
-<td width="33%" align="center"><strong>1. Verifique</strong><br><sub><code>npm run preflight</code><br>confere Node, npm, Git e FFmpeg.</sub></td>
-<td width="33%" align="center"><strong>2. Configure</strong><br><sub><code>npm run setup</code><br>define dono, nome e prefixo.</sub></td>
-<td width="33%" align="center"><strong>3. Conecte</strong><br><sub><code>npm start</code><br>abre QR ou pareamento.</sub></td>
+<td width="25%" align="center"><strong>1. Instale</strong><br><sub>o instalador cria o ambiente local e instala dependências.</sub></td>
+<td width="25%" align="center"><strong>2. Configure</strong><br><sub><code>npm run setup</code><br>define o dono principal desta instância, nome e prefixo.</sub></td>
+<td width="25%" align="center"><strong>3. Verifique</strong><br><sub><code>npm run preflight</code><br>confere sistema, configuração e integrações.</sub></td>
+<td width="25%" align="center"><strong>4. Conecte</strong><br><sub><code>npm start</code><br>abre QR ou pareamento.</sub></td>
 </tr>
 </table>
 
@@ -179,18 +183,51 @@ O bot continua responsável pelo fluxo do WhatsApp e pelo estado do grupo. Integ
   <img src="docs/instalacao/img/preflight-linux.png" alt="Preflight do SHOGUN" width="82%">
 </p>
 
-A configuração local fica em `dados/src/config.json`. A sessão do WhatsApp fica em `dados/database/qr-code/`.
+### Quem é o dono principal?
+
+```text
+SHOGUN (projeto e créditos)
+        |
+        +-- sua instalação clonada
+                |
+                +-- dono principal da instância <- seu numerodono
+                |
+                +-- sessão WhatsApp
+                |
+                +-- grupos
+                     +-- admins do grupo são outra coisa
+```
+
+O número informado no setup controla **esta cópia do bot** e os comandos reservados ao dono. Ele não muda a autoria do projeto e não significa “dono do grupo” no WhatsApp. A explicação completa, incluindo APIs e modos BunnyFy, está em **[Configuração da sua instância](docs/configuracao-da-instancia.md)**.
+
+A configuração local fica em `dados/src/config.json`, as opções privadas ficam em `.env.local` e a sessão do WhatsApp fica em `dados/database/qr-code/`.
 
 > [!CAUTION]
-> A pasta `dados/database/qr-code/` contém credenciais da sessão vinculada. **Não envie, compacte nem publique esse diretório.** Quem obtiver esses arquivos pode comprometer a conta conectada.
+> A pasta `dados/database/qr-code/`, `.env.local` e `dados/src/config.json` pertencem à sua instalação. **Não envie, compacte nem publique esses arquivos.** A sessão contém material de autenticação e os outros arquivos podem conter dados privados ou credenciais.
+
+---
+
+## 🔑 APIs sem adivinhação
+
+Você **não precisa cadastrar uma pilha de chaves para chegar ao primeiro `!menu`**.
+
+| Situação | O que configurar |
+| --- | --- |
+| só quero instalar e usar o núcleo | setup + WhatsApp; nenhuma chave de API |
+| quero BunnyFy | URL + credencial de consumidor BunnyFy e os modos desejados |
+| quero IA NVIDIA direta | `NVIDIA_API_KEY` |
+| quero IA exclusivamente pela BunnyFy | BunnyFy ativa + `BUNNYFY_AI_MODE=exclusive`; sem chave NVIDIA no bot |
+| quero fallback VEX legado | `VEX_API_KEY` + `VEX_SITE` |
+
+O arquivo **[docs/configuracao-da-instancia.md](docs/configuracao-da-instancia.md)** contém a matriz completa e exemplos seguros. O `npm run preflight` mostra o que está configurado sem revelar valores.
 
 ---
 
 ## ⚙ Operação do dia a dia
 
 ```bash
-npm run preflight   # diagnóstico do ambiente
-npm run setup       # configuração inicial
+npm run preflight   # diagnóstico do ambiente e da configuração
+npm run setup       # configuração do dono/nome/prefixo
 npm start           # iniciar
 ```
 
@@ -237,6 +274,18 @@ Requisito mínimo: **Node.js 20.19+**, npm, Git e FFmpeg.
 </details>
 
 <details>
+<summary><strong>O que significa “dono” no setup?</strong></summary>
+<br>
+É o dono principal <strong>desta instalação</strong>: o número autorizado a usar comandos reservados ao dono. Não é o autor do projeto e não é automaticamente o administrador de todos os grupos. Veja <a href="docs/configuracao-da-instancia.md">Configuração da sua instância</a>.
+</details>
+
+<details>
+<summary><strong>Preciso de chave de API para iniciar?</strong></summary>
+<br>
+Não. O núcleo inicia sem chave de API. BunnyFy, NVIDIA, VEX e outras integrações são configuradas conforme os recursos que você quiser ativar.
+</details>
+
+<details>
 <summary><strong>Preciso deixar o aparelho ligado?</strong></summary>
 <br>
 Sim. O processo precisa continuar rodando. No Android, use <code>termux-wake-lock</code> e retire o Termux da otimização agressiva de bateria.
@@ -258,7 +307,7 @@ Use o guia da sua plataforma. Ele acompanha os scripts existentes no repositóri
 
 ## Documentação
 
-**[Primeiros passos](docs/primeiros-passos.md)** · **[Segurança](docs/seguranca.md)** · **[Solução de problemas](docs/solucao-de-problemas.md)** · **[Termux](docs/instalacao/termux.md)** · **[Windows](docs/instalacao/windows.md)** · **[Linux](docs/instalacao/linux.md)** · **[macOS](docs/instalacao/macos.md)**
+**[Configuração da instância](docs/configuracao-da-instancia.md)** · **[Primeiros passos](docs/primeiros-passos.md)** · **[Segurança](docs/seguranca.md)** · **[Solução de problemas](docs/solucao-de-problemas.md)** · **[Termux](docs/instalacao/termux.md)** · **[Windows](docs/instalacao/windows.md)** · **[Linux](docs/instalacao/linux.md)** · **[macOS](docs/instalacao/macos.md)**
 
 ## Licença e créditos
 
