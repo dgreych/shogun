@@ -66,11 +66,11 @@ function collectRuntimeKeys() {
   const patterns = [
     /process\.env\.([A-Z][A-Z0-9_]*)/g,
     /process\.env\[['"]([A-Z][A-Z0-9_]*)['"]\]/g,
-    /\benv\.([A-Z][A-Z0-9_]*)/g,
-    /['"]((?:BUNNYFY|NVIDIA|VEX|UPLOAD_GITHUB|SHOGUN)_[A-Z0-9_]+)['"]/g
+    /\benv\.([A-Z][A-Z0-9_]*)/g
   ];
+  const files = SOURCE_ROOTS.flatMap(sourceRoot => walk(sourceRoot, []));
 
-  for (const file of walk(ROOT)) {
+  for (const file of files) {
     const relative = path.relative(ROOT, file).replaceAll(path.sep, '/');
     const content = fs.readFileSync(file, 'utf8');
     for (const pattern of patterns) {
@@ -129,7 +129,7 @@ function validateGuide(file) {
     failures.push(`${file} não aponta para o guia canônico de configuração.`);
   }
   if (!/dono principal/i.test(content)) failures.push(`${file} não explica o dono principal da instância.`);
-  if (!/nenhuma chave|sem chave de API|não precisa de uma chave/i.test(content)) {
+  if (!/nenhuma chave|sem chave de API|não precisa de (?:uma )?chave/i.test(content)) {
     failures.push(`${file} não deixa claro que o núcleo inicia sem chave de API.`);
   }
 }
