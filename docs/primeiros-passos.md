@@ -71,9 +71,10 @@ serão usadas.
 
 ## APIs vêm depois do primeiro boot
 
-Você não precisa configurar BunnyFy, NVIDIA, VEX ou upload externo para provar
-que o núcleo instalou corretamente. Primeiro confirme `!menu`; depois ative
-somente as integrações que realmente quiser usar.
+O núcleo do SHOGUN funciona **sem chave de API obrigatória**. Você não precisa
+configurar BunnyFy, NVIDIA, VEX ou upload externo para provar que a instalação
+básica está correta. Primeiro confirme `!menu`; depois ative somente as
+integrações que realmente quiser usar.
 
 Consulte **[Configuração da sua instância](configuracao-da-instancia.md)** para
 saber exatamente qual variável pertence a cada capacidade.
