@@ -128,7 +128,7 @@ function inspectOptionalIntegrations() {
   } else if (aiMode === 'primary') {
     warnings.push('IA está em primary, mas NVIDIA_API_KEY não foi configurada; o fallback direto ficará indisponível.');
   } else {
-    warnings.push('NVIDIA_API_KEY não configurada; a assistente por NVIDIA direta ficará indisponível, sem impedir o núcleo do bot.');
+    console.log('ℹ️ NVIDIA direta — não configurada; recurso opcional');
   }
 
   const vexKey = isPresent(process.env.VEX_API_KEY);
@@ -148,7 +148,7 @@ console.log('\n⛩️  Verificação do ambiente\n');
 
 const nodeVersion = versionTuple(process.versions.node);
 if (atLeast(nodeVersion, MIN_NODE)) console.log(`✅ Node.js — v${process.versions.node}`);
-else failures.push(`Node.js ${MIN_NODE.join('.')} ou superior é necessário; atual: ${process.versions.node}`);
+else failures.push(`Node.js ${MIN_NODE.join('.')} ou superior é necessário; atual: v${process.versions.node}`);
 
 probe('npm', process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--version']);
 probe('Git', 'git', ['--version']);
