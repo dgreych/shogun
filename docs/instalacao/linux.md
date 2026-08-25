@@ -92,20 +92,39 @@ O caminho deve terminar em `/shogun`.
 bash scripts/install-linux.sh
 ```
 
-O instalador executa o preflight, instala as dependências travadas em `package-lock.json` e abre a configuração inicial.
+O instalador cria `.env.local` a partir de `.env.example` quando necessário,
+executa o preflight, instala as dependências travadas em `package-lock.json` e
+abre a configuração inicial. Um `.env.local` que já exista é preservado.
 
 <table>
-<tr><td><strong>Seu nome</strong></td><td>identificação local do dono</td></tr>
-<tr><td><strong>Número</strong></td><td>país + DDD + número, somente dígitos</td></tr>
+<tr><td><strong>Seu nome</strong></td><td>identificação do dono principal desta instância</td></tr>
+<tr><td><strong>Número</strong></td><td>país + DDD + número do dono principal, somente dígitos</td></tr>
 <tr><td><strong>Nome do bot</strong></td><td>nome desta instalação</td></tr>
 <tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
 </table>
+
+### O dono desta instalação
+
+```text
+projeto SHOGUN
+    └── sua instalação Linux
+        ├── dono principal -> numerodono
+        ├── sessão WhatsApp
+        └── grupos -> administradores próprios
+```
+
+`numerodono` identifica quem controla **esta instância** e pode usar comandos de
+dono. Não altera a autoria do projeto e não transforma esse número no
+administrador de todos os grupos.
 
 Para refazer apenas o setup depois:
 
 ```bash
 npm run setup
 ```
+
+A matriz de BunnyFy, NVIDIA, VEX e demais opções está em
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
 
 ---
 
@@ -119,7 +138,13 @@ npm run preflight
   <img src="img/preflight-linux.png" alt="Preflight do SHOGUN no Linux" width="92%">
 </p>
 
-O comando verifica Node.js, npm, Git, FFmpeg, configuração e dependências locais.
+O comando verifica Node.js, npm, Git, FFmpeg, configuração, dono principal,
+dependências e o estado das integrações sem revelar tokens.
+
+> [!NOTE]
+> O núcleo não precisa de chave de API para chegar ao primeiro `!menu`. Avisos
+> sobre integrações opcionais só significam que aquele recurso específico ainda
+> não foi configurado.
 
 ---
 
@@ -152,6 +177,21 @@ Envie em um grupo de teste:
 Se escolheu outro prefixo, substitua `!`.
 
 **Recebeu resposta?** O núcleo instalou, conectou e está despachando comandos.
+
+---
+
+## APIs opcionais
+
+Depois do primeiro `!menu`, edite `.env.local` apenas se quiser capacidades
+externas. Resumo:
+
+- núcleo + WhatsApp: sem chave de API;
+- BunnyFy: `BUNNYFY_ENABLED=true`, URL e credencial de consumidor;
+- NVIDIA direta: `NVIDIA_API_KEY` para IA direta ou fallback;
+- VEX legado: `VEX_API_KEY` + `VEX_SITE` somente quando esse fallback for usado.
+
+Veja **[Configuração da sua instância](../configuracao-da-instancia.md)** antes
+de ativar modos `primary` ou `exclusive`.
 
 ---
 
@@ -224,7 +264,9 @@ dados/src/config.json
 ```
 
 > [!CAUTION]
-> Nunca publique a pasta de sessão. Ela contém material de autenticação do WhatsApp vinculado.
+> Nunca publique esses arquivos. A sessão contém material de autenticação do
+> WhatsApp e os arquivos de configuração podem conter informações privadas ou
+> credenciais.
 
 Para diagnóstico adicional, rode `npm run preflight` e consulte **[Solução de problemas](../solucao-de-problemas.md)**.
 
