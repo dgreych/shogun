@@ -83,20 +83,40 @@ O instalador do repositório faz a parte tediosa em ordem previsível:
 
 1. atualiza o índice do Termux;
 2. instala **Git, Node.js LTS, FFmpeg e termux-tools**;
-3. executa o preflight da plataforma;
-4. instala as dependências travadas em `package-lock.json` com `npm ci`;
-5. abre a configuração inicial.
+3. cria `.env.local` a partir de `.env.example` se ainda não existir;
+4. executa o preflight da plataforma;
+5. instala as dependências travadas em `package-lock.json` com `npm ci`;
+6. abre a configuração inicial.
+
+Um `.env.local` existente é preservado. APIs opcionais começam desligadas.
 
 ### O setup pergunta
 
 <table>
-<tr><td><strong>Seu nome</strong></td><td>como o bot identifica o dono</td></tr>
-<tr><td><strong>Seu número</strong></td><td>país + DDD + número, somente dígitos</td></tr>
+<tr><td><strong>Seu nome</strong></td><td>como o bot identifica o dono principal desta instância</td></tr>
+<tr><td><strong>Seu número</strong></td><td>país + DDD + número do dono principal, somente dígitos</td></tr>
 <tr><td><strong>Nome do bot</strong></td><td>o nome exibido pela instalação</td></tr>
 <tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
 </table>
 
 A configuração é gravada localmente em `dados/src/config.json`.
+
+### Quem é o dono principal?
+
+```text
+projeto SHOGUN
+    └── sua instalação no Android
+        ├── dono principal -> numerodono
+        ├── sessão WhatsApp
+        └── grupos -> administradores próprios
+```
+
+O número do setup controla **esta cópia do bot** e seus comandos de dono. Isso
+não muda os créditos/autoria do projeto e não é a mesma coisa que ser
+administrador de um grupo.
+
+Veja **[Configuração da sua instância](../configuracao-da-instancia.md)** para
+entender APIs e credenciais antes de preencher qualquer chave.
 
 ---
 
@@ -119,7 +139,19 @@ Também retire o Termux da otimização agressiva de bateria do fabricante. Andr
 
 ---
 
-## 6 · Inicie e conecte
+## 6 · Verifique e conecte
+
+Antes do boot:
+
+```bash
+npm run preflight
+```
+
+O diagnóstico verifica sistema, configuração, dono principal e integrações sem
+imprimir tokens. Avisos sobre APIs opcionais não impedem o núcleo quando você
+não usa aqueles recursos.
+
+Depois:
 
 ```bash
 npm start
@@ -168,6 +200,22 @@ Se escolheu outro prefixo, troque `!` por ele.
 
 ---
 
+## APIs opcionais
+
+Você não precisa de uma chave de API para chegar ao primeiro `!menu`.
+
+Depois que o núcleo estiver funcionando, edite `.env.local` somente para os
+recursos que quiser ativar:
+
+- BunnyFy: URL + credencial de consumidor;
+- NVIDIA direta: `NVIDIA_API_KEY`;
+- VEX legado: `VEX_API_KEY` + `VEX_SITE`.
+
+A matriz completa e os modos `off`, `primary` e `exclusive` estão em
+**[Configuração da sua instância](../configuracao-da-instancia.md)**.
+
+---
+
 ## Da próxima vez
 
 ```bash
@@ -199,7 +247,8 @@ cd ~/shogun
 npm run preflight
 ```
 
-O preflight verifica **Node.js, npm, Git, FFmpeg, Termux, configuração e dependências locais**.
+O preflight verifica **Node.js, npm, Git, FFmpeg, Termux, configuração, dono da
+instância, dependências locais e estado das integrações opcionais**.
 
 <details>
 <summary><strong>Node.js está abaixo de 20.19</strong></summary>
@@ -248,18 +297,22 @@ npm run setup
 
 ## 🔐 A parte que você não deve mandar para ninguém
 
-A sessão fica em:
+Arquivos privados desta instalação:
 
 ```text
+.env.local
+dados/src/config.json
 dados/database/qr-code/
 ```
 
 > [!CAUTION]
-> Esses arquivos representam acesso à sessão vinculada do WhatsApp. **Não envie a pasta, não coloque em Drive, não publique em GitHub e não cole seu conteúdo em suporte.** Só apague a sessão se realmente quiser desvincular e parear novamente.
+> Esses arquivos podem representar acesso à sessão vinculada ou conter
+> configuração privada. **Não envie, não coloque em Drive, não publique em
+> GitHub e não cole seu conteúdo em suporte.**
 
 ## O mínimo obrigatório
 
-**Necessário para o núcleo:** Android + Termux, Node.js 20.19+, npm, Git, FFmpeg e conexão com WhatsApp.
+**Necessário para o núcleo:** Android + Termux, Node.js 20.19+, npm, Git, FFmpeg, configuração do dono e conexão com WhatsApp.
 
 **Opcional:** integrações externas, IA e capacidades que dependam de APIs específicas. A ausência delas não impede o núcleo do SHOGUN de iniciar e conectar.
 
