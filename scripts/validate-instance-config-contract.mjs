@@ -7,10 +7,11 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const failures = [];
 const notes = [];
 
-const SOURCE_ROOTS = [
+// Somente código de runtime. Scripts de CI/manutenção podem usar variáveis
+// operacionais que não pertencem ao contrato de configuração do usuário.
+const RUNTIME_ROOTS = [
   path.join(ROOT, 'dados', 'src'),
-  path.join(ROOT, 'src'),
-  path.join(ROOT, 'scripts')
+  path.join(ROOT, 'src')
 ];
 
 const SKIP_DIRS = new Set([
@@ -66,9 +67,13 @@ function collectRuntimeKeys() {
   const patterns = [
     /process\.env\.([A-Z][A-Z0-9_]*)/g,
     /process\.env\[['"]([A-Z][A-Z0-9_]*)['"]\]/g,
-    /\benv\.([A-Z][A-Z0-9_]*)/g
+    /\benv\.([A-Z][A-Z0-9_]*)/g,
+    // Modos são frequentemente passados dinamicamente como string para
+    // resolveCapabilityMode(name, env), portanto não aparecem como env.KEY.
+    // Restringir a *_MODE evita confundir códigos de erro BUNNYFY_*.
+    /['"](BUNNYFY_[A-Z0-9_]+_MODE)['"]/g
   ];
-  const files = SOURCE_ROOTS.flatMap(sourceRoot => walk(sourceRoot, []));
+  const files = RUNTIME_ROOTS.flatMap(sourceRoot => walk(sourceRoot, []));
 
   for (const file of files) {
     const relative = path.relative(ROOT, file).replaceAll(path.sep, '/');
@@ -139,7 +144,7 @@ const runtimeKeys = collectRuntimeKeys();
 
 for (const [key, files] of runtimeKeys.entries()) {
   if (!env.has(key)) {
-    failures.push(`Configuração usada pelo código não documentada: ${key} (${[...files].slice(0, 4).join(', ')}).`);
+    failures.push(`Configuração usada pelo runtime não documentada: ${key} (${[...files].slice(0, 4).join(', ')}).`);
   }
 }
 
@@ -152,10 +157,16 @@ for (const key of [
   'BUNNYFY_API_TOKEN',
   'BUNNYFY_AI_MODE',
   'BUNNYFY_YOUTUBE_MODE',
+  'BUNNYFY_TRANSCRIPTION_MODE',
+  'BUNNYFY_FACEBOOK_MODE',
+  'BUNNYFY_PINTEREST_MODE',
+  'BUNNYFY_TIKTOK_MODE',
+  'BUNNYFY_KWAI_MODE',
   'BUNNYFY_IMAGES_MODE',
   'BUNNYFY_STICKERS_MODE',
   'BUNNYFY_CANVAS_MODE',
   'BUNNYFY_LOGOS_MODE',
+  'BUNNYFY_GAMES_MODE',
   'BUNNYFY_IMAGE_GEN_MODE',
   'BUNNYFY_TAVERN_RENDER_MODE',
   'BUNNYFY_NEXO_RENDER_MODE',
@@ -195,14 +206,26 @@ if (configExample.numerodono !== '55DDDNUMERO') {
 }
 
 const preflight = read('scripts/preflight-platform.mjs');
-for (const key of ['BUNNYFY_ENABLED', 'BUNNYFY_BASE_URL', 'BUNNYFY_API_TOKEN', 'NVIDIA_API_KEY', 'VEX_API_KEY', 'VEX_SITE']) {
+for (const key of [
+  'BUNNYFY_ENABLED',
+  'BUNNYFY_BASE_URL',
+  'BUNNYFY_API_TOKEN',
+  'BUNNYFY_TRANSCRIPTION_MODE',
+  'BUNNYFY_FACEBOOK_MODE',
+  'BUNNYFY_PINTEREST_MODE',
+  'BUNNYFY_TIKTOK_MODE',
+  'BUNNYFY_KWAI_MODE',
+  'NVIDIA_API_KEY',
+  'VEX_API_KEY',
+  'VEX_SITE'
+]) {
   if (!preflight.includes(key)) failures.push(`preflight não audita ${key}.`);
 }
 if (!preflight.includes('Dono principal da instância')) {
   failures.push('preflight não valida a identidade do dono principal da instância.');
 }
 
-notes.push(`${runtimeKeys.size} variáveis de configuração da instância encontradas no código.`);
+notes.push(`${runtimeKeys.size} variáveis/modos de configuração da instância encontrados no runtime.`);
 notes.push(`${env.size} entradas documentadas em .env.example.`);
 
 for (const note of notes) console.log(`ℹ️ ${note}`);
