@@ -63,14 +63,34 @@ Se a pasta já existir, use `cd ~/shogun` em vez de clonar novamente.
 bash scripts/install-macos.sh
 ```
 
-O script executa o preflight, instala as dependências travadas pelo `package-lock.json`, abre o setup e verifica as entradas principais do runtime.
+O script cria `.env.local` a partir de `.env.example` se necessário, executa o
+preflight, instala as dependências travadas pelo `package-lock.json`, abre o
+setup e verifica as entradas principais do runtime. Um `.env.local` existente
+é preservado.
 
 <table>
-<tr><td><strong>Seu nome</strong></td><td>identificação local do dono</td></tr>
-<tr><td><strong>Número</strong></td><td>país + DDD + número, somente dígitos</td></tr>
+<tr><td><strong>Seu nome</strong></td><td>identificação do dono principal desta instância</td></tr>
+<tr><td><strong>Número</strong></td><td>país + DDD + número do dono principal, somente dígitos</td></tr>
 <tr><td><strong>Nome do bot</strong></td><td>nome desta instalação</td></tr>
 <tr><td><strong>Prefixo</strong></td><td>por exemplo <code>!</code></td></tr>
 </table>
+
+### Quem é o dono principal?
+
+```text
+projeto SHOGUN
+    └── sua instalação no macOS
+        ├── dono principal -> numerodono
+        ├── sessão WhatsApp
+        └── grupos -> administradores próprios
+```
+
+O número salvo pelo setup controla **esta instância** e seus comandos de dono.
+Ele não altera a autoria do projeto e não é a mesma coisa que ser administrador
+de um grupo.
+
+Veja **[Configuração da sua instância](../configuracao-da-instancia.md)** para a
+matriz de integrações e credenciais opcionais.
 
 ---
 
@@ -80,7 +100,12 @@ O script executa o preflight, instala as dependências travadas pelo `package-lo
 npm run preflight
 ```
 
-Esse comando confere os requisitos antes de você descobrir um deles faltando no meio do boot, que é o método clássico e menos divertido.
+Esse comando confere os requisitos, a configuração do dono e o estado das
+integrações sem mostrar tokens. Avisos sobre APIs opcionais não impedem o núcleo
+quando esses recursos não estão sendo usados.
+
+> [!NOTE]
+> Nenhuma chave de API é necessária apenas para chegar ao primeiro `!menu`.
 
 ---
 
@@ -112,6 +137,19 @@ Se escolheu outro prefixo, use-o no lugar de `!`.
 
 ---
 
+## APIs opcionais
+
+Depois de confirmar o núcleo, edite `.env.local` apenas para os recursos que
+quiser ativar:
+
+- BunnyFy: URL + credencial de consumidor e modos desejados;
+- NVIDIA direta: `NVIDIA_API_KEY` para IA direta/fallback;
+- VEX legado: `VEX_API_KEY` + `VEX_SITE` somente quando usado.
+
+Detalhes: **[Configuração da sua instância](../configuracao-da-instancia.md)**.
+
+---
+
 ## Uso diário
 
 ### Iniciar novamente
@@ -140,16 +178,20 @@ npm run preflight
 
 ---
 
-## 🔐 Sessão do WhatsApp
+## 🔐 Proteja a instalação
 
-A sessão vinculada fica em:
+Arquivos privados:
 
 ```text
+.env.local
+dados/src/config.json
 dados/database/qr-code/
 ```
 
 > [!CAUTION]
-> Não publique, envie ou compartilhe essa pasta. Ela contém material de autenticação da conta conectada.
+> Não publique, envie ou compartilhe esses arquivos. A sessão contém material
+> de autenticação da conta conectada e as configurações podem conter dados
+> privados ou credenciais.
 
 Para problemas adicionais, consulte **[Solução de problemas](../solucao-de-problemas.md)**.
 
