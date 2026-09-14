@@ -42,14 +42,14 @@ test('planner e bridge compartilham ownership derivado e fecham a superfície in
   assert.equal(planner.contractDrift, false);
   assert.deepEqual(planner.unresolved, []);
   assert.deepEqual(planner.crossBoundaryDuplicates, []);
-  assert.equal(planner.rawLegacyFamilies, 509);
-  assert.equal(planner.rawLegacyTokens, 1572);
+  assert.equal(planner.rawLegacyFamilies, 512);
+  assert.equal(planner.rawLegacyTokens, 1576);
   assert.equal(planner.runtimeInjectedFamilies, 16);
   assert.equal(planner.runtimeInjectedTokens, 34);
-  assert.equal(planner.legacyFamilies, 525);
-  assert.equal(planner.legacyTokens, 1606);
-  assert.equal(planner.nativeFamilies + planner.selectedFamilies, 525);
-  assert.equal(planner.nativeTokens + planner.selectedTokens, 1606);
+  assert.equal(planner.legacyFamilies, 528);
+  assert.equal(planner.legacyTokens, 1610);
+  assert.equal(planner.nativeFamilies + planner.selectedFamilies, 528);
+  assert.equal(planner.nativeTokens + planner.selectedTokens, 1610);
   assert.equal(planner.fallbackFamiliesAfterMacrotranche, 0);
   assert.equal(planner.fallbackTokensAfterMacrotranche, 0);
 
@@ -62,8 +62,8 @@ test('planner e bridge compartilham ownership derivado e fecham a superfície in
   if (membersActive) {
     assert.equal(planner.nativeFamilies, 131);
     assert.equal(planner.nativeTokens, 711);
-    assert.equal(planner.selectedFamilies, 394);
-    assert.equal(planner.selectedTokens, 895);
+    assert.equal(planner.selectedFamilies, 397);
+    assert.equal(planner.selectedTokens, 899);
   }
 });
 

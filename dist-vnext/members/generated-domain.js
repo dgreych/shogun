@@ -2410,61 +2410,93 @@ async function member_218_gitbot(scope) {
     }
 }
 async function member_307_rankativos(scope) {
-    const { AllgroupMembers, from, groupData, groupMetadata, info, isGroup, nazu, reply, socialCardWithBunnyFy } = scope;
-    if (!isGroup) return reply('Este comando só pode ser usado em grupo.');
+    const command = String(scope.command || "").trim().toLowerCase();
+    let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, groupMetadata, i6, info, isGroup, nazu, reply, socialCardWithBunnyFy } = scope;
     try {
-        const baseId = value => String(value || '').split('@')[0].split(':')[0];
-        const participants = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
-        const currentIds = new Set((AllgroupMembers || []).map(baseId));
-        for (const participant of participants) {
-            for (const id of [participant.id, participant.lid, participant.jid, participant.phoneNumber]) {
-                if (id) currentIds.add(baseId(id));
-            }
+        switch (command) {
+            case 'rankativos':
+            case 'rankativo':
+                try {
+                    if (!isGroup)
+                        return reply("isso so pode ser usado em grupo 💔");
+                    // Verifica se a preservação do contador está ativada
+                    const preservarContadorRankativo = groupData.preservarContador === true;
+                    // Verify current group members first
+                    let currentMembers = AllgroupMembers;
+                    let validUsers = [];
+                    // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
+                    if (!preservarContadorRankativo) {
+                        groupData.contador = groupData.contador.filter(user => {
+                            const userId = user.id;
+                            const isValidMember = currentMembers.includes(userId);
+                            if (!isValidMember) {
+                                console.log(`[RANKATIVO] Removed departed user: ${userId} (${getUserName(userId)})`);
+                                return false;
+                            }
+                            validUsers.push(user);
+                            return true;
+                        });
+                        // Save updated data
+                        fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+                    }
+                    else {
+                        // Se preservação estiver ativada, apenas filtra para validUsers sem remover do contador
+                        validUsers = (groupData.contador || []).filter(user => {
+                            const userId = user.id;
+                            return currentMembers.includes(userId);
+                        });
+                    }
+                    var blue67;
+                    blue67 = validUsers.sort((a, b) => (a.figu == undefined ? a.figu = 0 : a.figu + a.msg + a.cmd) < (b.figu == undefined ? b.figu = 0 : b.figu + b.cmd + b.msg) ? 0 : -1);
+                    var menc;
+                    menc = [];
+                    let blad;
+                    blad = `*🏆 Rank dos ${blue67.length < 10 ? blue67.length : 10} mais ativos do grupo:*\n`;
+                    for (i6 = 0; i6 < (blue67.length < 10 ? blue67.length : 10); i6++) {
+                        if (blue67[i6].id) {
+                            if (i6 != null) {
+                                blad += `\n*🏅 ${i6 + 1}º Lugar:* @${getUserName(blue67[i6].id)}\n- mensagens encaminhadas: *${blue67[i6].msg}*\n- comandos executados: *${blue67[i6].cmd}*\n- Figurinhas encaminhadas: *${blue67[i6].figu}*\n`;
+                            }
+                            if (!groupData.mark) {
+                                groupData.mark = {};
+                            }
+                            if (!['0', 'marca'].includes(groupData.mark[blue67[i6].id])) {
+                                menc.push(blue67[i6].id);
+                            }
+                        }
+                    }
+                    const rankingCard = await socialCardWithBunnyFy('ranking', {
+                        title: 'Membros mais ativos',
+                        subtitle: String(groupMetadata?.subject || '').slice(0, 72),
+                        unit: 'pontos',
+                        entries: blue67.slice(0, 10).map(user => ({
+                            name: getUserName(user.id).slice(0, 48),
+                            value: Number(user.msg || 0) + Number(user.cmd || 0) + Number(user.figu || 0)
+                        })),
+                        theme: 'emerald'
+                    }, { legacyFallback: async () => null }).catch(() => null);
+                    await nazu.sendMessage(from, rankingCard?.ok ? {
+                        image: rankingCard.buffer,
+                        mimetype: rankingCard.mime,
+                        caption: blad,
+                        mentions: menc
+                    } : {
+                        text: blad,
+                        mentions: menc
+                    }, { quoted: info });
+                }
+                catch (e) {
+                    console.error('[RANKATIVO] Erro:', e);
+                    await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
+                }
+                break;
         }
-        const validName = value => {
-            const name = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
-            return name && !/@(?:lid|s\.whatsapp\.net)/i.test(name)
-                && !/^\+?[\d\s().@-]{7,}$/.test(name)
-                && !/^usu[aá]rio desconhecido$/i.test(name) ? name : '';
-        };
-        const count = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
-        // Render-only projection: historical records and counters are never written.
-        const top = (Array.isArray(groupData.contador) ? groupData.contador : [])
-            .filter(user => currentIds.has(baseId(user.id)))
-            .slice().sort((a, b) => count(b.msg) - count(a.msg)).slice(0, 10);
-        if (!top.length) return reply('Ainda não há mensagens contabilizadas para os membros deste grupo.');
-        const names = top.map(user => {
-            const participant = participants.find(member => [member.id, member.lid, member.jid, member.phoneNumber]
-                .some(id => id && baseId(id) === baseId(user.id)));
-            const senderName = baseId(user.id) === baseId(scope.sender) ? scope.pushname : '';
-            return [user.pushname, user.pushName, user.name, senderName, participant?.notify, participant?.name, participant?.pushname]
-                .map(validName).find(Boolean) || 'Contato sem nome';
-        });
-        const payload = {
-            title: 'Membros mais ativos',
-            subtitle: String(groupMetadata?.subject || '').slice(0, 72),
-            unit: 'mensagens',
-            entries: top.map((user, index) => ({ name: names[index].slice(0, 48), value: count(user.msg) })),
-            theme: 'obsidian'
-        };
-        console.log('[RANKATIVO/VNEXT] v4', JSON.stringify({ theme: payload.theme, unit: payload.unit,
-            entries: top.length, resolvedNames: names.filter(name => name !== 'Contato sem nome').length }));
-        const card = await socialCardWithBunnyFy('ranking', payload, { legacyFallback: async () => null })
-            .catch(error => { console.error('[RANKATIVO/VNEXT] canvas failed', error?.code || 'unknown'); return null; });
-        const caption = '*🏆 Membros mais ativos do grupo*\n' + top.map((user, index) =>
-            `\n${index + 1}. *${names[index]}* — ${count(user.msg)} mensagens\nComandos: ${count(user.cmd)} · Figurinhas: ${count(user.figu)}`
-        ).join('\n');
-        const mentions = top.filter(user => !['0', 'marca'].includes(groupData.mark?.[user.id])).map(user => user.id);
-        await nazu.sendMessage(from, card?.ok && Buffer.isBuffer(card.buffer)
-            ? { image: card.buffer, mimetype: card.mime, caption, mentions, __gyomeiPreserveDynamicMedia: true }
-            : { text: caption, mentions }, { quoted: info });
-        console.log('[RANKATIVO/VNEXT] sent v4', JSON.stringify({ image: Boolean(card?.ok), entries: top.length }));
-    } catch (error) {
-        console.error('[RANKATIVO/VNEXT] failed v4', error?.message);
-        await reply('Não consegui montar o ranking agora. Tente novamente em instantes.');
+        return undefined;
+    }
+    finally {
+        scope.i6 = i6;
     }
 }
-
 async function member_308_rankinativos(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
     let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, info, isGroup, nazu, reply } = scope;

@@ -36,8 +36,8 @@ test('ownership global acompanha o cutover Members sem fallback ou ownership mis
 
   assert.equal(plan.ownership.nativeFamilies, 99 + deltaFamilies);
   assert.equal(plan.ownership.nativeTokens, 559 + deltaTokens);
-  assert.equal(plan.ownership.compatibilityFamilies, 426 - deltaFamilies);
-  assert.equal(plan.ownership.compatibilityTokens, 1047 - deltaTokens);
-  assert.equal(plan.ownership.nativeFamilies + plan.ownership.compatibilityFamilies, 525);
-  assert.equal(plan.ownership.nativeTokens + plan.ownership.compatibilityTokens, 1606);
+  assert.equal(plan.ownership.compatibilityFamilies, 429 - deltaFamilies);
+  assert.equal(plan.ownership.compatibilityTokens, 1051 - deltaTokens);
+  assert.equal(plan.ownership.nativeFamilies + plan.ownership.compatibilityFamilies, 528);
+  assert.equal(plan.ownership.nativeTokens + plan.ownership.compatibilityTokens, 1610);
 });

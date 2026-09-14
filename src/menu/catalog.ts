@@ -11,8 +11,7 @@ export type LegacyMenuRendererKey =
   | 'menuDono'
   | 'menuSticker'
   | 'menuRPG'
-  | 'menuNexo'
-  | 'menuVIP';
+  | 'menuNexo';
 
 export interface MenuCommandDescriptor {
   readonly id: string;
@@ -156,15 +155,6 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     ownerOnly: false,
     liteModeAware: false,
     failureMessage: '❌ Ocorreu um erro ao carregar o menu NEXO.',
-  }),
-  descriptor({
-    id: 'vip',
-    presentationKey: 'vip',
-    rendererKey: 'menuVIP',
-    tokens: ['menuvip', 'vip', 'vipmenu'],
-    ownerOnly: false,
-    liteModeAware: false,
-    failureMessage: '❌ Erro ao carregar menu VIP.',
   }),
 ] satisfies readonly MenuCommandDescriptor[]);
 
