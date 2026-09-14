@@ -1,6 +1,6 @@
 /**
  * Sistema de Pesquisa de Plugins Minecraft Otimizado
- * Desenvolvido por Hiudy
+ * Desenvolvido por shogun
  * Versão: 2.0.0
  */
 

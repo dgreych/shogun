@@ -17,6 +17,20 @@ function replaceRequired(source, search, replacement, description) {
   return updated;
 }
 
+function replaceAllRequired(source, search, replacement, description) {
+  const occurrences = source.split(search).length - 1;
+  if (occurrences === 0) {
+    if (source.includes(replacement)) return source;
+    throw new Error(`Correção crítica não encontrada: ${description}`);
+  }
+
+  const updated = source.split(search).join(replacement);
+  if (updated.includes(search)) {
+    throw new Error(`Correção crítica incompleta: ${description}`);
+  }
+  return updated;
+}
+
 function replacePatternRequired(source, pattern, replacement, description) {
   if (typeof replacement === 'string' && source.includes(replacement)) return source;
   const updated = source.replace(pattern, replacement);
@@ -105,14 +119,34 @@ case 'd': {
     'comando d/delete com mensagem citada'
   );
 
+  output = replaceAllRequired(
+    output,
+    `│ *Alaska dev* (Maurício)\n│\n│ 🌐 github.com/dgreych/shogun`,
+    `│ *Maurício Almeida*\n│ Criador e mantenedor do SHOGUN\n│ Alaska dev · dgreych\n│\n│ 🌐 github.com/dgreych/shogun`,
+    'todos os cartões legados de autoria do SHOGUN'
+  );
+
+  output = replaceAllRequired(
+    output,
+    `Para voltar à Alaska a qualquer momento: \${prefix}default`,
+    `Para voltar ao SHOGUN a qualquer momento: \${prefix}default`,
+    'todas as referências legadas de retorno à Alaska'
+  );
+
+  if (output.includes('*Alaska dev* (Maurício)')) {
+    throw new Error('Cartão legado de autoria ainda presente após correção global.');
+  }
+  if (output.includes('Para voltar à Alaska a qualquer momento')) {
+    throw new Error('Referência legada à Alaska ainda presente após correção global.');
+  }
+
   return output;
 }
 
 function patchRuntimeIa(source) {
   let output = source;
 
-  output = output.replace(`import axios from 'axios';
-`, '');
+  output = output.replace(`import axios from 'axios';\n`, '');
 
   if (output.includes('requestNvidiaChat') || output.includes('resolveEmbeddedNvidiaKey') || output.includes('getNvidiaApiKey')) {
     throw new Error('Transporte NVIDIA direto proibido no runtime de IA; use BunnyFy.');

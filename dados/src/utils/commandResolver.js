@@ -7,7 +7,8 @@ const BUILTIN_COMMAND_ALIASES = Object.freeze({
   d: 'delete',
   del: 'delete',
   deletar: 'delete',
-  delete: 'delete'
+  delete: 'delete',
+  'menu-ia': 'modelo-ia'
 });
 
 export function normalizeCommandToken(value) {

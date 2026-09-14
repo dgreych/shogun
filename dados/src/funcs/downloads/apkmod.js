@@ -1,6 +1,6 @@
 /**
  * Sistema de Download de APK Mod Otimizado
- * Desenvolvido por Hiudy
+ * Desenvolvido por shogun
  * Versão: 2.0.0
  * Otimizado com HTTP connection pooling
  */

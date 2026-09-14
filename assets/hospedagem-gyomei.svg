@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="430" viewBox="0 0 1600 430" role="img" aria-labelledby="title desc">
+  <title id="title">Hospedagem da NAZUNA BOT GYOMEI a partir de R$ 16,99 por mês</title>
+  <desc id="desc">Banner com servidores, energia púrpura e chamada para atendimento pelo WhatsApp.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08050f"/>
+      <stop offset="0.52" stop-color="#21103a"/>
+      <stop offset="1" stop-color="#07150e"/>
+    </linearGradient>
+    <linearGradient id="cta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#29e379"/>
+      <stop offset="1" stop-color="#119b50"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7842d9"/>
+      <stop offset="1" stop-color="#d09cff"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#b285e8" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="430" rx="36" fill="url(#bg)"/>
+  <rect width="1600" height="430" rx="36" fill="url(#grid)"/>
+  <circle cx="1350" cy="80" r="220" fill="#2ddf7a" opacity="0.08"/>
+  <circle cx="180" cy="350" r="260" fill="#9b5fff" opacity="0.1"/>
+
+  <g transform="translate(1120 58)">
+    <rect x="0" y="0" width="330" height="315" rx="30" fill="#0c0c14" stroke="#7750a6" stroke-width="3"/>
+    <g fill="#181524" stroke="#4f3b69" stroke-width="2">
+      <rect x="35" y="35" width="260" height="58" rx="12"/>
+      <rect x="35" y="110" width="260" height="58" rx="12"/>
+      <rect x="35" y="185" width="260" height="58" rx="12"/>
+      <rect x="35" y="260" width="260" height="24" rx="10"/>
+    </g>
+    <g fill="#31e67f" filter="url(#glow)">
+      <circle cx="65" cy="64" r="7"/><circle cx="65" cy="139" r="7"/><circle cx="65" cy="214" r="7"/>
+    </g>
+    <g fill="#aa78ee">
+      <rect x="92" y="56" width="152" height="8" rx="4"/><rect x="92" y="70" width="112" height="6" rx="3" opacity="0.55"/>
+      <rect x="92" y="131" width="152" height="8" rx="4"/><rect x="92" y="145" width="132" height="6" rx="3" opacity="0.55"/>
+      <rect x="92" y="206" width="152" height="8" rx="4"/><rect x="92" y="220" width="92" height="6" rx="3" opacity="0.55"/>
+    </g>
+  </g>
+
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <text x="105" y="88" fill="#cbb9df" font-size="22" font-weight="800" letter-spacing="5">NAZUNA BOT • GYOMEI</text>
+    <text x="105" y="160" fill="#ffffff" font-size="54" font-weight="900">HOSPEDE SEM BRIGAR</text>
+    <text x="105" y="218" fill="#ffffff" font-size="54" font-weight="900">COM O CONTÊINER.</text>
+    <rect x="102" y="248" width="655" height="5" rx="2.5" fill="url(#violet)"/>
+    <text x="105" y="302" fill="#d7cbe4" font-size="24" font-weight="600">Build root-ready, startup na raiz e suporte direto.</text>
+    <text x="105" y="360" fill="#ffffff" font-size="31" font-weight="900">A PARTIR DE <tspan fill="#8cf2b5" font-size="47">R$ 16,99</tspan><tspan fill="#d7cbe4" font-size="26"> / MÊS</tspan></text>
+  </g>
+
+  <g transform="translate(790 276)" font-family="Inter, Segoe UI, Arial, sans-serif">
+    <rect width="280" height="78" rx="39" fill="url(#cta)" filter="url(#glow)"/>
+    <circle cx="48" cy="39" r="22" fill="#ffffff" opacity="0.96"/>
+    <path d="M39 29c10-9 26-1 25 12-1 11-13 19-24 13l-9 3 3-9c-5-7-3-14 5-19zm4 5c-4 3-5 9-2 13l-2 4 5-1c7 4 15-1 16-8 1-8-9-13-17-8z" fill="#16aa59"/>
+    <text x="168" y="48" text-anchor="middle" fill="#07150e" font-size="24" font-weight="900">FALAR AGORA</text>
+  </g>
+
+  <rect x="12" y="12" width="1576" height="406" rx="30" fill="none" stroke="#b683f0" stroke-opacity="0.45" stroke-width="2"/>
+</svg>

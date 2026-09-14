@@ -1,10 +1,10 @@
 /**
- * Instagram Download - Usando instância própria da Nodz (a Vex não cobre Instagram)
+ * Instagram Download - Usando instância própria da Nodz (a serviço legado não cobre Instagram)
  */
 
 import axios from 'axios';
 import { mediaClient } from '../../utils/httpClient.js';
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 
 const BASE_URL_PADRAO = 'http://node1.vexhost.com.br:20018';
 
@@ -50,7 +50,7 @@ async function dl(url) {
     if (cached) return { ok: true, ...cached, cached: true };
 
     // O axios manda "Accept: application/json, text/plain, */*" por padrão; alguns
-    // roteadores no estilo Nodz/Vex tratam isso como pedido de documentação em vez
+    // roteadores no estilo Nodz/serviço legado tratam isso como pedido de documentação em vez
     // do resultado real. Sobrescrever pra */* evita esse problema.
     const apiUrl = `${getNodzBase()}/api/downloads/instagram?url=${encodeURIComponent(url)}`;
     const response = await axios.get(apiUrl, { timeout: 120000, headers: { Accept: '*/*' } });
@@ -101,7 +101,7 @@ async function dl(url) {
     }
 
     const result = {
-      criador: 'Hiudy',
+      criador: 'shogun',
       data: results,
       count: results.length
     };

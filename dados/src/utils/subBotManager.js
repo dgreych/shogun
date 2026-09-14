@@ -280,10 +280,10 @@ async function initializeSubBot(botId, phoneNumber, ownerNumber, generatePairing
                         const indexModule = await import('../index.js');
                         
                         // Obtém a função default exportada
-                        const NazuninhaBotExec = indexModule.default || indexModule;
+                        const shogunExec = indexModule.default || indexModule;
                         
-                        if (typeof NazuninhaBotExec !== 'function') {
-                            console.error(`❌ Erro: NazuninhaBotExec não é uma função. Tipo: ${typeof NazuninhaBotExec}`);
+                        if (typeof shogunExec !== 'function') {
+                            console.error(`❌ Erro: shogunExec não é uma função. Tipo: ${typeof shogunExec}`);
                             console.error(`Módulo importado:`, Object.keys(indexModule));
                             continue;
                         }
@@ -298,7 +298,7 @@ async function initializeSubBot(botId, phoneNumber, ownerNumber, generatePairing
                         }
                         
                         // Processa a mensagem usando a mesma lógica do bot principal
-                        await NazuninhaBotExec(sock, info, null, messagesCache, null);
+                        await shogunExec(sock, info, null, messagesCache, null);
                     } catch (importError) {
                         console.error(`❌ Erro ao importar/executar processamento no sub-bot ${botId}:`, importError.message);
                         console.error(`Stack trace:`, importError.stack);

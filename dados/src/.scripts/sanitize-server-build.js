@@ -11,7 +11,7 @@ const packageData = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
 const version = String(packageData.version || '1.0.0');
 const publicMode = process.argv.includes('--public');
 const distDir = path.join(ROOT_DIR, 'dist');
-const bundleName = `nazuna-gyomei-server-v${version}`;
+const bundleName = `shogun-server-v${version}`;
 const bundleDir = path.join(distDir, bundleName);
 const rootTarPath = path.join(distDir, `${bundleName}-root.tar.gz`);
 const rootZipPath = path.join(distDir, `${bundleName}-root.zip`);
@@ -21,13 +21,17 @@ const manifestFile = path.join(bundleDir, 'DEPLOY-MANIFEST.json');
 const SERVER_UNWANTED_PATHS = [
   '.github',
   '.gitignore',
+  'AGENTS.md',
   'AUTOMACOES_V9.md',
   'ROADMAP_NODZ.md',
   'nazuna-main.zip',
   'dados/logs',
   'logs',
   'backups',
-  'dist'
+  'dist',
+  'docs/cloud',
+  'docs/RETOMADAV2_AGENTES.md',
+  'scripts/sync-live-document.mjs'
 ];
 
 if (!fs.existsSync(bundleDir)) {
@@ -84,8 +88,8 @@ if (publicMode) {
 
 if (fs.existsSync(manifestFile)) {
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  manifest.name = 'NAZUNA BOT - versão modificada GYOMEI';
-  manifest.release = `Versão modificada ${version} sobre a base Nazuna 9.0`;
+  manifest.name = 'SHOGUN';
+  manifest.release = `SHOGUN ${version}`;
   manifest.rootLayout = true;
   manifest.startupFileAtArchiveRoot = true;
   manifest.publicArtifact = publicMode;
@@ -137,7 +141,7 @@ function compactRoot() {
 compactRoot();
 
 console.log('🧹 Estado da build higienizado.');
-console.log('🤖 Manifesto identificado como NAZUNA BOT — versão modificada GYOMEI.');
+console.log('⛩️ Manifesto identificado como SHOGUN.');
 console.log('📂 Compactação root-ready confirmada: sem pasta externa envolvendo o projeto.');
 console.log(`🗑️ Entradas desnecessárias removidas do servidor: ${removedBuildEntries}`);
 console.log(`📄 Arquivos de grupo ajustados: ${sanitizedFiles}`);

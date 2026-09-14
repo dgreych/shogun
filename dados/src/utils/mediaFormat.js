@@ -34,7 +34,7 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 
 /**
  * Detecta o mime real pelos bytes (não confia no content-type do servidor de
- * origem — a Vex já teve bug de roteador devolvendo o tipo errado). Retorna
+ * origem — a serviço legado já teve bug de roteador devolvendo o tipo errado). Retorna
  * null se não reconhecer, pra quem chamar decidir o fallback.
  */
 function sniffImageMime(buffer) {

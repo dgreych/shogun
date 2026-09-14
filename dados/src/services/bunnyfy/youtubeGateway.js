@@ -520,14 +520,13 @@ async function downloadYoutubeAudioForPlay(value, {
       await onMetadata(preview);
     } catch {}
   };
-  if (mode === 'off') return downloadLegacyYoutubeAudio(input, legacyYoutube, emitMetadataOnce);
+  if (mode === 'off') return { ok: false, code: 'BUNNYFY_DISABLED', msg: 'O download do YouTube requer BunnyFy configurada nesta instância.' };
 
   try {
     return await downloadBunnyFyYoutubeAudio(input, env, clientFactory, legacyYoutube, emitMetadataOnce);
   } catch (error) {
     if (mode === 'primary' && shouldFallbackYoutubeError(error)) {
-      const fallback = await downloadLegacyYoutubeAudio(input, legacyYoutube, emitMetadataOnce);
-      return fallback.ok ? { ...fallback, fallbackUsed: true } : fallback;
+      return { ok: false, code: error?.code || 'BUNNYFY_UNAVAILABLE', msg: 'O serviço BunnyFy de YouTube está temporariamente indisponível.' };
     }
     throw error;
   }
@@ -541,14 +540,13 @@ async function downloadYoutubeVideoForPlay(value, {
 } = {}) {
   const input = normalizeYoutubePlayInput(value);
   const mode = resolveBunnyFyYoutubeMode(env);
-  if (mode === 'off') return downloadLegacyYoutubeVideo(input, legacyYoutube, quality);
+  if (mode === 'off') return { ok: false, code: 'BUNNYFY_DISABLED', msg: 'O download do YouTube requer BunnyFy configurada nesta instância.' };
 
   try {
     return await downloadBunnyFyYoutubeVideo(input, quality, env, clientFactory, legacyYoutube);
   } catch (error) {
     if (mode === 'primary' && shouldFallbackYoutubeError(error)) {
-      const fallback = await downloadLegacyYoutubeVideo(input, legacyYoutube, quality);
-      return fallback?.ok ? { ...fallback, fallbackUsed: true } : fallback;
+      return { ok: false, code: error?.code || 'BUNNYFY_UNAVAILABLE', msg: 'O serviço BunnyFy de YouTube está temporariamente indisponível.' };
     }
     throw error;
   }

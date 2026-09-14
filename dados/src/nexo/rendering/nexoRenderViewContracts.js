@@ -1,9 +1,8 @@
 import { NexoValidationError } from '../errors.js';
 
-// Espelho local (validação em JS puro) do contrato Render View v1 que o
-// GPT definiu e congelou em BunnyFy: src/nexoGame/contracts/renderView.ts
-// (schemaVersion 1, GPT-NEXO-002, revisado e aceito por Claude). Isso
-// garante que o Gyomei nunca monta nem envia um payload malformado --
+// Espelho local, em JS puro, do contrato Render View v1 congelado na BunnyFy
+// (src/nexoGame/contracts/renderView.ts, schemaVersion 1). Isso
+// garante que o bot nunca monta nem envia um payload malformado --
 // falha aqui, local e barato, em vez de descobrir só depois de uma
 // viagem de rede pra BunnyFy rejeitar. Os limites e regex ABAIXO
 // precisam continuar batendo com o lado BunnyFy; se um dia divergirem,

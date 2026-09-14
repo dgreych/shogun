@@ -74,7 +74,7 @@ function checkWritable(directory) {
   const relative = path.relative(ROOT_DIR, directory);
   try {
     fs.mkdirSync(directory, { recursive: true });
-    const testFile = path.join(directory, `.gyomei-write-test-${process.pid}`);
+    const testFile = path.join(directory, `.shogun-write-test-${process.pid}`);
     fs.writeFileSync(testFile, 'ok');
     fs.unlinkSync(testFile);
     ok(`Diretório gravável: ${relative}`);
@@ -129,26 +129,11 @@ function validateConfig(config) {
   const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || config.BUNNYFY_BASE_URL || config.bunnyfy_base_url || '').trim();
   const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || config.BUNNYFY_API_TOKEN || config.bunnyfy_api_token || config.bunnyfy_token || '').trim();
   const bunnyfyAiMode = String(process.env.BUNNYFY_AI_MODE || config.BUNNYFY_AI_MODE || config.bunnyfy_ai_mode || '').trim();
-
-  const vexKey = String(
-    process.env.VEX_API_KEY || config.apikey_vex || ''
-  ).trim();
-  const vexSite = String(
-    process.env.VEX_SITE || config.site_vex || ''
-  ).trim();
-
   if (bunnyfyAiMode === 'exclusive' && (isPlaceholder(bunnyfyBase) || isPlaceholder(bunnyfyToken))) {
     const message = 'BunnyFy AI exclusive está ativo, mas BUNNYFY_BASE_URL/BUNNYFY_API_TOKEN não estão completos neste ambiente local.';
     mode === 'deploy' ? fail(message) : warn(message);
   } else if (bunnyfyAiMode === 'exclusive') {
     ok('Configuração BunnyFy AI disponível sem ser exibida');
-  }
-
-  if (isPlaceholder(vexKey) || isPlaceholder(vexSite)) {
-    const message = 'Credenciais da Vex não estão completas; transcrição ficará indisponível.';
-    mode === 'deploy' ? fail(message) : warn(message);
-  } else {
-    ok('Configuração da Vex disponível sem ser exibida');
   }
 }
 
@@ -225,7 +210,7 @@ async function validateMediaExtraction() {
     const { getQuotedMediaSource } = await import('../utils/shogunCore.js');
     const fakeMedia = {
       url: 'https://example.invalid/media',
-      mediaKey: Buffer.from('gyomei'),
+      mediaKey: Buffer.from('shogun'),
       mimetype: 'image/jpeg'
     };
     const result = getQuotedMediaSource({

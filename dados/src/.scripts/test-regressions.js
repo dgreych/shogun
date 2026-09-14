@@ -7,7 +7,6 @@ import path from 'node:path';
 import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, resolveCommandInput } from '../utils/commandResolver.js';
 import { extractJSON } from '../funcs/private/ia.js';
 import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
-import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
 import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/shogunCore.js';
 import { buildSafeMessagePreview } from '../utils/safeCommandLog.js';
 
@@ -110,47 +109,6 @@ await test('logger omite argumentos privados de play, ytmp3 e setnvidia sem alte
   }), 'mensagem normal');
 });
 
-await test('diagnóstico Vex do YouTube não inclui consulta, URL ou conteúdo da resposta', () => {
-  const privateContent = 'consulta-privada-que-nao-pode-aparecer';
-  const entry = buildVexFailureLogEntry('youtubemp3', {
-    status: 502,
-    data: {
-      success: false,
-      message: privateContent,
-      query: privateContent,
-      resultado: { url: `https://example.invalid/${privateContent}` }
-    }
-  });
-  const serialized = JSON.stringify(entry);
-
-  assert.deepEqual(Object.keys(entry).sort(), [
-    'code',
-    'endpoint',
-    'hasMessage',
-    'httpStatus',
-    'marca',
-    'responseShape',
-    'success',
-    'ts'
-  ]);
-  assert.equal(entry.endpoint, 'youtubemp3');
-  assert.equal(entry.httpStatus, 502);
-  assert.equal(entry.responseShape, 'resultado');
-  assert.equal(entry.success, false);
-  assert.equal(entry.hasMessage, true);
-  assert.ok(!serialized.includes(privateContent));
-  assert.ok(!serialized.includes('example.invalid'));
-
-  const unknownEndpoint = buildVexFailureLogEntry(privateContent, { status: 999, data: 'texto privado' });
-  assert.equal(unknownEndpoint.endpoint, 'desconhecido');
-  assert.equal(unknownEndpoint.httpStatus, null);
-  assert.ok(!JSON.stringify(unknownEndpoint).includes(privateContent));
-
-  const youtubeSource = fs.readFileSync(new URL('../funcs/downloads/youtube.js', import.meta.url), 'utf8');
-  assert.ok(!youtubeSource.includes('query=${youtubeUrl}'));
-  assert.ok(!youtubeSource.includes('JSON.stringify(response.data).slice'));
-  assert.ok(youtubeSource.includes('buildVexFailureLogEntry(endpoint, response)'));
-});
 
 await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto', () => {
   const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');

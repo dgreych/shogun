@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 
 const CONFIG = {
   get API_URL() {
@@ -41,7 +41,7 @@ class Logos2 {
       
       // Fazer requisição para a API com text1 e text2
       // O axios manda "Accept: application/json, text/plain, */*" por padrão; alguns
-      // roteadores no estilo Nodz/Vex tratam isso como pedido de documentação em vez
+      // roteadores no estilo Nodz/serviço legado tratam isso como pedido de documentação em vez
       // do resultado real. Sobrescrever pra */* evita esse problema.
       const response = await axios({
         url: `${CONFIG.API_URL}/ephoto/${this.modelo}?text1=${texto1Codificado}&text2=${texto2Codificado}`,

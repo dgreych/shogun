@@ -4,14 +4,13 @@
  * faixa (título/artista) direto da página do Spotify (oEmbed + meta tags, sem
  * precisar de credencial), montar uma busca por texto e baixar o equivalente
  * no YouTube usando a mesma infraestrutura que já atende `play`/`ytmp3`
- * (BunnyFy como fonte primária, Vex/yt-search como fallback). Só cai no
- * download direto via Vex se essa resolução via YouTube falhar por completo.
+ * (BunnyFy como fonte primária, serviço legado/yt-search como fallback). Só cai no
+ * download direto via serviço legado se essa resolução via YouTube falhar por completo.
  */
 
 import axios from 'axios';
-import { getConfig } from '../../utils/gyomeiStore.js';
 import { downloadYoutubeAudioForPlay } from '../../services/bunnyfy/youtubeGateway.js';
-import { legacyYoutubeAdapter } from './youtube.js';
+import { youtubeMetadataAdapter } from './youtube.js';
 
 const SEARCH_BASE_URL = 'https://api.vreden.my.id';
 const OEMBED_URL = 'https://open.spotify.com/oembed';
@@ -39,13 +38,6 @@ function setCache(key, val) {
   cache.set(key, { val, ts: Date.now() });
 }
 
-function getVexCredentials() {
-  const config = getConfig();
-  const site = String(config.site_vex || '').replace(/\/$/, '');
-  const apikey = String(config.apikey_vex || '').trim();
-  if (!site || !apikey || apikey.startsWith('COLOQUE_')) return null;
-  return { site, apikey };
-}
 
 /**
  * Valida se é uma URL válida do Spotify
@@ -129,7 +121,7 @@ async function resolveSpotifyTrackMetadata(url) {
  * @param {string} query - texto de busca (ex.: "Artista - Título")
  */
 async function downloadViaYoutubeSearch(query) {
-  const result = await downloadYoutubeAudioForPlay(query, { legacyYoutube: legacyYoutubeAdapter });
+  const result = await downloadYoutubeAudioForPlay(query, { legacyYoutube: youtubeMetadataAdapter });
   if (!result?.ok || !Buffer.isBuffer(result.buffer)) {
     return { ok: false, msg: result?.msg || 'Não foi possível encontrar essa música para download.' };
   }
@@ -144,70 +136,15 @@ async function downloadViaYoutubeSearch(query) {
 }
 
 /**
- * Faz o download direto via Vex, como último recurso quando a resolução via
+ * Faz o download direto via serviço legado, como último recurso quando a resolução via
  * YouTube falha por completo (comportamento legado preservado).
  * @param {string} url - URL do track do Spotify
  */
-async function downloadViaVex(url) {
-  try {
-    const credenciais = getVexCredentials();
-    if (!credenciais) {
-      return { ok: false, msg: 'Configure site_vex e apikey_vex em dados/src/config.json.' };
-    }
-
-    // O axios manda "Accept: application/json, text/plain, */*" por padrão, e
-    // como isso contém "application/json", ainda aciona o bug do roteador da Vex
-    // (devolve a documentação em vez do resultado). Precisa sobrescrever pra */*.
-    const apiUrl = `${credenciais.site}/api/downloads/spotify?apikey=${encodeURIComponent(credenciais.apikey)}&query=${encodeURIComponent(url)}`;
-    const response = await axios.get(apiUrl, {
-      timeout: 120000,
-      headers: { Accept: '*/*' }
-    });
-
-    const resposta = response.data?.resposta || response.data?.resultado || response.data;
-    const track = resposta?.data?.track || resposta?.data || resposta?.track;
-    const dlurl = resposta?.download || resposta?.dlurl;
-
-    if (!track || !dlurl) {
-      return { ok: false, msg: response.data?.message || response.data?.msg || 'Informações da música não encontradas' };
-    }
-
-    const audioResponse = await axios.get(dlurl, {
-      responseType: 'arraybuffer',
-      timeout: 120000
-    });
-
-    const artists = Array.isArray(track.artists) ? track.artists : [track.artists].filter(Boolean);
-
-    return {
-      ok: true,
-      buffer: Buffer.from(audioResponse.data),
-      title: track.name,
-      artists,
-      albumImage: track.album?.images?.[0]?.url,
-      year: track.release_date?.split?.('-')?.[0],
-      duration: track.duration_ms,
-      filename: `${artists.join(', ') || 'Spotify'} - ${track.name || 'audio'}.mp3`,
-      source: 'vex'
-    };
-  } catch (error) {
-    console.error('Erro no download do Spotify (Vex):', error.message);
-
-    if (error.response?.status === 404) {
-      return { ok: false, msg: 'Música não encontrada no Spotify' };
-    }
-    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-      return { ok: false, msg: 'Timeout ao baixar a música. Tente novamente.' };
-    }
-
-    return { ok: false, msg: error.message || 'Erro ao baixar do Spotify' };
-  }
-}
 
 /**
  * Faz download de uma música do Spotify via URL: resolve os metadados
- * públicos da faixa, baixa o equivalente no YouTube (BunnyFy/Vex) e só cai
- * no download direto via Vex se essa resolução falhar por completo.
+ * públicos da faixa, baixa o equivalente no YouTube (BunnyFy/serviço legado) e só cai
+ * no download direto via serviço legado se essa resolução falhar por completo.
  * @param {string} url - URL do track do Spotify
  * @returns {Promise<Object>} Dados do download
  */
@@ -245,7 +182,7 @@ async function download(url) {
     console.error('[Spotify] Falha ao resolver faixa via YouTube:', error.message);
   }
 
-  return downloadViaVex(url);
+  return { ok: false, msg: 'Não foi possível resolver esta faixa. Configure BunnyFy para habilitar o download por YouTube.' };
 }
 
 /**

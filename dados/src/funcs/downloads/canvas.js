@@ -4,17 +4,9 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getConfig } from '../../utils/gyomeiStore.js';
 import { ensureNonWebpImage } from '../../utils/mediaFormat.js';
 import { resolveCapabilityMode, welcomeCardWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
 
-function getVexCredentials() {
-  const config = getConfig();
-  const site = String(config.site_vex || '').replace(/\/$/, '');
-  const apikey = String(config.apikey_vex || '').trim();
-  if (!site || !apikey || apikey.startsWith('COLOQUE_')) return null;
-  return { site, apikey };
-}
 
 function logDiagnostico(entry) {
   try {
@@ -44,51 +36,11 @@ async function downloadVisual(url, label) {
 }
 
 /**
- * Gera o card de boas-vindas/despedida via Vex e devolve o buffer pronto pra
+ * Gera o card de boas-vindas/despedida via serviço legado e devolve o buffer pronto pra
  * enviar como mensagem de imagem no WhatsApp (nunca em WebP).
  */
-async function gerarWelcomeCardLegado(avatar, nome, texto, fundo, corMoldura, corLinhas, glow = false) {
-  const credenciais = getVexCredentials();
-  if (!credenciais) {
-    return { ok: false, msg: 'Configure site_vex e apikey_vex em dados/src/config.json.' };
-  }
-  if (!avatar || !nome) {
-    return { ok: false, msg: 'Avatar e nome são obrigatórios para o card.' };
-  }
-
-  const url = `${credenciais.site}/api/canvas/welcome2?apikey=${encodeURIComponent(credenciais.apikey)}` +
-    `&avatar=${encodeURIComponent(avatar)}` +
-    `&nome=${encodeURIComponent(nome)}` +
-    `&texto=${encodeURIComponent(texto || '')}` +
-    `&fundo=${encodeURIComponent(fundo || '')}` +
-    `&corMoldura=${encodeURIComponent(corMoldura || '')}` +
-    `&corLinhas=${encodeURIComponent(corLinhas || '')}` +
-    `&glow=${glow ? 'true' : 'false'}`;
-
-  try {
-    const response = await axios.get(url, {
-      responseType: 'arraybuffer',
-      timeout: 30000,
-      headers: { Accept: '*/*' }
-    });
-
-    const bytes = response.data ? response.data.byteLength : 0;
-    const contentType = response.headers?.['content-type'] || '';
-
-    if (!bytes || bytes < 1000) {
-      logDiagnostico({ ok: false, capability: 'welcomeCard', bytes, contentType });
-      const textoErro = bytes ? Buffer.from(response.data).toString('utf8').slice(0, 300) : '';
-      return { ok: false, msg: `A Vex não retornou uma imagem válida para o card${textoErro ? `: ${textoErro}` : '.'}` };
-    }
-
-    const { buffer, mime } = await ensureNonWebpImage(Buffer.from(response.data), contentType);
-    logDiagnostico({ ok: true, capability: 'welcomeCard', bytesOriginais: bytes, contentTypeOriginal: contentType, mimeFinal: mime, bytesFinais: buffer.length });
-
-    return { ok: true, criador: 'Tokyo', type: 'image', mime, buffer };
-  } catch (error) {
-    logDiagnostico({ ok: false, capability: 'welcomeCard', code: error?.code || 'LEGACY_CANVAS_FAILED' });
-    return { ok: false, msg: 'Não foi possível gerar o card agora.' };
-  }
+async function gerarWelcomeCardLegado() {
+  return { ok: false, code: 'BUNNYFY_DISABLED', msg: 'Os cards automáticos requerem BunnyFy configurada nesta instância.' };
 }
 
 /**

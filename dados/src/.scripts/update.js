@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const REPO_URL = 'https://github.com/devcrician/nazuna.git';
+const REPO_URL = 'https://github.com/dgreych/shogun.git';
 const BACKUP_DIR = path.join(process.cwd(), `backup_${new Date().toISOString().replace(/[:.]/g, '_').replace(/T/, '_')}`);
 const TEMP_DIR = path.join(process.cwd(), 'temp_nazuna');
 const isWindows = os.platform() === 'win32';
@@ -62,8 +62,7 @@ function setupGracefulShutdown() {
 
 async function displayHeader() {
   const header = [
-    `${colors.bold}🚀 Nazuna - Atualizador${colors.reset}`,
-    `${colors.bold}👨‍💻 Criado por Hiudy${colors.reset}`,
+    `${colors.bold}\u{1D598}\u{1D58D}\u{1D594}\u{1D58C}\u{1D59A}\u{1D593} — atualizador${colors.reset}`,
   ];
 
   printSeparator();
@@ -567,7 +566,7 @@ async function main() {
     await installDependencies(dependencyCheckResult);
     await cleanup();
     printMessage('🔄 Buscando informações do último commit...');
-    const response = await fetch('https://api.github.com/repos/devcrician/nazuna/commits?per_page=1', {
+    const response = await fetch('https://api.github.com/repos/dgreych/shogun/commits?per_page=1', {
       headers: { Accept: 'application/vnd.github+json' },
     });
     if (!response.ok) {

@@ -2,13 +2,11 @@
  * Pinterest — busca e download.
  *
  * A busca passou a ser servida pela BunnyFy, que agrega Pinterest e Wallhaven.
- * Era a última capacidade além do YouTube ainda presa à Vex, e a fonte deixou
+ * Era a última capacidade além do YouTube ainda presa à serviço legado, e a fonte deixou
  * de responder: o comando devolvia "nenhuma imagem encontrada" para qualquer
- * termo. A Vex fica como fallback enquanto o modo não for exclusivo.
+ * termo. A serviço legado fica como fallback enquanto o modo não for exclusivo.
  */
 
-import axios from 'axios';
-import { getConfig } from '../../utils/shogunStore.js';
 import { pinterestSearchWithBunnyFy, socialDownloadWithBunnyFy } from '../../services/bunnyfy/capabilityGateway.js';
 
 // Cache simples
@@ -33,13 +31,6 @@ function setCache(key, val) {
   cache.set(key, { val, ts: Date.now() });
 }
 
-function getVexCredentials() {
-  const config = getConfig();
-  const site = String(config.site_vex || '').replace(/\/$/, '');
-  const apikey = String(config.apikey_vex || '').trim();
-  if (!site || !apikey || apikey.startsWith('COLOQUE_')) return null;
-  return { site, apikey };
-}
 
 // Validador de URL
 const PIN_REGEX = /^https?:\/\/(?:[a-zA-Z0-9-]+\.)?pinterest\.\w{2,6}(?:\.\w{2})?\/pin\/\d+|https?:\/\/pin\.it\/[a-zA-Z0-9]+/;
@@ -53,54 +44,6 @@ function isValidPinURL(url) {
  * @param {string} query - Termo de pesquisa
  * @returns {Promise<Object>} Resultados da pesquisa
  */
-async function searchComVex(query) {
-  try {
-    if (!query || typeof query !== 'string' || query.trim().length === 0) {
-      return { ok: false, msg: 'Termo de pesquisa inválido' };
-    }
-
-    const cached = getCached(`search:${query.toLowerCase()}`);
-    if (cached) return { ok: true, ...cached, cached: true };
-
-    const credenciais = getVexCredentials();
-    if (!credenciais) {
-      return { ok: false, msg: 'Configure site_vex e apikey_vex em dados/src/config.json.' };
-    }
-
-    // O axios manda "Accept: application/json, text/plain, */*" por padrão, e
-    // como isso contém "application/json", ainda aciona o bug do roteador da Vex
-    // (devolve a documentação em vez do resultado). Precisa sobrescrever pra */*.
-    const apiUrl = `${credenciais.site}/api/search/pinterest?apikey=${encodeURIComponent(credenciais.apikey)}&query=${encodeURIComponent(query)}`;
-    const response = await axios.get(apiUrl, {
-      timeout: 60000,
-      headers: { Accept: '*/*' }
-    });
-
-    const dados = response.data?.resposta || response.data?.resultado || response.data;
-    const items = dados?.results || dados;
-    const images = Array.isArray(items) ? items.map(item => item.directLink || item.url).filter(Boolean) : [];
-
-    if (images.length === 0) {
-      return { ok: false, msg: 'Nenhuma imagem encontrada' };
-    }
-
-    const result = {
-      criador: 'shogun',
-      type: 'image',
-      mime: 'image/jpeg',
-      query,
-      count: images.length,
-      urls: images.slice(0, 50)
-    };
-
-    setCache(`search:${query.toLowerCase()}`, result);
-
-    return { ok: true, ...result };
-  } catch (error) {
-    console.error('Erro na pesquisa Pinterest:', error.message);
-    return { ok: false, msg: 'Erro ao buscar imagens no Pinterest' };
-  }
-}
 
 /**
  * Busca por assunto. A BunnyFy devolve as mídias já baixadas e assinadas, com
@@ -115,13 +58,11 @@ async function search(query) {
   if (cached) return { ok: true, ...cached, cached: true };
 
   try {
-    const resultado = await pinterestSearchWithBunnyFy(termo, {
-      legacyFallback: async () => searchComVex(termo)
-    });
+    const resultado = await pinterestSearchWithBunnyFy(termo);
 
     // legacyFallback devolve o formato antigo já pronto; só o caminho BunnyFy
     // precisa ser convertido.
-    if (!resultado || resultado.source !== 'bunnyfy') return resultado ?? searchComVex(termo);
+    if (!resultado?.ok) return resultado || { ok: false, msg: 'A busca do Pinterest requer BunnyFy configurada.' };
 
     const midias = (resultado.results || [])
       .map((item) => ({ url: item.mediaUrl, mime: item.mime, title: item.title ?? null }))
@@ -141,48 +82,10 @@ async function search(query) {
     return { ok: true, ...saida };
   } catch (error) {
     console.error('Erro na pesquisa Pinterest:', error.message);
-    return searchComVex(termo);
+    return { ok: false, msg: 'Erro ao buscar imagens no Pinterest' };
   }
 }
 
-async function dlComVex(url) {
-  const credenciais = getVexCredentials();
-  if (!credenciais) {
-    return { ok: false, msg: 'Configure site_vex e apikey_vex em dados/src/config.json.' };
-  }
-
-  const buscarMidia = async (endpoint) => {
-    try {
-      const apiUrl = `${credenciais.site}/api/downloads/${endpoint}?apikey=${encodeURIComponent(credenciais.apikey)}&query=${encodeURIComponent(url)}`;
-      const response = await axios.get(apiUrl, { timeout: 60000, headers: { Accept: '*/*' } });
-      const dados = response.data?.resposta || response.data?.resultado || response.data;
-      return Array.isArray(dados?.medias) ? dados.medias : [];
-    } catch {
-      return [];
-    }
-  };
-
-  let medias = await buscarMidia('pinterestmp4');
-  let type = 'video';
-  if (medias.length === 0) {
-    medias = await buscarMidia('pinterestimg');
-    type = 'image';
-  }
-
-  const mediaUrls = medias.map(m => m.url).filter(Boolean);
-  if (mediaUrls.length === 0) {
-    return { ok: false, msg: 'O pin não contém mídia disponível para download' };
-  }
-
-  return {
-    ok: true,
-    criador: 'shogun',
-    type,
-    mime: type === 'video' ? 'video/mp4' : 'image/jpeg',
-    title: 'Pin do Pinterest',
-    urls: mediaUrls
-  };
-}
 
 /**
  * Faz download de um pin do Pinterest (imagem ou vídeo)
@@ -200,10 +103,8 @@ async function dl(url) {
 
     // A BunnyFy só cobre vídeo (via yt-dlp); pin de imagem faz a chamada
     // falhar com um erro transitório (503) e o modo 'primary' já cai
-    // automaticamente no fallback da Vex, que cobre os dois casos.
-    const bunnyResult = await socialDownloadWithBunnyFy('pinterest', url, {
-      legacyFallback: () => dlComVex(url)
-    });
+    // automaticamente no fallback da serviço legado, que cobre os dois casos.
+    const bunnyResult = await socialDownloadWithBunnyFy('pinterest', url);
     if (!bunnyResult.ok) return bunnyResult;
 
     const result = bunnyResult.source === 'bunnyfy'

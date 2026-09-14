@@ -36,7 +36,7 @@ interface MenuDatabasePort {
   getMenuLerMaisText(): unknown;
 }
 
-interface ShogunMenuRuntimePort {
+interface GyomeiMenuRuntimePort {
   readonly PERSONA_MENU_DESIGNS: UnknownRecord;
   highlightMenuCommands(text: unknown, prefix: string): string;
 }
@@ -44,13 +44,13 @@ interface ShogunMenuRuntimePort {
 interface MenuRuntimeModules {
   readonly renderers: Readonly<Record<LegacyMenuRendererKey, MenuRenderer>>;
   readonly database: MenuDatabasePort;
-  readonly runtime: ShogunMenuRuntimePort;
+  readonly gyomei: GyomeiMenuRuntimePort;
 }
 
 export interface LegacyMenuPresentationDependencies {
   readonly loadMenus?: ModuleLoader;
   readonly loadDatabase?: ModuleLoader;
-  readonly loadShogunRuntime?: ModuleLoader;
+  readonly loadGyomeiRuntime?: ModuleLoader;
   readonly fileSystem?: FileSystemPort;
   readonly mediaRoot?: string;
   readonly sleep?: (milliseconds: number) => Promise<void>;
@@ -110,8 +110,8 @@ async function defaultLoadDatabase(): Promise<unknown> {
   return import(new URL('../../dados/src/utils/database.js', import.meta.url).href);
 }
 
-async function defaultLoadShogunRuntime(): Promise<unknown> {
-  return import(new URL('../../dados/src/utils/shogunRuntime.js', import.meta.url).href);
+async function defaultLoadGyomeiRuntime(): Promise<unknown> {
+  return import(new URL('../../dados/src/utils/gyomeiRuntime.js', import.meta.url).href);
 }
 
 function defaultSleep(milliseconds: number): Promise<void> {
@@ -136,6 +136,7 @@ function resolveRenderers(moduleValue: unknown): Readonly<Record<LegacyMenuRende
     'menuSticker',
     'menuRPG',
     'menuNexo',
+    'menuVIP',
   ];
 
   const resolved = {} as Record<LegacyMenuRendererKey, MenuRenderer>;
@@ -161,11 +162,11 @@ function resolveDatabase(moduleValue: unknown): MenuDatabasePort {
   });
 }
 
-function resolveShogunRuntime(moduleValue: unknown): ShogunMenuRuntimePort {
-  const record = recordOf(moduleValue, 'Runtime do bot');
+function resolveGyomeiRuntime(moduleValue: unknown): GyomeiMenuRuntimePort {
+  const record = recordOf(moduleValue, 'Runtime Gyomei');
   return Object.freeze({
     PERSONA_MENU_DESIGNS: recordOf(record.PERSONA_MENU_DESIGNS, 'PERSONA_MENU_DESIGNS'),
-    highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime bot') as ShogunMenuRuntimePort['highlightMenuCommands'],
+    highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime Gyomei') as GyomeiMenuRuntimePort['highlightMenuCommands'],
   });
 }
 
@@ -180,7 +181,7 @@ function resolveShogunRuntime(moduleValue: unknown): ShogunMenuRuntimePort {
 export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
   readonly #loadMenus: ModuleLoader;
   readonly #loadDatabase: ModuleLoader;
-  readonly #loadShogunRuntime: ModuleLoader;
+  readonly #loadGyomeiRuntime: ModuleLoader;
   readonly #fs: FileSystemPort;
   readonly #mediaRoot: string;
   readonly #sleep: (milliseconds: number) => Promise<void>;
@@ -190,7 +191,7 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
   constructor(dependencies: LegacyMenuPresentationDependencies = {}) {
     this.#loadMenus = dependencies.loadMenus ?? defaultLoadMenus;
     this.#loadDatabase = dependencies.loadDatabase ?? defaultLoadDatabase;
-    this.#loadShogunRuntime = dependencies.loadShogunRuntime ?? defaultLoadShogunRuntime;
+    this.#loadGyomeiRuntime = dependencies.loadGyomeiRuntime ?? defaultLoadGyomeiRuntime;
     this.#fs = dependencies.fileSystem ?? {
       existsSync: (filePath) => fs.existsSync(filePath),
       readFileSync: (filePath) => fs.readFileSync(filePath),
@@ -205,11 +206,11 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
       this.#modulesPromise = Promise.all([
         this.#loadMenus(),
         this.#loadDatabase(),
-        this.#loadShogunRuntime(),
-      ]).then(([menus, database, runtime]) => Object.freeze({
+        this.#loadGyomeiRuntime(),
+      ]).then(([menus, database, gyomei]) => Object.freeze({
         renderers: resolveRenderers(menus),
         database: resolveDatabase(database),
-        runtime: resolveShogunRuntime(runtime),
+        gyomei: resolveGyomeiRuntime(gyomei),
       }));
     }
     return this.#modulesPromise;
@@ -286,7 +287,7 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
           customMediaPath = record.customPhoto;
         }
         if (typeof record.customPersona === 'string' && record.customPersona) {
-          personaDesign = modules.runtime.PERSONA_MENU_DESIGNS[record.customPersona] ?? null;
+          personaDesign = modules.gyomei.PERSONA_MENU_DESIGNS[record.customPersona] ?? null;
         }
       }
     }
@@ -325,7 +326,7 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
     const rawMenu = descriptor.liteModeAware
       ? await renderer(context.prefix, botName, context.pushName, context.isLiteMode, design)
       : await renderer(context.prefix, botName, context.pushName, design);
-    const menuText = modules.runtime.highlightMenuCommands(rawMenu, context.prefix);
+    const menuText = modules.gyomei.highlightMenuCommands(rawMenu, context.prefix);
     const lerMais = String(modules.database.getMenuLerMaisText() || '');
 
     const sendMedia = async (): Promise<void> => {

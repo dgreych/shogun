@@ -1,5 +1,5 @@
 // vNext modular em construção. O bootstrap operacional continua legado até o gate explícito de cutover.
-export { SHOGUN_CONFIG, type ShogunRuntimeConfig } from './config.js';
+export { GYOMEI_R0_CONFIG, type GyomeiRuntimeConfig } from './config.js';
 export type { AppContext } from './app/context.js';
 export {
   LegacyCommandExecutorAdapter,
@@ -74,7 +74,7 @@ export {
   type MacrotrancheExecutionContext,
 } from './macrotranche/domain.js';
 export type { NexoPort, NexoStatus } from './nexo/contracts.js';
-export type { ShogunClientPort } from './runtime/client.js';
+export type { GyomeiClientPort } from './runtime/client.js';
 export { CompositeVNextDispatchTarget } from './runtime/composite-dispatch.js';
 export {
   CommandCompatibilityDispatch,
@@ -95,7 +95,7 @@ export {
   type LiveCommandDispatchReceipt,
 } from './runtime/live-command-dispatcher.js';
 export { LEGACY_PERSISTENCE_BOUNDARIES, type LegacyPersistencePort } from './runtime/database.js';
-export type { ShogunRuntime } from './runtime/runtime.js';
+export type { GyomeiRuntime } from './runtime/runtime.js';
 export {
   GENERATED_RUNTIME_BOUNDARIES,
   PRODUCTION_STATE_BOUNDARIES,

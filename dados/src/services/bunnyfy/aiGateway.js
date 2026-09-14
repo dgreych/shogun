@@ -2,7 +2,7 @@ import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
 import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
 import { getConfig } from '../../utils/shogunStore.js';
-import { DEFAULT_NVIDIA_MODEL, requestNvidiaChat } from '../../utils/nvidiaApi.js';
+import { DEFAULT_NVIDIA_MODEL, isKnownNvidiaModel, requestNvidiaChat } from '../../utils/nvidiaApi.js';
 
 const AI_MODES = new Set(['off', 'primary', 'exclusive']);
 const DIRECT_FALLBACK_CODES = new Set([
@@ -18,6 +18,10 @@ const DEFAULT_LIMITS = Object.freeze({
   maxMessageChars: 16_000,
   maxTotalChars: 48_000
 });
+
+function isNvidiaIsolated(env = resolveBunnyFyRuntimeEnv()) {
+  return ['true', '1'].includes(String(env.BUNNYFY_NVIDIA_ISOLATED || '').trim().toLowerCase());
+}
 
 function resolveBunnyFyAiMode(env = resolveBunnyFyRuntimeEnv()) {
   if (!['true', '1'].includes(String(env.BUNNYFY_ENABLED || '').trim().toLowerCase())) {
@@ -157,9 +161,17 @@ async function createDirectCompletion(messages, options, env, directRequest = re
   return directResultToCanonical(result);
 }
 
+function bunnyFyManagedOptions(options = {}) {
+  const { model, ...managedOptions } = options || {};
+  return isKnownNvidiaModel(model)
+    ? { ...managedOptions, model }
+    : managedOptions;
+}
+
 function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = {}) {
   const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
   const initialMode = resolveBunnyFyAiMode(env);
+  const initialIsolation = isNvidiaIsolated(env);
   let bunnyFyClient = dependencies.bunnyFyClient || null;
   const directRequest = dependencies.directRequest || requestNvidiaChat;
 
@@ -176,10 +188,11 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
     });
   }
 
-  // Modos ativos validam URL/token imediatamente, como já fazia o gateway
-  // original. O modo off é a única exceção: não deve sequer precisar de
-  // configuração BunnyFy para preservar o fallback NVIDIA direto.
-  if (initialMode !== 'off' && !bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
+  // A quarentena de NVIDIA é intencionalmente anterior aos modos de IA.
+  // Ela impede tanto BunnyFy-AI quanto o fallback NVIDIA direto, sem alterar
+  // BUNNYFY_ENABLED nem os modos independentes de imagens, stickers, canvas,
+  // logos, jogos e demais capacidades.
+  if (!initialIsolation && initialMode !== 'off' && !bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
 
   function getBunnyFyClient() {
     if (!bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
@@ -189,13 +202,24 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
   return {
     baseUrl: bunnyFyClient?.baseUrl ?? null,
     async createChatCompletion(messages, options = {}) {
+      if (isNvidiaIsolated(env)) {
+        throw new BunnyFyError('BUNNYFY_UNAVAILABLE', {
+          status: 503,
+          retryable: false
+        });
+      }
+
       const mode = resolveBunnyFyAiMode(env);
       if (mode === 'off') {
         return createDirectCompletion(messages, options, env, directRequest);
       }
 
+      // Em modos gerenciados, somente uma preferência pertencente ao catálogo
+      // canônico do SHOGUN atravessa a fronteira. A BunnyFy continua dona da
+      // validação final e do failover entre os dez modelos qualificados.
+      const managedOptions = bunnyFyManagedOptions(options);
       try {
-        return await getBunnyFyClient().createChatCompletion(messages, options);
+        return await getBunnyFyClient().createChatCompletion(messages, managedOptions);
       } catch (error) {
         if (mode !== 'primary' || !shouldFallbackDirectAi(error)) throw error;
         console.warn('[BUNNYFY_AI] Falha transitória na BunnyFy; usando fallback NVIDIA direto.', {
@@ -230,8 +254,10 @@ export {
   DEFAULT_LIMITS,
   buildBunnyFyAccessMessage,
   buildBoundedChatMessages,
+  bunnyFyManagedOptions,
   createBunnyFyAiClient,
   isBunnyFyAccessError,
+  isNvidiaIsolated,
   resolveBunnyFyAccountUrl,
   resolveBunnyFyAiMode,
   shouldFallbackDirectAi,

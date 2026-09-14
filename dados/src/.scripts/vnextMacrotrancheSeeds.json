@@ -4,8 +4,8 @@
   "expected": {
     "nativeFamilies": 99,
     "nativeTokens": 559,
-    "compatibilityFamilies": 426,
-    "compatibilityTokens": 1047
+    "compatibilityFamilies": 429,
+    "compatibilityTokens": 1051
   },
   "nativeSeeds": [
     "menu",

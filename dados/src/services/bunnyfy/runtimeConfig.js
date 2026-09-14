@@ -1,4 +1,4 @@
-import { getConfig } from '../../utils/gyomeiStore.js';
+import { getConfig } from '../../utils/shogunStore.js';
 
 const BUNNYFY_CONFIG_KEYS = Object.freeze([
   'BUNNYFY_ENABLED',

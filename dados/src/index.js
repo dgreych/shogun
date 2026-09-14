@@ -83,6 +83,8 @@ import spotifyModule from './funcs/downloads/spotify.js';
 import captchaIndex, { initCaptchaIndex, addCaptcha, removeCaptcha, getCaptcha, hasPendingCaptcha } from './utils/captchaIndex.js';
 import fsPromises from 'fs/promises';
 
+console.log('[RUNTIME_BOOT] SHOGUN_RANK_CARD_V3_NAMES_READONLY');
+
 import {
   formatUptime,
   normalizar,
@@ -18523,7 +18525,11 @@ case 'ytmp3': {
     const dlRes = await downloadYoutubeAudioForPlay(q, {
       legacyYoutube: youtube,
       onMetadata: async preview => {
-        const caption = buildYoutubePreviewCaption(preview);
+        const bunnyfyCredit =
+          String(process.env.BUNNYFY_YOUTUBE_MODE || '').trim().toLowerCase() === 'exclusive'
+            ? '\n\n`downloaded by bunnyfy`'
+            : '';
+        const caption = buildYoutubePreviewCaption(preview) + bunnyfyCredit;
         if (!preview.thumbnail) {
           await reply(caption);
           return;
@@ -22056,7 +22062,87 @@ case 'desbangp':
     }
        break;
 
+case 'gruposbot':
+  try {
+    if (!isOwner) return reply('⛔ Apenas o meu dono pode usar este comando!');
+    if (isGroup) return reply('⛔ Esse comando só funciona no privado.');
+    const _gpAll = await nazu.groupFetchAllParticipating();
+    const _gpList = Object.values(_gpAll).sort((a, b) => a.subject.localeCompare(b.subject));
+    const _gpIndexPath = __dirname + '/../database/dono/gp-index.json';
+    let _gpIndex = {};
+    try { _gpIndex = JSON.parse(fs.readFileSync(_gpIndexPath, 'utf8')); } catch {}
+    const _jidToId = {};
+    for (const [id, jid] of Object.entries(_gpIndex)) _jidToId[jid] = id;
+    let _nextId = _gpList.length > 0 ? Math.max(0, ...Object.keys(_gpIndex).map(Number)) + 1 : 1;
+    const _newIndex = {};
+    for (const g of _gpList) {
+      const existing = _jidToId[g.id];
+      _newIndex[existing ?? String(_nextId++)] = g.id;
+    }
+    fs.writeFileSync(_gpIndexPath, JSON.stringify(_newIndex), { mode: 0o600 });
+    const _idByJid = {};
+    for (const [id, jid] of Object.entries(_newIndex)) _idByJid[jid] = id;
+    let _gpTeks = `🤖 *Grupos do Bot* (${_gpList.length})\n\n`;
+    for (const g of _gpList) {
+      _gpTeks += `*#${_idByJid[g.id]}* — ${g.subject}\n👥 ${g.participants?.length ?? '?'} membros\n\n`;
+    }
+    if (_gpList.length === 0) _gpTeks += 'Nenhum grupo encontrado.';
+    await reply(_gpTeks.trim());
+  } catch (e) {
+    console.error(e);
+    await reply('❌ Erro ao listar grupos.');
+  }
+  break;
 
+case 'sairgp':
+  try {
+    if (!isOwner) return reply('⛔ Apenas o meu dono pode usar este comando!');
+    if (isGroup) return reply('⛔ Esse comando só funciona no privado.');
+    if (!q) return reply('Use: !sairgp <número>\nVeja os números com !gruposbot');
+    const _sgIndexPath = __dirname + '/../database/dono/gp-index.json';
+    let _sgIndex = {};
+    try { _sgIndex = JSON.parse(fs.readFileSync(_sgIndexPath, 'utf8')); } catch {}
+    const _sgJid = _sgIndex[q.trim()];
+    if (!_sgJid) return reply(`❌ #${q.trim()} não encontrado. Atualize a lista com !gruposbot`);
+    let _sgName = _sgJid;
+    try { const _m = await nazu.groupMetadata(_sgJid).catch(() => null); _sgName = _m?.subject || _sgJid; } catch {}
+    await nazu.groupLeave(_sgJid).catch(() => {});
+    delete _sgIndex[q.trim()];
+    fs.writeFileSync(_sgIndexPath, JSON.stringify(_sgIndex), { mode: 0o600 });
+    await reply(`✅ Saí do grupo *${_sgName}* (#${q.trim()}).`);
+  } catch (e) {
+    console.error(e);
+    await reply('❌ Erro ao sair do grupo.');
+  }
+  break;
+
+case 'blockbotgp':
+case 'unblockbotgp':
+case 'desbloquearbotgp':
+  try {
+    if (!isOwner) return reply('⛔ Apenas o meu dono pode usar este comando!');
+    if (isGroup) return reply('⛔ Esse comando só funciona no privado.');
+    if (!q) return reply(`Use: !${command} <número>\nVeja os números com !gruposbot`);
+    const _bgIndexPath = __dirname + '/../database/dono/gp-index.json';
+    let _bgIndex = {};
+    try { _bgIndex = JSON.parse(fs.readFileSync(_bgIndexPath, 'utf8')); } catch {}
+    const _bgJid = _bgIndex[q.trim()];
+    if (!_bgJid) return reply(`❌ #${q.trim()} não encontrado. Atualize a lista com !gruposbot`);
+    let _bgName = _bgJid;
+    try { const _m = await nazu.groupMetadata(_bgJid).catch(() => null); _bgName = _m?.subject || _bgJid; } catch {}
+    const _blocking = command === 'blockbotgp';
+    banGpIds[_bgJid] = _blocking;
+    fs.writeFileSync(__dirname + '/../database/dono/bangp.json', JSON.stringify(banGpIds));
+    if (_blocking) {
+      await reply(`🚫 Bot bloqueado em *${_bgName}* (#${q.trim()}).\nApenas premium e o dono podem interagir lá.`);
+    } else {
+      await reply(`✅ Bot liberado em *${_bgName}* (#${q.trim()}).`);
+    }
+  } catch (e) {
+    console.error(e);
+    await reply('❌ Erro ao alterar bloqueio do grupo.');
+  }
+  break;
 
 
 
@@ -22660,40 +22746,59 @@ case 'rankativo':
   try  {
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
     
-    // Verifica se a preservação do contador está ativada
-    const preservarContadorRankativo = groupData.preservarContador === true;
-    
-    // Verify current group members first
-    let currentMembers = AllgroupMembers;
-    let validUsers = [];
-    
-    // Filtra usuários que saíram do grupo (apenas se preservação não estiver ativada)
-      if  (!preservarContadorRankativo) {
-      groupData.contador = groupData.contador.filter(user => {
-    const userId = user.id;
-    const isValidMember = currentMembers.includes(userId);
-    
-    if  (!isValidMember) {
-      console.log(`[RANKATIVO] Removed departed user: ${userId} (${getUserName(userId)})`);
-      return false;
-    }
-    
-    validUsers.push(user);
-    return true;
-      });
-      
-      // Save updated data
-      fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
-    } else {
-      // Se preservação estiver ativada, apenas filtra para validUsers sem remover do contador
-      validUsers = (groupData.contador || []).filter(user => {
-    const userId = user.id;
-    return currentMembers.includes(userId);
-      });
-    }
-    
+    // O ranking e apenas uma leitura: nunca remove, reordena ou regrava o
+    // historico persistido ao montar o cartao.
+    const currentMembers = Array.isArray(AllgroupMembers) ? AllgroupMembers : [];
+    const storedRankUsers = Array.isArray(groupData.contador) ? groupData.contador : [];
+    const validUsers = storedRankUsers.filter(user => currentMembers.some(memberId => idsMatch(user?.id, memberId)));
+
     var blue67;
-    blue67 = validUsers.sort((a, b) => (a.figu == undefined ? a.figu = 0 : a.figu + a.msg + a.cmd) < (b.figu == undefined ? b.figu = 0 : b.figu + b.cmd + b.msg) ? 0 : -1);
+    blue67 = [...validUsers].sort((a, b) =>
+      (Number(b?.msg || 0) + Number(b?.cmd || 0) + Number(b?.figu || 0)) -
+      (Number(a?.msg || 0) + Number(a?.cmd || 0) + Number(a?.figu || 0))
+    );
+    const rankParticipants = Array.isArray(groupMetadata?.participants) ? groupMetadata.participants : [];
+    const isRankDisplayName = (candidate) => {
+      const value = typeof candidate === 'string' ? candidate.trim() : '';
+      return value && !/@(?:lid|s\.whatsapp\.net)$/i.test(value) && !/^@?\d{7,}$/.test(value) &&
+        !/\blead\b.*\d{4,}/i.test(value) && value.replace(/\D/g, '').length < 7 &&
+        !/^usu[aá]rio desconhecido$/i.test(value);
+    };
+    const getRankNameWithin = (operation) => new Promise((resolve) => {
+      const timeout = setTimeout(() => resolve(''), 900);
+      Promise.resolve(operation())
+        .then((name) => { clearTimeout(timeout); resolve(name); })
+        .catch(() => { clearTimeout(timeout); resolve(''); });
+    });
+    const lookupRankName = async (identity) => {
+      const directName = await getRankNameWithin(() => nazu.getName(identity));
+      if (isRankDisplayName(directName)) return directName;
+      return getRankNameWithin(() => nazu.getName(from, identity));
+    };
+    const rankDisplayName = async (user) => {
+      const storedPushName = typeof user?.pushname === 'string' ? user.pushname.replace(/\s+/g, ' ').trim() : '';
+      if (storedPushName && !/^usu[aá]rio desconhecido$/i.test(storedPushName) &&
+          !/@(?:lid|s\.whatsapp\.net)$/i.test(storedPushName)) {
+        return storedPushName;
+      }
+      const participant = rankParticipants.find((member) => [member?.id, member?.lid, member?.jid]
+        .some((memberId) => idsMatch(user?.id, memberId)));
+      const candidates = [participant?.pushname, participant?.notify, participant?.name];
+      const displayName = candidates.find(isRankDisplayName);
+      if (displayName) return displayName.replace(/\s+/g, ' ').trim();
+
+      const identities = [...new Set([participant?.id, participant?.lid, participant?.jid, participant?.phoneNumber, user?.id]
+        .filter((identity) => typeof identity === 'string' && identity))];
+      for (const identity of identities) {
+        try {
+          const fetchedName = await lookupRankName(identity);
+          if (isRankDisplayName(fetchedName)) return fetchedName.replace(/\s+/g, ' ').trim();
+        } catch {
+          // Tenta a próxima identidade conhecida, inclusive JID e LID equivalentes.
+        }
+      }
+      return 'Contato sem nome';
+    };
     var menc;
     menc = [];
     let blad;
@@ -22711,21 +22816,36 @@ case 'rankativo':
     }
       }
     }
-    const rankingCard = await socialCardWithBunnyFy('ranking', {
+    const rankingEntries = await Promise.all(blue67.slice(0, 10).map(async (user) => ({
+      name: (await rankDisplayName(user)).slice(0, 48),
+      value: Number(user.msg || 0)
+    })));
+    const rankingPayload = {
       title: 'Membros mais ativos',
       subtitle: String(groupMetadata?.subject || '').slice(0, 72),
-      unit: 'pontos',
-      entries: blue67.slice(0, 10).map(user => ({
-        name: getUserName(user.id).slice(0, 48),
-        value: Number(user.msg || 0) + Number(user.cmd || 0) + Number(user.figu || 0)
-      })),
-      theme: 'emerald'
-    }, { legacyFallback: async () => null }).catch(() => null);
+      unit: 'mensagens',
+      entries: rankingEntries,
+      theme: 'obsidian'
+    };
+    console.log('[RANKATIVO] payload v3', {
+      unit: rankingPayload.unit,
+      theme: rankingPayload.theme,
+      names: rankingPayload.entries.map(entry => entry.name)
+    });
+    const rankingCard = await socialCardWithBunnyFy('ranking', rankingPayload, { legacyFallback: async () => null }).catch(() => null);
+    if (rankingCard?.ok && Buffer.isBuffer(rankingCard.buffer)) {
+      console.log('[RANKATIVO] BunnyFy card ready', {
+        bytes: rankingCard.buffer.length,
+        sha256: crypto.createHash('sha256').update(rankingCard.buffer).digest('hex').slice(0, 16),
+        entries: rankingEntries.length
+      });
+    }
     await nazu.sendMessage(from, rankingCard?.ok ? {
       image: rankingCard.buffer,
       mimetype: rankingCard.mime,
       caption: blad,
-      mentions: menc
+      mentions: menc,
+      __gyomeiPreserveDynamicMedia: true
     } : {
       text: blad,
       mentions: menc

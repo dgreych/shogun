@@ -1,4 +1,4 @@
-export interface ShogunRuntimeConfig {
+export interface GyomeiRuntimeConfig {
   readonly legacySourceRoot: string;
   readonly legacyBootstrap: string;
   readonly configFile: string;
@@ -10,7 +10,7 @@ export interface ShogunRuntimeConfig {
  * Contrato estrutural de R0. Nenhum valor daqui substitui a configuração
  * operacional legada nesta fase.
  */
-export const SHOGUN_CONFIG: ShogunRuntimeConfig = Object.freeze({
+export const GYOMEI_R0_CONFIG: GyomeiRuntimeConfig = Object.freeze({
   legacySourceRoot: 'dados/src',
   legacyBootstrap: 'dados/src/.scripts/start-v9-fixed.js',
   configFile: 'dados/src/config.json',

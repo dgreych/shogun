@@ -13,17 +13,21 @@ const STATUS_CODES = Object.freeze({
   504: 'BUNNYFY_TIMEOUT'
 });
 
+// Contato de quem distribui as chaves da API. Fica numa constante porque
+// aparece em mais de uma mensagem e muda junto.
+const CONTATO_API = 'wa.me/5522997028553';
+
 const PUBLIC_MESSAGES = Object.freeze({
-  BUNNYFY_AUTH_FAILED: 'A BunnyFy recusou a autenticação.',
+  BUNNYFY_AUTH_FAILED: `🔑 *Este recurso usa a BunnyFy e precisa de chave.*\n\nSem chave configurada, ele fica indisponível.\n\nFale comigo para pegar a sua: ${CONTATO_API}`,
   BUNNYFY_BAD_REQUEST: 'A BunnyFy recusou os dados enviados.',
   BUNNYFY_BAD_RESPONSE: 'A BunnyFy retornou uma resposta inválida.',
   BUNNYFY_CONFIG_INVALID: 'A configuração da BunnyFy é inválida.',
   BUNNYFY_CONFLICT: 'A operação entrou em conflito com outra solicitação.',
   BUNNYFY_CONTENT_BLOCKED: 'Esse pedido não pode ser atendido: este serviço não gera conteúdo sexual explícito, nem qualquer conteúdo que sexualize menores de idade.',
-  BUNNYFY_FORBIDDEN: 'A operação não foi autorizada pela BunnyFy.',
+  BUNNYFY_FORBIDDEN: `🚫 *Sua chave não cobre este recurso.*\n\nFale comigo para liberar: ${CONTATO_API}`,
   BUNNYFY_NETWORK_ERROR: 'Não foi possível conectar à BunnyFy.',
   BUNNYFY_NOT_FOUND: 'O recurso solicitado não foi encontrado.',
-  BUNNYFY_RATE_LIMITED: 'A BunnyFy está limitando solicitações temporariamente.',
+  BUNNYFY_RATE_LIMITED: `⏳ *Limite de requisições atingido.*\n\nO uso gratuito sem chave é limitado por instância. Com chave própria o limite é seu, não compartilhado.\n\nFale comigo para pegar a sua: ${CONTATO_API}`,
   BUNNYFY_REMOTE_ERROR: 'A BunnyFy encontrou um erro interno.',
   BUNNYFY_TIMEOUT: 'A BunnyFy demorou mais que o permitido para responder.',
   BUNNYFY_TOO_LARGE: 'A resposta da BunnyFy excedeu o tamanho permitido.',

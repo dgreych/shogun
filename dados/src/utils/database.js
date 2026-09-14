@@ -323,29 +323,22 @@ try {
 const defaultMsgBotOnEnabled = configForMsgBotOn.numerodono === '553391967445' ? false : true;
 
 ensureJsonFileExists(MSGBOTON_FILE, { enabled: defaultMsgBotOnEnabled,
-message: `🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨
+message: `⚔️ ────────────────── ⚔️
 
-       🙏 *GYOMEI está desperto*
-        🪨🙏🪨
+      *𝖘𝖍𝖔𝖌𝖚𝖓 no comando*
 
-  Assumo minha vigília sobre este
-  grupo com serenidade e disciplina.
+  Grupo sob controle. Moderação,
+  mídia, jogos e economia prontos
+  para uso.
 
-  Pronto para servir, proteger e
-  cumprir cada tarefa que me for
-  confiada.
-        🪨🙏🪨
+  Digite *{prefix}menu* para ver
+  tudo o que dá para fazer aqui.
 
-  Esta jornada segue sobre a base
-  da Nazuna e o legado de *Hiudy*
-  e *DevTokyo*, agora sob o nome
-  de *GYOMEI*.
+  _Para não exibir esta mensagem
+  nas próximas inicializações, use
+  *{prefix}msgboton*._
 
-  _Para encerrar esta mensagem nas
-  próximas inicializações, use
-  *msgboton*._
-
-🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨🪨`
+⚔️ ────────────────── ⚔️`
 });
 
 ensureJsonFileExists(CUSTOM_REACTS_FILE, { reacts: [] });
@@ -511,14 +504,29 @@ const loadMsgBotOn = () => {
   
   const defaultEnabled = currentOwner === '553391967445' ? false : true;
   
-  const data = loadJsonFile(MSGBOTON_FILE, {
-    enabled: defaultEnabled,
-    message: `✅ *GYOMEI está online*
+  const MENSAGEM_PADRAO = `✅ *𝖘𝖍𝖔𝖌𝖚𝖓 online*
 
 Conectado e pronto, atendendo todos os grupos configurados.
 
-_Para desativar este aviso, use *msgboton*._`
+_Para desativar este aviso, use *msgboton*._`;
+
+  const data = loadJsonFile(MSGBOTON_FILE, {
+    enabled: defaultEnabled,
+    message: MENSAGEM_PADRAO
   });
+
+  // O texto fica salvo em disco, então instalações antigas continuariam
+  // enviando a mensagem da identidade anterior mesmo com o padrão novo. Só
+  // substitui quando reconhece o texto antigo; mensagem escrita pelo dono é
+  // preservada.
+  if (typeof data.message === 'string' && /GYOMEI|Nazuna|Hiudy|DevTokyo/i.test(data.message)) {
+    data.message = MENSAGEM_PADRAO;
+    try {
+      ensureDirectoryExists(DONO_DIR);
+      fs.writeFileSync(MSGBOTON_FILE, JSON.stringify(data, null, 2));
+    } catch { /* segue com o valor corrigido em memória */ }
+  }
+
   return data;
 };
 

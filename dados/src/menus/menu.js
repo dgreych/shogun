@@ -28,6 +28,5 @@ ${middleBorder}${menuItemIcon}${prefix}menufig -> Figurinhas
 ${middleBorder}${menuItemIcon}${prefix}alteradores -> Alteradores
 ${middleBorder}${menuItemIcon}${prefix}menurpg -> RPG
 ${middleBorder}${menuItemIcon}${prefix}menunexo -> NEXO
-${middleBorder}${menuItemIcon}${prefix}menuvip -> VIP
 ${bottomBorder}`;
 }

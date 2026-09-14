@@ -1,78 +1,46 @@
-export default async function menuIa(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    chatBotMenuTitle = "🤖 CHATBOTS INTELIGENTES",
-    textMenuTitle = "✍️ GERAÇÃO DE TEXTO",
-    toolsMenuTitle = "🛠️ FERRAMENTAS DE IA"
+import { DEFAULT_NVIDIA_MODEL, NVIDIA_MODEL_CATALOG } from '../utils/nvidiaApi.js';
+
+export default async function menuIa(prefix, botName = 'SHOGUN', userName = 'Usuário', {
+  header = `╭┈⊰ 🤖 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
+  menuTopBorder = '╭┈',
+  bottomBorder = '╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯',
+  menuTitleIcon = '🧠▸',
+  menuItemIcon = '•.̇𖥨֗🤖⭟',
+  separatorIcon = '❁',
+  middleBorder = '┊'
 } = {}) {
+  const pfx = String(prefix || '!');
+  const formattedHeader = String(header)
+    .replace(/#nome#/g, userName || 'Usuário')
+    .replace(/#prefix#/g, pfx);
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-  
- return `${formattedHeader}
+  const modelLines = NVIDIA_MODEL_CATALOG.map((entry, index) => {
+    const isDefault = entry.id === DEFAULT_NVIDIA_MODEL;
+    return `${middleBorder}${menuItemIcon}${index + 1}. *${entry.label}*${isDefault ? ' ⭐ PADRÃO' : ''}\n${middleBorder}   ${entry.id}`;
+  }).join('\n');
 
-${menuTopBorder}${separatorIcon} *${chatBotMenuTitle}*
+  return `${formattedHeader}
+
+${menuTopBorder}${separatorIcon} ${menuTitleIcon} *IA & MODELOS NVIDIA*
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}gemma
-${middleBorder}${menuItemIcon}${prefix}gemma2
-${middleBorder}${menuItemIcon}${prefix}codegemma
-${middleBorder}${menuItemIcon}${prefix}qwen
-${middleBorder}${menuItemIcon}${prefix}qwen2
-${middleBorder}${menuItemIcon}${prefix}qwen3
-${middleBorder}${menuItemIcon}${prefix}qwencoder
-${middleBorder}${menuItemIcon}${prefix}llama
-${middleBorder}${menuItemIcon}${prefix}llama3
-${middleBorder}${menuItemIcon}${prefix}phi
-${middleBorder}${menuItemIcon}${prefix}phi3
-
-${middleBorder}${menuItemIcon}${prefix}yi
-${middleBorder}${menuItemIcon}${prefix}kimi
-${middleBorder}${menuItemIcon}${prefix}kimik2
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${textMenuTitle}*
+${middleBorder}Pool qualificado: *10 modelos* gerenciados pela BunnyFy.
+${middleBorder}Padrão: *Nemotron 3 Ultra 550B*.
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}cog
-${middleBorder}${menuItemIcon}${prefix}mistral
-${middleBorder}${menuItemIcon}${prefix}magistral
-${middleBorder}${menuItemIcon}${prefix}baichuan
-${middleBorder}${menuItemIcon}${prefix}marin
-${middleBorder}${menuItemIcon}${prefix}rakutenai
-${middleBorder}${menuItemIcon}${prefix}rocket
-${middleBorder}${menuItemIcon}${prefix}swallow
-${middleBorder}${menuItemIcon}${prefix}falcon
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${toolsMenuTitle}*
+${modelLines}
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}ideias
-${middleBorder}${menuItemIcon}${prefix}explicar
-${middleBorder}${menuItemIcon}${prefix}resumir
-${middleBorder}${menuItemIcon}${prefix}corrigir
-${middleBorder}${menuItemIcon}${prefix}resumirurl
-${middleBorder}${menuItemIcon}${prefix}resumirchat <qtd>
-${middleBorder}${menuItemIcon}${prefix}recomendar <tipo> <gênero>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *💬 DEBATES & ARGUMENTAÇÃO*
+${middleBorder}*SELEÇÃO DE MODELO*
+${middleBorder}${menuItemIcon}${pfx}menu-ia -> mostra o modelo ativo e as opções
+${middleBorder}${menuItemIcon}${pfx}menu-ia 9 -> seleciona o Nemotron 3 Ultra
+${middleBorder}${menuItemIcon}${pfx}menu-ia <id> -> seleciona pelo ID completo
+${middleBorder}${menuItemIcon}${pfx}modelo-ia -> alias técnico equivalente
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}debater <tema>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *📖 HISTÓRIAS INTERATIVAS*
+${middleBorder}Em grupos, a seleção é própria do grupo e exige dono/admin real.
+${middleBorder}No privado, o dono altera o padrão da instância.
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}aventura <gênero>
-${middleBorder}${menuItemIcon}${prefix}aventura escolha <1/2/3>
-${middleBorder}${menuItemIcon}${prefix}aventura status
-${middleBorder}${menuItemIcon}${prefix}aventura sair
-${middleBorder}
-${middleBorder}${menuTitleIcon} *Alias: historia* ${menuTitleIcon}
-${bottomBorder}
-`;
+${middleBorder}*ASSISTENTE*
+${middleBorder}${menuItemIcon}${pfx}gemma2 [texto]
+${middleBorder}${menuItemIcon}${pfx}comandoia [texto]
+${middleBorder}${menuItemIcon}${pfx}nexo [texto]
+${middleBorder}${menuItemIcon}${pfx}vision [imagem] [pergunta]
+${bottomBorder}`;
 }

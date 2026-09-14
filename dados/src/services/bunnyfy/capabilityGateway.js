@@ -521,13 +521,13 @@ const SOCIAL_DOWNLOAD_METHODS = {
 /**
  * Retorna a mediaUrl assinada da BunnyFy (não baixa o buffer aqui): cada
  * comando de download já sabe consumir uma URL de mídia (é exatamente o que
- * fazia com a Vex), então a "cola" de baixar/repassar fica no arquivo do
+ * fazia com a serviço legado), então a "cola" de baixar/repassar fica no arquivo do
  * comando, sem duplicar essa lógica no gateway.
  */
 async function socialDownloadWithBunnyFy(provider, url, {
   env = process.env,
   clientFactory = createCapabilityClient,
-  legacyFallback = async () => null
+  legacyFallback = async () => ({ ok: false, code: 'BUNNYFY_DISABLED', msg: 'Este download requer BunnyFy configurada nesta instância.' })
 } = {}) {
   const modeName = SOCIAL_DOWNLOAD_MODES[provider];
   const method = SOCIAL_DOWNLOAD_METHODS[provider];
@@ -557,13 +557,13 @@ async function socialDownloadWithBunnyFy(provider, url, {
 
 /**
  * A busca do Pinterest era a última capacidade além do YouTube que ainda
- * dependia da Vex — e a fonte parou de responder, deixando o comando morto.
+ * dependia da serviço legado — e a fonte parou de responder, deixando o comando morto.
  */
 async function pinterestSearchWithBunnyFy(query, {
   limit,
   env = process.env,
   clientFactory = createCapabilityClient,
-  legacyFallback = async () => null
+  legacyFallback = async () => ({ ok: false, code: 'BUNNYFY_DISABLED', msg: 'A busca do Pinterest requer BunnyFy configurada nesta instância.' })
 } = {}) {
   const mode = resolveCapabilityMode('BUNNYFY_PINTEREST_MODE', env);
   return executeCapability({
