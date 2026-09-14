@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import path from 'node:path';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { spawnSync } from 'node:child_process';
@@ -18,6 +19,7 @@ import {
 } from './instanceConfigStore.js';
 
 const rl = readline.createInterface({ input, output });
+const BASIC_SETUP = process.argv.includes('--basic');
 
 const MODE_LABELS = Object.freeze({
   BUNNYFY_AI_MODE: 'Assistente / IA',
@@ -53,6 +55,15 @@ function envValue(draft, key, fallback = '') {
 
 function yes(value) {
   return ['1', 'true', 'yes', 'sim', 's', 'on'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+function printHeader(subtitle) {
+  clear();
+  output.write('\n╭──────────────────────────────────────────────────────────────╮\n');
+  output.write('│                SHOGUN · QUARTEL DE CONFIGURAÇÃO             │\n');
+  output.write('├──────────────────────────────────────────────────────────────┤\n');
+  output.write(`│ ${subtitle.padEnd(60, ' ')} │\n`);
+  output.write('╰──────────────────────────────────────────────────────────────╯\n');
 }
 
 async function askText(label, current = '', { required = false, normalize = value => value, validate = null } = {}) {
@@ -110,6 +121,51 @@ async function askSecret(label, current = '') {
   if (answer === '-') return '';
   if (!answer) return current;
   return answer.trim();
+}
+
+async function editBasicIdentity(config, envDraft) {
+  title('Configuração inicial');
+
+  const ownerCurrent = config.nomedono === 'Comandante' ? '' : config.nomedono;
+  const normalizedCurrentNumber = normalizeOwnerNumber(config.numerodono);
+  const numberCurrent = /^\d{10,15}$/.test(normalizedCurrentNumber) ? normalizedCurrentNumber : '';
+
+  config.nomedono = await askText('Como o SHOGUN deve chamar você?', ownerCurrent, { required: true });
+  config.numerodono = await askText('Seu número com país e DDD (somente dígitos)', numberCurrent, {
+    required: true,
+    normalize: normalizeOwnerNumber,
+    validate: value => /^\d{10,15}$/.test(value) ? null : 'Use entre 10 e 15 dígitos.'
+  });
+  config.nomebot = await askText('Nome do bot', config.nomebot || 'SHOGUN', { required: true });
+  config.prefixo = await askText('Prefixo de comando', config.prefixo || '!', {
+    required: true,
+    validate: value => String(value).length === 1 ? null : 'Use exatamente um caractere.'
+  });
+
+  envDraft.DEFAULT_PERSONA = 'shogun';
+  envDraft.BOT_NAME = config.nomebot;
+}
+
+async function runBasicSetup(config, envDraft) {
+  printHeader('Primeiro uso: só o necessário para ligar o bot.');
+  output.write('\nVocê responderá quatro perguntas. Integrações avançadas ficam para depois.\n');
+  output.write('A persona padrão desta instalação será shogun.\n');
+
+  await editBasicIdentity(config, envDraft);
+
+  const failures = validateIdentity(config);
+  if (failures.length) throw new Error(failures.join(' '));
+
+  saveInstanceConfig(config);
+  saveEnvUpdates({
+    DEFAULT_PERSONA: 'shogun',
+    BOT_NAME: config.nomebot
+  });
+
+  output.write('\n✅ Configuração local salva.\n');
+  output.write('✅ Persona padrão: shogun.\n');
+  output.write('ℹ️ BunnyFy, NVIDIA e integrações legadas não são necessárias para o primeiro uso.\n');
+  output.write('ℹ️ Para configuração avançada, use: npm run config\n');
 }
 
 async function editIdentity(config, envDraft) {
@@ -239,7 +295,8 @@ function showReview(config, envDraft) {
 
 function runPreflight() {
   title('Diagnóstico pós-configuração');
-  const result = spawnSync(process.execPath, ['scripts/preflight-platform.mjs'], {
+  const preflightPath = path.join(ROOT_DIR, 'scripts', 'preflight-platform.mjs');
+  const result = spawnSync(process.execPath, [preflightPath], {
     cwd: ROOT_DIR,
     stdio: 'inherit',
     env: process.env
@@ -252,17 +309,17 @@ async function main() {
   const envDocument = loadEnvDocument();
   const envDraft = Object.fromEntries(envDocument.values);
 
-  clear();
-  output.write('\n╭──────────────────────────────────────────────────────────────╮\n');
-  output.write('│                SHOGUN · QUARTEL DE CONFIGURAÇÃO             │\n');
-  output.write('├──────────────────────────────────────────────────────────────┤\n');
-  output.write('│ Configure a instância sem abrir JSON ou .env manualmente.   │\n');
-  output.write('│ Segredos nunca são mostrados na revisão do painel.          │\n');
-  output.write('╰──────────────────────────────────────────────────────────────╯\n');
+  if (BASIC_SETUP) {
+    await runBasicSetup(config, envDraft);
+    return;
+  }
+
+  printHeader('Configuração avançada: integrações e ajustes opcionais.');
+  output.write('\nUse este painel depois do primeiro uso quando precisar de BunnyFy, NVIDIA ou compatibilidade legada.\n');
 
   let dirty = false;
   while (true) {
-    const choice = await askChoice('Painel principal', [
+    const choice = await askChoice('Painel avançado', [
       'Identidade, dono e persona',
       'BunnyFy e capacidades',
       'NVIDIA e integrações legadas',

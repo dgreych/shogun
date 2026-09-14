@@ -9,7 +9,7 @@
     "start:validated": "npm run validate:local && npm start",
     "dev": "nodemon dados/src/.scripts/start-v9-fixed.js",
     "preflight": "node scripts/preflight-platform.mjs",
-    "setup": "node dados/src/.scripts/config-panel.js",
+    "setup": "node dados/src/.scripts/config-panel.js --basic",
     "setup:legacy": "node dados/src/.scripts/config.js",
     "config": "node dados/src/.scripts/config-panel.js",
     "config:legacy": "node dados/src/.scripts/config.js",
