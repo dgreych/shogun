@@ -23,6 +23,8 @@ test('onboarding básico fixa persona shogun e não exige integrações avançad
   assert.match(panel, /DEFAULT_PERSONA\s*=\s*'shogun'/);
   assert.match(panel, /BOT_NAME\s*=\s*config\.nomebot/);
   assert.match(panel, /process\.argv\.includes\(['"]--basic['"]\)/);
+  assert.match(panel, /npm run config/);
+  assert.match(panel, /configuraç[aã]o avançada/i);
 });
 
 test('diagnóstico pós-configuração usa caminho absoluto para o preflight', () => {
@@ -30,11 +32,10 @@ test('diagnóstico pós-configuração usa caminho absoluto para o preflight', (
   assert.match(panel, /spawnSync\(process\.execPath,\s*\[preflightPath\]/);
 });
 
-test('guias públicos separam configuração inicial simples das opções avançadas', () => {
+test('guias públicos descrevem somente as quatro perguntas do primeiro uso', () => {
   for (const guide of [termuxGuide, linuxGuide]) {
     assert.match(guide, /quatro perguntas/i);
-    assert.match(guide, /npm run config/);
-    assert.match(guide, /avançad/i);
-    assert.match(guide, /BunnyFy|NVIDIA/);
+    assert.match(guide, /nome do bot/i);
+    assert.match(guide, /prefixo/i);
   }
 });
