@@ -1,3 +1,10 @@
+import fs from 'node:fs';
+
+export function promotionContent(text, image = fs.readFileSync(new URL('../../../assets/brand/shogun-promotion.jpg', import.meta.url))) {
+  if (!Buffer.isBuffer(image) || !image.length) throw new Error('Arte promocional indisponível.');
+  return { image, caption: text };
+}
+
 export const FIRST_PROMOTION = `🐈‍⬛ *SHOGUN · NOVA GERAÇÃO*
 
 Esta atualização abre uma nova fase do Shogun: identidade visual renovada, artes próprias nos menus e uma personalidade que é só dele. Os comandos também receberam melhorias para o dia a dia do grupo.
@@ -31,8 +38,9 @@ async function deadline(action, milliseconds, code) {
   } finally { clearTimeout(timer); }
 }
 
-export async function sendPromotionalMessage(socket, group, text) {
+export async function sendPromotionalMessage(socket, group, text, { image } = {}) {
   const metadata = await deadline(() => socket.groupMetadata(group), 15_000, 'PROMO_METADATA_TIMEOUT');
-  const payload = promotionalPayload(text, metadata);
+  const { mentions } = promotionalPayload(text, metadata);
+  const payload = { ...promotionContent(text, image), mentions };
   return deadline(() => socket.sendMessage(group, payload), 30_000, 'PROMO_UNCERTAIN');
 }

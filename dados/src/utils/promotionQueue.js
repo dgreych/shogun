@@ -35,7 +35,7 @@ export class PromotionQueue {
   list() { return this.state.messages.map(message => ({ ...message })); }
 
   start(id, groupIds) {
-    if (this.state.campaign?.status === 'running') throw new Error('Já existe um envio em andamento. Aguarde a fila terminar.');
+    if (['running', 'paused'].includes(this.state.campaign?.status)) throw new Error('Já existe um envio em andamento. Aguarde a fila terminar.');
     const message = this.state.messages.find(item => String(item.id) === String(id).trim());
     if (!message) throw new Error('Mensagem não encontrada. Use listmsgpromo para consultar os IDs.');
     const targets = [...new Set(groupIds)].filter(value => /^\d+(?:-\d+)?@g\.us$/.test(String(value)));
@@ -43,6 +43,18 @@ export class PromotionQueue {
     this.state.campaign = { messageId: message.id, text: message.text, targets, results: {}, status: 'running', inFlight: null, nextSendAt: this.now() + 30_000, startedAt: this.now() };
     this.save(this.state);
     return this.progress();
+  }
+
+  pause() {
+    if (this.state.campaign?.status !== 'running') throw new Error('Não há campanha em andamento.');
+    this.state.campaign.status = 'paused'; this.save(this.state); return this.progress();
+  }
+
+  resume() {
+    if (this.state.campaign?.status !== 'paused') throw new Error('Não há campanha pausada.');
+    this.state.campaign.status = 'running';
+    this.state.campaign.nextSendAt = Math.max(this.state.campaign.nextSendAt || 0, this.now() + 30_000);
+    this.save(this.state); return this.progress();
   }
 
   progress() {

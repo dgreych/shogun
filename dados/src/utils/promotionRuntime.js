@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { DATABASE_DIR } from './paths.js';
 import { PromotionQueue } from './promotionQueue.js';
-import { FIRST_PROMOTION, sendPromotionalMessage } from './promotionMessage.js';
+import { FIRST_PROMOTION, sendPromotionalMessage, promotionContent } from './promotionMessage.js';
 
 let queue;
 let socket;
@@ -43,8 +43,10 @@ export function setPromotionConnection(currentSocket, isConnected) {
     if (!polling) {
       polling = setInterval(() => {
         if (connected) void consumePromotionRequest({ file: requestFile, start: id => startPromotion(socket, id),
+          pause: () => getPromotionQueue().pause(),
+          resume: () => { const progress = getPromotionQueue().resume(); void drain(); return progress; },
           sendPreview: async recipient => {
-            const result = await socket.sendMessage(recipient + '@s.whatsapp.net', { text: FIRST_PROMOTION });
+            const result = await socket.sendMessage(recipient + '@s.whatsapp.net', promotionContent(FIRST_PROMOTION));
             if (!result?.key?.id) throw new Error('WhatsApp não confirmou o envio da mensagem.');
             return { total: 1, sent: 1, messageId: result.key.id };
           },
@@ -64,12 +66,13 @@ export function setPromotionConnection(currentSocket, isConnected) {
   }
 }
 
-export async function consumePromotionRequest({ file, start, sendProfile, sendPreview, now = Date.now }) {
+export async function consumePromotionRequest({ file, start, sendProfile, sendPreview, pause, resume, now = Date.now }) {
   if (!fs.existsSync(file)) return false;
   const request = JSON.parse(fs.readFileSync(file, 'utf8'));
   const profile = request.type === 'profile';
   const preview = request.type === 'promo-preview';
-  const validTarget = profile || preview ? /^\d{10,15}$/.test(request.recipient) && typeof (profile ? sendProfile : sendPreview) === 'function'
+  const control = request.type === 'promo-pause' ? pause : request.type === 'promo-resume' ? resume : null;
+  const validTarget = control ? typeof control === 'function' : profile || preview ? /^\d{10,15}$/.test(request.recipient) && typeof (profile ? sendProfile : sendPreview) === 'function'
     : !request.type && Number.isSafeInteger(request.messageId) && request.messageId > 0;
   if (!validTarget ||
       !Number.isFinite(request.createdAt) || now() - request.createdAt < 0 || now() - request.createdAt > 3600_000)
@@ -77,7 +80,7 @@ export async function consumePromotionRequest({ file, start, sendProfile, sendPr
   const consumed = file + '.consumed';
   fs.renameSync(file, consumed);
   try {
-    const progress = await (profile ? sendProfile(request.recipient) : preview ? sendPreview(request.recipient) : start(request.messageId));
+    const progress = await (control ? control() : profile ? sendProfile(request.recipient) : preview ? sendPreview(request.recipient) : start(request.messageId));
     fs.writeFileSync(consumed, JSON.stringify({ ...request, status: 'started', progress }), { mode: 0o600 });
     console.log(profile ? '[SHOGUN] Foto enviada em qualidade original.' : preview ? '[PROMO] Cópia enviada ao dono.' : '[PROMO] Envio autorizado iniciado: mensagem ' + request.messageId + ', ' + progress.total + ' grupos.');
     return true;
