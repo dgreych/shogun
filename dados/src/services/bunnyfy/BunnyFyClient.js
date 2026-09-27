@@ -17,6 +17,7 @@ import {
   parseMovieQuiz,
   parseSocialCard,
   parseSocialDownload,
+  parseInstagramDownload,
   parseSticker,
   parseTranscription,
   parseYouTubeDownload
@@ -680,6 +681,13 @@ class BunnyFyClient {
     });
     const result = parseSocialDownload(response.data);
     return { ...result, media: this.resolveMediaDescriptor(result.media) };
+  }
+
+  async downloadInstagram(url, { idempotencyKey = crypto.randomUUID() } = {}) {
+    if (typeof url !== 'string' || !url.trim() || url.length > 2048) throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
+    const response = await this.request(BUNNYFY_ROUTES.downloadsInstagram, { method: 'POST', json: { url: url.trim() }, idempotencyKey });
+    const result = parseInstagramDownload(response.data);
+    return { items: result.items.map(item => ({ ...item, media: this.resolveMediaDescriptor(item.media) })) };
   }
 
   async downloadFacebook(url, options) {

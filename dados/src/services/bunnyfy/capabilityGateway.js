@@ -507,6 +507,28 @@ async function transcriptionWithBunnyFy(buffer, {
   });
 }
 
+async function instagramDownloadWithBunnyFy(url, {
+  env = resolveBunnyFyRuntimeEnv(), clientFactory = createCapabilityClient,
+  legacyFallback = async () => null
+} = {}) {
+  return executeCapability({ mode: resolveCapabilityMode('BUNNYFY_INSTAGRAM_MODE', env), legacyFallback,
+    operation: async () => {
+      const client = clientFactory(env);
+      const result = await client.downloadInstagram(url);
+      const data = [];
+      let remainingBytes = 50 * 1024 * 1024;
+      for (const item of result.items) {
+        if (remainingBytes <= 0) throw new BunnyFyError('BUNNYFY_TOO_LARGE', { status: 413 });
+        const downloaded = await client.downloadMedia(item.media, { maxBytes: remainingBytes });
+        remainingBytes -= downloaded.buffer.length;
+        if (remainingBytes < 0) throw new BunnyFyError('BUNNYFY_TOO_LARGE', { status: 413 });
+        data.push({ type: item.type, buff: downloaded.buffer, mime: downloaded.mime });
+      }
+      return { ok: true, source: 'bunnyfy', data, count: data.length };
+    }
+  });
+}
+
 const SOCIAL_DOWNLOAD_MODES = {
   facebook: 'BUNNYFY_FACEBOOK_MODE',
   pinterest: 'BUNNYFY_PINTEREST_MODE',
@@ -602,6 +624,7 @@ export {
   createCapabilityClient,
   executeCapability,
   imageGenerateWithBunnyFy,
+  instagramDownloadWithBunnyFy,
   masterEnabled,
   movieQuizWithBunnyFy,
   pinterestSearchWithBunnyFy,

@@ -26,6 +26,7 @@ const BUNNYFY_ROUTES = Object.freeze({
   nexoEncounter: '/v1/games/nexo/encounter',
   transcriptions: '/v1/audio/transcriptions',
   downloadsFacebook: '/v1/downloads/facebook',
+  downloadsInstagram: '/v1/downloads/instagram',
   downloadsPinterest: '/v1/downloads/pinterest',
   searchPinterest: '/v1/search/pinterest',
   downloadsTiktok: '/v1/downloads/tiktok',
@@ -611,6 +612,18 @@ function parseTranscription(value) {
   };
 }
 
+function parseInstagramDownload(value) {
+  const data = requireObject(value, 'data');
+  if (!Array.isArray(data.items) || data.items.length < 1 || data.items.length > 20) throw new BunnyFyError('BUNNYFY_BAD_RESPONSE');
+  return { items: data.items.map(value => {
+    const item = requireObject(value, 'item');
+    const media = requireMediaDescriptor(item.media);
+    if (!['image', 'video'].includes(item.type) || typeof media.mime !== 'string' || !media.mime.startsWith(item.type + '/') ||
+        !Number.isSafeInteger(media.bytes) || media.bytes <= 0) throw new BunnyFyError('BUNNYFY_BAD_RESPONSE');
+    return { ...item, media };
+  }) };
+}
+
 function parseSocialDownload(value) {
   const data = requireObject(value, 'data');
   const media = requireMediaDescriptor(data.media);
@@ -641,6 +654,7 @@ export {
   parseMovieQuiz,
   parseSocialCard,
   parseSocialDownload,
+  parseInstagramDownload,
   parseTranscription,
   parseYouTubeDownload
 };
