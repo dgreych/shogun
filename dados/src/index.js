@@ -21690,14 +21690,16 @@ case 'setcabecalho':
 case 'setheadermenu':
   try  {
       if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <texto>\n\nExemplo: ${prefix + command} ╭┈⊰ 🌸 『 *{botName}* 』\\n┊Olá, {userName}!\\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯\n\n*Placeholders disponíveis:*\n{botName} - Nome do bot\n{userName} - Nome do usuário`);
+      if  (!q) return reply(`Uso: ${prefix + command} <texto>\n\nExemplo: ${prefix + command} ╭━╼ 🐈‍⬛ *SHOGUN*\\n┃  *#title#*\\n┃  #nome# ┆ prefixo #prefix#\\n┃\n\n*Campos disponíveis:*\n#title# — título do menu\n#nome# — nome da pessoa\n#prefix# — prefixo da conversa\n{botName} — nome do bot\n{userName} — nome da pessoa`);
     
     const currentDesign = loadMenuDesign();
     // Processa quebras de linha explícitas
     currentDesign.header = q.replace(/\\n/g, '\n');
     
       if  (saveMenuDesign(currentDesign)) {
-      await reply(`✅ Cabeçalho do menu definido com sucesso!\n\n*Preview:*\n${currentDesign.header.replace(/{botName}/g, nomebot).replace(/{userName}/g, pushname)}`);
+      const { renderShogunMenu } = await import('./menus/presentation.js');
+      const preview = renderShogunMenu({ title: 'PRÉVIA DO MENU', prefix, userName: pushname, options: currentDesign, sections: [{ title: 'COMANDOS', entries: [{ command: 'menu', description: 'Abre o menu principal.' }] }] });
+      await reply(`Cabeçalho salvo.\n\n${preview}`);
     } else {
       await reply("❌ Erro ao salvar configurações do design do menu.");
     }
@@ -21713,15 +21715,8 @@ case 'resetdesignmenu':
   try  {
       if  (!isOwner) return reply("Este comando é apenas para o meu dono");
     
-    const defaultDesign = {
-      header: `╭┈⊰ 🌸 『 *{botName}* 』\n┊Olá, {userName}!\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`,
-      menuTopBorder: "╭┈",
-      bottomBorder: "╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯",
-      menuTitleIcon: "🍧ฺꕸ▸",
-      menuItemIcon: "•.̇𖥨֗🍓⭟",
-      separatorIcon: "❁",
-      middleBorder: "┊"
-    };
+    const { createShogunMenuTheme } = await import('./menus/theme.js');
+    const defaultDesign = createShogunMenuTheme();
     
       if  (saveMenuDesign(defaultDesign)) {
       await reply("✅ Design do menu resetado para o padrão com sucesso!");

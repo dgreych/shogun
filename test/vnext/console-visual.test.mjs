@@ -16,13 +16,9 @@ test('pixel art do Shogun fecha 64 colunas em todas as 25 linhas', () => {
   const arte = renderShogun();
   assert.equal(arte.length, 25);
   assert.ok(arte.every((linha) => larguraVisual(linha) === 64));
-  assert.match(arte.join('\n'), /\u001b\[38;2;222;176;84m/); // chifres
-  assert.match(arte.join('\n'), /\u001b\[38;2;22;40;58m/); // placas em aço azulado
-  assert.match(arte.join('\n'), /\u001b\[38;2;52;88;116m/); // arestas horizontais
-  assert.match(arte.join('\n'), /\u001b\[38;2;48;7;11m/); // profundidade curta da colina
-  const fioKatana = arte.join('\n').match(/\u001b\[(?:38|48);2;72;82;94m/g) ?? [];
-  assert.ok(fioKatana.length >= 1 && fioKatana.length <= 4,
-    `katana voltou a dominar a composição: ${fioKatana.length} pixels claros`);
+  assert.match(arte.join('\n'), /\u001b\[(?:38|48);2;255;42;50m/); // olhos vermelhos
+  assert.match(arte.join('\n'), /\u001b\[(?:38|48);2;10;10;13m/); // gato preto
+  assert.doesNotMatch(arte.join('\n'), /(?:222;176;84|22;40;58|72;82;94)m/);
   const ocupacao = arte.map((linha) => semAnsi(linha).replaceAll(' ', '').length);
   const primeiraPintada = ocupacao.findIndex((total) => total > 0);
   const topoLua = ocupacao[primeiraPintada] ?? 0;
@@ -39,7 +35,7 @@ test('painel preserva estado e instrucao fora da arte', () => {
     detalhe: 'QR permanece fora desta composição',
   });
   const painel = semAnsi(painelColorido);
-  assert.match(painelColorido, /\u001b\[38;2;222;176;84m/);
+  assert.match(painelColorido, /\u001b\[38;2;206;20;26m/);
   assert.match(painelColorido, /\u001b\[38;2;104;170;126m/);
   assert.match(painel, /CONECTADO/);
   assert.match(painel, /QR permanece fora desta composição/);
@@ -65,7 +61,7 @@ test('cartoes de grupo e privado fecham a mesma largura visual', () => {
       comando: true,
       emGrupo: true,
       conteudo: '!play música para concentração 🎧 com um nome bastante comprido',
-      grupo: 'Quartel do Shogun ⚔️',
+      grupo: 'Comunidade do Shogun 🐈‍⬛',
       usuario: 'Maurício',
       horario: '18:12:30',
     },
