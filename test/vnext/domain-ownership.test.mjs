@@ -63,12 +63,12 @@ test('ownership vNext cobre toda a superfície preparada sem fallback e separa n
   const compatibilityOwned = new Set(plan.tokens);
   const owned = new Set([...nativeOwned, ...compatibilityOwned]);
 
-  assert.equal(runtime.raw.familyCount, 510);
-  assert.equal(runtime.raw.uniqueTokenCount, 1569);
+  assert.equal(runtime.raw.familyCount, 512);
+  assert.equal(runtime.raw.uniqueTokenCount, 1572);
   assert.equal(runtime.injectedFamilyCount, 14);
   assert.equal(runtime.injectedTokenCount, 30);
-  assert.equal(legacy.familyCount, 524);
-  assert.equal(legacy.uniqueTokenCount, 1599);
+  assert.equal(legacy.familyCount, 526);
+  assert.equal(legacy.uniqueTokenCount, 1602);
   assert.equal(plan.contractDrift, false);
   assert.deepEqual(plan.unresolved, []);
   assert.deepEqual(plan.crossBoundaryDuplicates, []);
