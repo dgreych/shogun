@@ -1,7 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { DATABASE_DIR } from './paths.js';
-import { PromotionQueue } from './promotionQueue.js';
+import { PromotionQueue, rankPromotionGroups } from './promotionQueue.js';
+import { resolveOperatorRecipient } from './operatorWhatsAppRecipient.js';
 import { FIRST_PROMOTION, sendPromotionalMessage, promotionContent } from './promotionMessage.js';
 
 let queue;
@@ -45,8 +46,15 @@ export function setPromotionConnection(currentSocket, isConnected) {
         if (connected) void consumePromotionRequest({ file: requestFile, start: id => startPromotion(socket, id),
           pause: () => getPromotionQueue().pause(),
           resume: () => { const progress = getPromotionQueue().resume(); void drain(); return progress; },
+          prioritize: async () => getPromotionQueue().prioritize(await socket.groupFetchAllParticipating()),
+          restart: async () => {
+            const groups = await socket.groupFetchAllParticipating();
+            getPromotionQueue().restart(rankPromotionGroups(groups).map(group => group.id));
+            return getPromotionQueue().prioritize(groups);
+          },
           sendPreview: async recipient => {
-            const result = await socket.sendMessage(recipient + '@s.whatsapp.net', promotionContent(FIRST_PROMOTION));
+            const jid = await resolveOperatorRecipient(socket, recipient);
+            const result = await socket.sendMessage(jid, promotionContent(FIRST_PROMOTION));
             if (!result?.key?.id) throw new Error('WhatsApp não confirmou o envio da mensagem.');
             return { total: 1, sent: 1, messageId: result.key.id };
           },
@@ -66,12 +74,12 @@ export function setPromotionConnection(currentSocket, isConnected) {
   }
 }
 
-export async function consumePromotionRequest({ file, start, sendProfile, sendPreview, pause, resume, now = Date.now }) {
+export async function consumePromotionRequest({ file, start, sendProfile, sendPreview, pause, resume, prioritize, restart, now = Date.now }) {
   if (!fs.existsSync(file)) return false;
   const request = JSON.parse(fs.readFileSync(file, 'utf8'));
   const profile = request.type === 'profile';
   const preview = request.type === 'promo-preview';
-  const control = request.type === 'promo-pause' ? pause : request.type === 'promo-resume' ? resume : null;
+  const control = ({ 'promo-pause': pause, 'promo-resume': resume, 'promo-prioritize': prioritize, 'promo-restart': restart })[request.type];
   const validTarget = control ? typeof control === 'function' : profile || preview ? /^\d{10,15}$/.test(request.recipient) && typeof (profile ? sendProfile : sendPreview) === 'function'
     : !request.type && Number.isSafeInteger(request.messageId) && request.messageId > 0;
   if (!validTarget ||
@@ -82,7 +90,7 @@ export async function consumePromotionRequest({ file, start, sendProfile, sendPr
   try {
     const progress = await (control ? control() : profile ? sendProfile(request.recipient) : preview ? sendPreview(request.recipient) : start(request.messageId));
     fs.writeFileSync(consumed, JSON.stringify({ ...request, status: 'started', progress }), { mode: 0o600 });
-    console.log(profile ? '[SHOGUN] Foto enviada em qualidade original.' : preview ? '[PROMO] Cópia enviada ao dono.' : '[PROMO] Envio autorizado iniciado: mensagem ' + request.messageId + ', ' + progress.total + ' grupos.');
+    console.log(profile ? '[SHOGUN] Foto enviada em qualidade original.' : preview ? '[PROMO] Cópia enviada ao dono.' : control ? '[PROMO] Campanha atualizada: ' + progress.status : '[PROMO] Envio autorizado iniciado: mensagem ' + request.messageId + ', ' + progress.total + ' grupos.');
     return true;
   } catch (error) {
     fs.writeFileSync(consumed, JSON.stringify({ ...request, status: 'failed' }), { mode: 0o600 });
@@ -92,7 +100,8 @@ export async function consumePromotionRequest({ file, start, sendProfile, sendPr
 
 export async function startPromotion(socket, messageId) {
   const groups = await socket.groupFetchAllParticipating();
-  const result = getPromotionQueue().start(messageId, Object.keys(groups || {}));
+  getPromotionQueue().start(messageId, rankPromotionGroups(groups).map(group => group.id));
+  const result = getPromotionQueue().prioritize(groups);
   setPromotionConnection(socket, true);
   return result;
 }

@@ -55,3 +55,16 @@ test('pausa preserva destinatários e retoma somente quem ainda não recebeu', a
   await restarted.queue.step(send);
   assert.deepEqual(calls, ['1@g.us', '2@g.us']); assert.equal(restarted.queue.progress().status, 'completed');
 });
+
+test('prioridade usa tamanho real dos grupos e repetição autorizada preserva as tentativas anteriores', async () => {
+  const f = fixture(); f.queue.define('Aviso'); f.queue.start(1, ['1@g.us', '2@g.us', '3@g.us']);
+  f.advance(30_000); await f.queue.step(async () => ({ key: { id: 'antigo' } })); f.queue.pause();
+  const groups = {'1@g.us':{subject:'Pequeno',size:2},'2@g.us':{subject:'Moonlight',size:200},'3@g.us':{subject:'Main Moita',size:900}};
+  f.queue.prioritize(groups); assert.deepEqual(f.queue.state.campaign.targets,['3@g.us','2@g.us','1@g.us']);
+  assert.equal(f.queue.progress().sent,1);
+  f.queue.restart(Object.keys(groups)); f.queue.prioritize(groups);
+  assert.equal(f.queue.progress().status,'paused');assert.equal(f.queue.progress().sent,0);
+  assert.equal(f.queue.state.campaign.previousAttempts[0].results['1@g.us'],'sent');
+  f.queue.resume();f.advance(1_000_000); const calls=[];
+  await f.queue.step(async group=>{calls.push(group);return {key:{id:'novo'}};});assert.deepEqual(calls,['3@g.us']);
+});

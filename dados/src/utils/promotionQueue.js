@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+export function rankPromotionGroups(groups) {
+  return Object.entries(groups || {}).filter(([id]) => /^\d+(?:-\d+)?@g\.us$/.test(id)).map(([id, group]) => ({
+    id, name: String(group?.subject || 'Grupo').replace(/[\r\n\u0000-\u001f]/g, ' ').slice(0, 100),
+    members: Math.max(Array.isArray(group?.participants) ? group.participants.length : 0, Number.isSafeInteger(Number(group?.size)) && Number(group.size) >= 0 ? Number(group.size) : 0),
+  })).sort((a, b) => b.members - a.members);
+}
+
 export class PromotionQueue {
   constructor({ file, now = Date.now, random = Math.random, save, load } = {}) {
     this.now = now;
@@ -48,6 +55,26 @@ export class PromotionQueue {
   pause() {
     if (this.state.campaign?.status !== 'running') throw new Error('Não há campanha em andamento.');
     this.state.campaign.status = 'paused'; this.save(this.state); return this.progress();
+  }
+
+  prioritize(groups) {
+    const campaign = this.state.campaign;
+    if (!campaign || !['paused', 'running'].includes(campaign.status)) throw new Error('Não há campanha para ordenar.');
+    const ranked = rankPromotionGroups(groups);
+    const sizes = new Map(ranked.map(group => [group.id, group.members]));
+    campaign.targets.sort((a, b) => (sizes.get(b) || 0) - (sizes.get(a) || 0));
+    campaign.audiences = ranked.filter(group => campaign.targets.includes(group.id));
+    this.save(this.state); return { ...this.progress(), priorities: campaign.audiences.slice(0, 5).map(({ name, members }) => ({ name, members })) };
+  }
+
+  restart(groupIds) {
+    const campaign = this.state.campaign;
+    if (campaign?.status !== 'paused' || this.busy) throw new Error('Pause a campanha antes de repetir.');
+    const targets = [...new Set(groupIds)].filter(id => /^\d+(?:-\d+)?@g\.us$/.test(id));
+    if (!targets.length) throw new Error('Nenhum grupo disponível.');
+    campaign.previousAttempts = [...(campaign.previousAttempts || []), { at: this.now(), results: { ...campaign.results } }].slice(-5);
+    campaign.results = {}; campaign.targets = targets; campaign.inFlight = null; campaign.nextSendAt = this.now() + 30_000;
+    this.save(this.state); return this.progress();
   }
 
   resume() {
