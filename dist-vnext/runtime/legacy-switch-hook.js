@@ -14,6 +14,8 @@ import { LinkCheckToolsDomainDispatchTarget } from '../tools/link-check-domain.j
 import { MiscToolsDomainDispatchTarget, } from '../tools/misc-domain.js';
 import { UtilityToolsDomainDispatchTarget, } from '../tools/utility-domain.js';
 import { CompositeVNextDispatchTarget } from './composite-dispatch.js';
+import { findCommandAccessPolicy } from '../commands/access-catalog.js';
+import { evaluateCommandAccess, commandAccessMessage, UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
 /**
  * Hook de ownership usado dentro do executor legado, imediatamente antes do
  * switch(command). Todos os gates e políticas preexistentes já executaram
@@ -25,7 +27,15 @@ export class LegacySwitchHook {
     constructor(target) {
         this.target = target;
     }
-    dispatch(command, context) {
+    async dispatch(command, context) {
+        const policy = findCommandAccessPolicy(command, { arguments: context.query });
+        if (policy) {
+            const decision = evaluateCommandAccess(policy, context.access || UNRESOLVED_COMMAND_ACCESS);
+            if (!decision.executable) {
+                await context.reply(commandAccessMessage(decision));
+                return true;
+            }
+        }
         return this.target.dispatch(command, context);
     }
 }

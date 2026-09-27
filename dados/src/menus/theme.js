@@ -1,47 +1,23 @@
-const BASE_DIVIDER = '━━━━━━━━━━━━━━━━━━━━━━━━';
-
-function normalizeBotName(value) {
-    const name = String(value || '').trim();
-    return name || 'SHOGUN';
-}
-
-/**
- * Identidade visual padrão dos menus SHOGUN.
- *
- * O tema é propositalmente sóbrio e textual para permanecer legível em qualquer
- * cliente WhatsApp. Customizações de grupo/instância são aplicadas depois e,
- * portanto, sempre têm precedência sobre estes valores.
- */
-export function createShogunMenuTheme({ botName } = {}) {
-    const instanceName = normalizeBotName(botName);
-    const label = instanceName.toLocaleUpperCase('pt-BR') === 'SHOGUN'
-        ? 'SHOGUN'
-        : `SHOGUN · ${instanceName}`;
-
+export function createShogunMenuTheme() {
     return {
         header: [
-            `┏━〔 ${label} 〕━┓`,
-            '┃ OPERADOR // #nome#',
-            '┃ PREFIXO  // #prefix#',
-            `┗${BASE_DIVIDER}`
+            '╭━━━─〔 ⛩ SHOGUN 〕─━━━',
+            '┃',
+            '┃  Usuário › #nome#',
+            '┃  Prefixo › #prefix#',
+            '┃',
         ].join('\n'),
-        menuTopBorder: '┏━',
-        bottomBorder: `┗${BASE_DIVIDER}`,
-        menuTitleIcon: '◆',
-        menuItemIcon: '├',
-        separatorIcon: '◇',
+        menuTopBorder: '┣━━〔',
+        bottomBorder: '╰━━━─〔 SHOGUN 〕─━━━━',
+        menuTitleIcon: '',
+        menuItemIcon: '  ▸ ',
+        separatorIcon: '◈',
         middleBorder: '┃',
-        separator: '│'
+        separator: '│',
     };
 }
 
-export function withShogunMenuTheme(options = {}, context = {}) {
-    const safeOptions = options && typeof options === 'object' && !Array.isArray(options)
-        ? options
-        : {};
-
-    return {
-        ...createShogunMenuTheme(context),
-        ...safeOptions
-    };
+export function withShogunMenuTheme(options = {}) {
+    const safeOptions = options && typeof options === 'object' && !Array.isArray(options) ? options : {};
+    return { ...safeOptions, ...createShogunMenuTheme() };
 }

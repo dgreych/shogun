@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
+import { evaluateCommandAccess, UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
+import { findCommandAccessPolicy } from '../commands/access-catalog.js';
+import { resolveCommandInput } from '../commands/input-resolver.js';
 const DEFAULT_MEDIA_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../dados/midias');
 function recordOf(value, description) {
     if (!value || typeof value !== 'object') {
@@ -54,7 +57,7 @@ function resolveRenderers(moduleValue) {
     const required = [
         'menu',
         'menuAlterador',
-        'menuIa',
+        'menuShogun',
         'menuLogos',
         'menubn',
         'menudown',
@@ -90,7 +93,6 @@ function resolveDatabase(moduleValue) {
 function resolveShogunRuntime(moduleValue) {
     const record = recordOf(moduleValue, 'Runtime do bot');
     return Object.freeze({
-        PERSONA_MENU_DESIGNS: recordOf(record.PERSONA_MENU_DESIGNS, 'PERSONA_MENU_DESIGNS'),
         highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime bot'),
     });
 }
@@ -190,7 +192,6 @@ export class LegacyMenuPresentationAdapter {
         const isGroup = chatId.endsWith('@g.us');
         let botName = context.botName;
         let customMediaPath = null;
-        let personaDesign = null;
         if (isGroup && modules.database.isGroupCustomizationEnabled()) {
             const custom = modules.database.getGroupCustomization(chatId);
             if (custom && typeof custom === 'object') {
@@ -202,9 +203,6 @@ export class LegacyMenuPresentationAdapter {
                     && record.customPhoto
                     && this.#fs.existsSync(record.customPhoto)) {
                     customMediaPath = record.customPhoto;
-                }
-                if (typeof record.customPersona === 'string' && record.customPersona) {
-                    personaDesign = modules.runtime.PERSONA_MENU_DESIGNS[record.customPersona] ?? null;
                 }
             }
         }
@@ -234,7 +232,11 @@ export class LegacyMenuPresentationAdapter {
             }
         }
         const mediaBuffer = this.#fs.readFileSync(mediaPath);
-        const design = modules.database.getMenuDesignWithDefaults(botName, context.pushName, context.prefix, personaDesign);
+        const design = { ...recordOf(modules.database.getMenuDesignWithDefaults(botName, context.pushName, context.prefix), 'Design dos menus'), accessFor: (command, entry) => {
+                const resolved = resolveCommandInput(command, context.rawAliases);
+                const parameters = [resolved.matchedAlias?.fixedParams, entry?.arguments].filter(Boolean).join(' ');
+                return evaluateCommandAccess(findCommandAccessPolicy(resolved.command, { domain: descriptor.id === 'menunexo' ? 'nexo' : 'legacy', arguments: parameters }), context.access || UNRESOLVED_COMMAND_ACCESS);
+            } };
         const renderer = modules.renderers[descriptor.rendererKey];
         const rawMenu = descriptor.liteModeAware
             ? await renderer(context.prefix, botName, context.pushName, context.isLiteMode, design)

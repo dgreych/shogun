@@ -41,12 +41,15 @@ function replacePatternRequired(source, pattern, replacement, description) {
 function patchRuntimeIndex(source) {
   let output = source;
 
-  output = replaceRequired(
-    output,
-    `import * as automacoesV9 from './utils/shogunRuntime.js';`,
-    `import * as automacoesV9 from './utils/shogunRuntime.js';\nimport { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';`,
-    'import do resolvedor de comandos'
-  );
+  const resolverImport = `import { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';`;
+  if (!output.includes(resolverImport)) {
+    output = replaceRequired(
+      output,
+      `import * as automacoesV9 from './utils/shogunRuntime.js';`,
+      `import * as automacoesV9 from './utils/shogunRuntime.js';\n${resolverImport}`,
+      'import do resolvedor de comandos'
+    );
+  }
 
   output = replaceRequired(
     output,

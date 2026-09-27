@@ -71,3 +71,7 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Checkouts isolados de trabalho.
+.worktrees/
+.checkpoint-state/

@@ -92,6 +92,11 @@ function fixture(seed = {}, overrides = {}) {
     removeUserFromMap() { return false; },
     ...overrides,
   };
+  context.access = overrides.access ?? Object.freeze({
+    resolved: true, isGroup: context.isGroup, isOwner: context.isOwner, isSubOwner: false,
+    isGroupAdmin: context.isOwner || context.isRealGroupAdmin,
+    isRealGroupAdmin: context.isRealGroupAdmin, isBotAdmin: context.isBotAdmin,
+  });
 
   return {
     root,

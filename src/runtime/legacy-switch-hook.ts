@@ -25,6 +25,8 @@ import {
 } from '../tools/utility-domain.js';
 import type { VNextCommandDispatchTarget } from './compatibility-dispatch.js';
 import { CompositeVNextDispatchTarget } from './composite-dispatch.js';
+import { findCommandAccessPolicy } from '../commands/access-catalog.js';
+import { evaluateCommandAccess, commandAccessMessage, UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
 
 export interface LegacySwitchOwnedTarget {
   dispatch(command: string, context: MacrotrancheExecutionContext): Promise<boolean>;
@@ -39,7 +41,15 @@ export interface LegacySwitchOwnedTarget {
 export class LegacySwitchHook {
   constructor(private readonly target: LegacySwitchOwnedTarget) {}
 
-  dispatch(command: string, context: MacrotrancheExecutionContext): Promise<boolean> {
+  async dispatch(command: string, context: MacrotrancheExecutionContext): Promise<boolean> {
+    const policy = findCommandAccessPolicy(command, { arguments: context.query });
+    if (policy) {
+      const decision = evaluateCommandAccess(policy, context.access || UNRESOLVED_COMMAND_ACCESS);
+      if (!decision.executable) {
+        await context.reply(commandAccessMessage(decision));
+        return true;
+      }
+    }
     return this.target.dispatch(command, context);
   }
 }

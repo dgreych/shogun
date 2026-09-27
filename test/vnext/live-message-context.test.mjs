@@ -14,7 +14,7 @@ const textCases = [
   ['document caption', { documentMessage: { caption: '!doc' } }, '!doc'],
   ['button', { buttonsResponseMessage: { selectedButtonId: '!menuadm' } }, '!menuadm'],
   ['list', { listResponseMessage: { singleSelectReply: { selectedRowId: '!menudown' } } }, '!menudown'],
-  ['template', { templateButtonReplyMessage: { selectedId: '!menuia' } }, '!menuia'],
+  ['template', { templateButtonReplyMessage: { selectedId: '!menushogun' } }, '!menushogun'],
   ['interactive native flow', {
     interactiveResponseMessage: {
       nativeFlowResponseMessage: { paramsJson: JSON.stringify({ id: '!menuvip' }) },
@@ -53,9 +53,10 @@ test('resolver entrega envelope completo de grupo sem acessar estado diretamente
       calls.push(['aliases', chatId]);
       return [{ alias: 'painel', command: 'menu' }];
     },
-    isOwner(sender) {
-      calls.push(['owner', sender]);
-      return true;
+    getCommandAccess(chatId, sender, isGroup) {
+      calls.push(['access', chatId, sender, isGroup]);
+      return { resolved: true, isGroup, isOwner: true, isSubOwner: false,
+        isGroupAdmin: false, isRealGroupAdmin: false, isBotAdmin: false };
     },
     isLiteMode(chatId, isGroup) {
       calls.push(['lite', chatId, isGroup]);
@@ -101,7 +102,9 @@ test('conversa privada usa remoteJid como sender', async () => {
   const port = {
     getPrefix: () => '!',
     getAliases: () => [],
-    isOwner: (sender) => sender.startsWith('5511'),
+    getCommandAccess: (_chatId, sender, isGroup) => ({ resolved: true, isGroup,
+      isOwner: sender.startsWith('5511'), isSubOwner: false,
+      isGroupAdmin: false, isRealGroupAdmin: false, isBotAdmin: false }),
     isLiteMode: () => false,
     getBotName: () => '𝖘𝖍𝖔𝖌𝖚𝖓',
   };

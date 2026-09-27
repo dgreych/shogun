@@ -1,22 +1,9 @@
+import { evaluateCommandAccess, commandAccessMessage, UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
 export async function ensureAdminAccess(context, access) {
-    if (access.group && !context.isGroup) {
-        await context.reply('Isso só pode ser usado em grupo 💔');
-        return false;
-    }
-    if (access.realAdmin) {
-        if (!context.isRealGroupAdmin) {
-            await context.reply('Comando restrito a administradores do grupo. 💔');
-            return false;
-        }
-    }
-    else if (access.admin && !context.isGroupAdmin) {
-        await context.reply('Você precisa ser adm 💔');
-        return false;
-    }
-    if (access.botAdmin && !context.isBotAdmin) {
-        await context.reply('Eu preciso ser adm para isso 💔');
-        return false;
-    }
-    return true;
+    const decision = evaluateCommandAccess({ tokens: [], groupOnly: access.group, admin: access.admin,
+        realAdmin: access.realAdmin, botAdmin: access.botAdmin, ownerOnly: false, ownerOrSub: false }, context.access || UNRESOLVED_COMMAND_ACCESS);
+    if (!decision.executable)
+        await context.reply(commandAccessMessage(decision));
+    return decision.executable;
 }
 //# sourceMappingURL=access.js.map

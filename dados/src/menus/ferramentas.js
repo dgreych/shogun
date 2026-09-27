@@ -1,91 +1,59 @@
-export default async function menuFerramentas(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    nicknameMenuTitle = "📱 GERADOR DE NOMES & IDENTIDADE",
-    captureMenuTitle = "🖼️ CAPTURAS & VISUALIZAÇÃO",
-    linkMenuTitle = "🌐 LINKS & UPLOADS",
-    securityMenuTitle = "🔒 SEGURANÇA",
-    timeMenuTitle = "🕐 TEMPO & CLIMA",
-    languageMenuTitle = "📚 DICIONÁRIO & TRADUÇÃO",
-    reminderMenuTitle = "⏰ LEMBRETES & LISTAS"
-} = {}) {
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-return `${formattedHeader}
+const sections = [
+    { title: "GERADOR DE NOMES & IDENTIDADE", optionKey: "nicknameMenuTitle", entries: [
+        {"command":"gerarnick"},
+    ] },
+    { title: "CAPTURAS & VISUALIZAÇÃO", optionKey: "captureMenuTitle", entries: [
+        {"command":"ssweb"},
+        {"command":"qrcode","arguments":"<texto>"},
+        {"command":"lerqr","arguments":"(responda imagem)"},
+    ] },
+    { title: "CALCULADORA", entries: [
+        {"command":"calc","arguments":"<expressão>"},
+        {"command":"calc","arguments":"converter <valor> <de> <para>"},
+    ] },
+    { title: "HORÓSCOPO & MISTICISMO", entries: [
+        {"command":"horoscopo","arguments":"<signo>"},
+        {"command":"signos"},
+    ] },
+    { title: "NOTAS PESSOAIS", entries: [
+        {"command":"nota","arguments":"add <texto>"},
+        {"command":"notas"},
+        {"command":"nota","arguments":"ver <id>"},
+        {"command":"nota","arguments":"del <id>"},
+        {"command":"nota","arguments":"fixar <id>"},
+        {"command":"nota","arguments":"buscar <termo>"},
+    ] },
+    { title: "LINKS & UPLOADS", optionKey: "linkMenuTitle", entries: [
+        {"command":"encurtalink"},
+        {"command":"upload"},
+    ] },
+    { title: "SEGURANÇA", optionKey: "securityMenuTitle", entries: [
+        {"command":"verificar","arguments":"<link>"},
+    ] },
+    { title: "TEMPO & CLIMA", optionKey: "timeMenuTitle", entries: [
+        {"command":"hora","arguments":"<cidade/país>"},
+        {"command":"clima","arguments":"<cidade>"},
+    ] },
+    { title: "DICIONÁRIO & TRADUÇÃO", optionKey: "languageMenuTitle", entries: [
+        {"command":"dicionario"},
+        {"command":"tradutor"},
+    ] },
+    { title: "LEMBRETES & LISTAS", optionKey: "reminderMenuTitle", entries: [
+        {"command":"lembrete"},
+        {"command":"meuslembretes"},
+        {"command":"apagalembrete"},
+    ] },
+    { title: "OUTROS", entries: [
+        {"command":"aniversario"},
+        {"command":"estatisticas"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *${nicknameMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}gerarnick
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${captureMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}ssweb
-${middleBorder}${menuItemIcon}${prefix}qrcode <texto>
-${middleBorder}${menuItemIcon}${prefix}lerqr (responda imagem)
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🧮 CALCULADORA*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}calc <expressão>
-${middleBorder}${menuItemIcon}${prefix}calc converter <valor> <de> <para>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🔮 HORÓSCOPO & MISTICISMO*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}horoscopo <signo>
-${middleBorder}${menuItemIcon}${prefix}signos
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *📝 NOTAS PESSOAIS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}nota add <texto>
-${middleBorder}${menuItemIcon}${prefix}notas
-${middleBorder}${menuItemIcon}${prefix}nota ver <id>
-${middleBorder}${menuItemIcon}${prefix}nota del <id>
-${middleBorder}${menuItemIcon}${prefix}nota fixar <id>
-${middleBorder}${menuItemIcon}${prefix}nota buscar <termo>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${linkMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}encurtalink
-${middleBorder}${menuItemIcon}${prefix}upload
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${securityMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}verificar <link>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${timeMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}hora <cidade/país>
-${middleBorder}${menuItemIcon}${prefix}clima <cidade>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${languageMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}dicionario
-${middleBorder}${menuItemIcon}${prefix}tradutor
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${reminderMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}lembrete
-${middleBorder}${menuItemIcon}${prefix}meuslembretes
-${middleBorder}${menuItemIcon}${prefix}apagalembrete
-${middleBorder}
-${middleBorder}${menuTitleIcon} *OUTROS* ${menuTitleIcon}
-${middleBorder}${menuItemIcon}${prefix}aniversario
-${middleBorder}${menuItemIcon}${prefix}estatisticas
-${bottomBorder}
-`;
+export default async function menuFerramentas(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "FERRAMENTAS", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }

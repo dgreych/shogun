@@ -3,6 +3,7 @@ export const BUILTIN_COMMAND_ALIASES = Object.freeze({
   del: 'delete',
   deletar: 'delete',
   delete: 'delete',
+  modelos: 'modeloconversa',
 } as const);
 
 export type CommandResolutionSource = 'builtin' | 'custom' | 'direct';

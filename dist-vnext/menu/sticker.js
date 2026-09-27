@@ -1,30 +1,17 @@
+import { renderShogunMenu } from '../../dados/src/menus/presentation.js';
 import { STICKER_MENU_DEFINITION } from './definitions.js';
-function getStickerSections() {
+export async function renderStickerMenu(prefix, _botName = 'SHOGUN', userName = 'Usuário', options = {}) {
+    const titles = [options.createStickerMenuTitle, options.managementMenuTitle];
     const sections = STICKER_MENU_DEFINITION.sections;
-    if (!sections || sections.length !== 2) {
-        throw new Error('Definição vNext de menuSticker inválida: esperadas 2 seções.');
-    }
-    const createSection = sections[0];
-    const managementSection = sections[1];
-    if (!createSection || !managementSection) {
-        throw new Error('Definição vNext de menuSticker incompleta.');
-    }
-    return { createSection, managementSection };
-}
-export async function renderStickerMenu(prefix, botName = 'MeuBot', userName = 'Usuário', { header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`, menuTopBorder = '╭┈', bottomBorder = '╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯', menuTitleIcon = '🍧ฺꕸ▸', menuItemIcon = '•.̇𖥨֗🫟⭟', separatorIcon = '❁', middleBorder = '┊', createStickerMenuTitle, managementMenuTitle, } = {}) {
-    void menuTitleIcon;
-    const { createSection, managementSection } = getStickerSections();
-    const resolvedCreateTitle = createStickerMenuTitle ?? createSection.title;
-    const resolvedManagementTitle = managementMenuTitle ?? managementSection.title;
-    const formattedHeader = header
-        .replace(/#nome#/g, userName)
-        .replace(/#prefix#/g, prefix);
-    const createLines = createSection.entries
-        .map(({ command }) => `${middleBorder}${menuItemIcon}${prefix}${command}`)
-        .join('\n');
-    const managementLines = managementSection.entries
-        .map(({ command }) => `${middleBorder}${menuItemIcon}${prefix}${command}`)
-        .join('\n');
-    return `${formattedHeader}\n\n${menuTopBorder}${separatorIcon} *${resolvedCreateTitle}*\n${middleBorder}\n${createLines}\n${bottomBorder}\n\n${menuTopBorder}${separatorIcon} *${resolvedManagementTitle}*\n${middleBorder}\n${managementLines}\n${bottomBorder}\n`;
+    if (!sections || sections.length !== 2)
+        throw new Error('Definição de figurinhas incompleta.');
+    return renderShogunMenu({
+        title: 'FIGURINHAS', prefix, userName,
+        ...(options.accessFor ? { accessFor: options.accessFor } : {}),
+        sections: sections.map((section, index) => ({
+            title: titles[index] || section.title,
+            entries: section.entries,
+        })),
+    });
 }
 //# sourceMappingURL=sticker.js.map

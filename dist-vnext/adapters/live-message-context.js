@@ -1,3 +1,4 @@
+import { UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
 function asRecord(value) {
     return value && typeof value === 'object' ? value : undefined;
 }
@@ -77,10 +78,28 @@ function readIdentity(info) {
  */
 export async function resolveLiveCommandDispatchInput(seed, legacy, reportInteractiveParseError) {
     const identity = readIdentity(seed.message);
-    const [prefix, rawAliases, isOwner, isLiteMode, botName] = await Promise.all([
+    const resolveAccess = async () => {
+        if (!identity.chatId || !identity.sender || !legacy.getCommandAccess)
+            return UNRESOLVED_COMMAND_ACCESS;
+        try {
+            const value = await legacy.getCommandAccess(identity.chatId, identity.sender, identity.isGroup);
+            const keys = ['resolved', 'isGroup', 'isOwner', 'isSubOwner', 'isGroupAdmin', 'isRealGroupAdmin', 'isBotAdmin'];
+            if (!value || keys.some(key => typeof value[key] !== 'boolean') || value.resolved !== true || value.isGroup !== identity.isGroup) {
+                return UNRESOLVED_COMMAND_ACCESS;
+            }
+            return Object.freeze({ ...Object.fromEntries(keys.map(key => [key, value[key]])),
+                ...(typeof value.isPrimaryOwner === 'boolean' ? { isPrimaryOwner: value.isPrimaryOwner } : {}),
+                ...(Array.isArray(value.moderatorCommands) ? { moderatorCommands: Object.freeze(value.moderatorCommands.filter(token => typeof token === 'string')) } : {}),
+            });
+        }
+        catch {
+            return UNRESOLVED_COMMAND_ACCESS;
+        }
+    };
+    const [prefix, rawAliases, access, isLiteMode, botName] = await Promise.all([
         legacy.getPrefix(identity.chatId, identity.isGroup),
         legacy.getAliases(identity.chatId),
-        legacy.isOwner(identity.sender),
+        resolveAccess(),
         legacy.isLiteMode(identity.chatId, identity.isGroup),
         legacy.getBotName(),
     ]);
@@ -95,7 +114,8 @@ export async function resolveLiveCommandDispatchInput(seed, legacy, reportIntera
         prefix: String(prefix || ''),
         botName: String(botName || ''),
         pushName: identity.pushName,
-        isOwner: Boolean(isOwner),
+        access,
+        isOwner: access.isOwner,
         isLiteMode: Boolean(isLiteMode),
         chatId: identity.chatId,
         sender: identity.sender,

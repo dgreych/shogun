@@ -400,7 +400,7 @@ function fuzzySimilarity(word1, word2) {
  * @param {string} prefix - Prefixo do bot (ex: "!")
  * @returns {object} - Objeto com comando similar e porcentagem
  */
-function Commands(targetWord, prefix = '.') {
+function Commands(targetWord, prefix = '.', accessFor = () => ({ visible: false })) {
   try {
     const fileContent = fs.readFileSync(__dirname + '/index.js', "utf8")
     const commandsRegex = /case\s+['"](.+?)['"]/g;
@@ -410,6 +410,7 @@ function Commands(targetWord, prefix = '.') {
     
     while ((match = commandsRegex.exec(fileContent)) !== null) {
       const extractedCommand = match[1];
+      if (!accessFor(extractedCommand)?.visible) continue;
       const similarity = fuzzySimilarity(targetWord, extractedCommand)
       if (similarity > highestSimilarity && extractedCommand !== targetWord) {
         highestSimilarity = similarity;
@@ -437,7 +438,7 @@ function Commands(targetWord, prefix = '.') {
  * Conta o total de comandos disponíveis no bot
  * @returns {number} - Total de comandos encontrados
  */
-function getTotalCommands() {
+function getTotalCommands(accessFor = () => ({ visible: false })) {
   try {
     const fileContent = fs.readFileSync(__dirname + '/index.js', "utf8")
     const commandsRegex = /case\s+['"](.+?)['"]/g;
@@ -445,6 +446,7 @@ function getTotalCommands() {
     let match;
     
     while ((match = commandsRegex.exec(fileContent)) !== null) {
+      if (!accessFor(match[1])?.visible) continue;
       count++;
     }
     return count;
@@ -460,7 +462,7 @@ function getTotalCommands() {
  * @param {number} limit - Quantidade de sugestões (padrão: 3)
  * @returns {array} - Array de objetos com comandos e similaridades
  */
-function getTopSimilarCommands(target, limit = 3) {
+function getTopSimilarCommands(target, limit = 3, accessFor = () => ({ visible: false })) {
   try {
     const fileContent = fs.readFileSync(__dirname + '/index.js', "utf8");
     const commandsRegex = /case\s+['"](.+?)['"]/g;
@@ -469,6 +471,7 @@ function getTopSimilarCommands(target, limit = 3) {
     
     while ((match = commandsRegex.exec(fileContent)) !== null) {
       const extractedCommand = match[1];
+      if (!accessFor(extractedCommand)?.visible) continue;
       const similarity = fuzzySimilarity(target, extractedCommand);
       if (similarity > 30 && extractedCommand !== target) {
         similarities.push({ command: extractedCommand, similarity });
@@ -503,7 +506,7 @@ function getValidCommandSet() {
 }
 
 const COMMAND_EMOJI_OVERRIDES = {
-  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menuia: '📜', menurpg: '📜', menunexo: '📜',
+  menu: '📜', menuadm: '📜', menudown: '📜', menufig: '📜', menubn: '📜', menushogun: '📜', menurpg: '📜', menunexo: '📜',
   criador: '👑', ping: '🏓',
   play: '🎵', ytmp3: '🎵', playvid: '🎥', ytmp4: '🎥',
   tiktok: '📱', tiktokaudio: '📱', tiktokvideo: '📱', tiktoks: '📱', tiktoksearch: '📱', ttk: '📱', tkk: '📱',
@@ -519,7 +522,7 @@ const COMMAND_EMOJI_OVERRIDES = {
   prefixo: '🔧', prefix: '🔧',
   numerodono: '👤', 'numero-dono': '👤', nomedono: '👤', 'nome-dono': '👤',
   nomebot: '🤖', botname: '🤖', 'nome-bot': '🤖',
-  setnvidia: '🔑', modeloia: '🧠', 'modelo-ia': '🧠',
+  setnvidia: '🔑', modeloconversa: '🧠', 'modeloshogun': '🧠',
   prompts: '🪨', menuprompt: '🪨', promptmenu: '🪨', setprompt: '🪨', verprompt: '🪨', resetprompt: '🪨',
   adddono: '➕', deldono: '➖', remdono: '➖', listdonos: '👑', donos: '👑',
   setmidia: '🖼️', menumidia: '🖼️', listmidias: '🖼️', delmidia: '🗑️', remmidia: '🗑️',
@@ -1435,7 +1438,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     menuMembros,
     menuFerramentas,
     menuSticker,
-    menuIa,
+    menuShogun,
     menuAlterador,
     menuLogos,
     menuTopCmd,
@@ -1561,33 +1564,14 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     const isGroup = from?.endsWith('@g.us') || false;
     if (!info.key.participant && !info.key.remoteJid) return;
     let sender;
-    if (isGroup) {
-      // Prioriza participant, depois busca por LID, com fallback para JID
-      sender = info.key.participant || info.message?.participant;
-      
-      if (!sender) {
-    const participants = Object.keys(info.key).filter(k => k.startsWith("participant")).map(k => info.key[k]).filter(Boolean);
-    if  (participants.length) {
-    sender = participants.find(p => p.includes("@lid")) || participants.find(p => p.includes("@s.whatsapp.net")) || participants[0];
-    }
-      }
-      
-      // Se ainda não encontrou, tenta extrair do contextInfo
-      if (!sender && info.message?.extendedTextMessage?.contextInfo?.participant) {
-    sender = info.message.extendedTextMessage.contextInfo.participant;
-      }
-      
-      // Se for JID, converte para LID usando cache
-      if (sender && isValidJid(sender)) {
-    sender = await getLidFromJidCached(nazu, sender);
-      }
-    } else {
-      sender = info.key.remoteJid;
-      
-      // Se for JID no PV, converte para LID usando cache
-      if (sender && isValidJid(sender)) {
-    sender = await getLidFromJidCached(nazu, sender);
-      }
+    const senderCandidates = isGroup
+      ? [info.key.participant, info.key.participantAlt]
+      : [info.key.remoteJid];
+    // Quem foi citado não ganha o crachá de quem mandou a mensagem.
+    sender = senderCandidates.find(value => typeof value === 'string'
+      && /^\d+(?::\d+)?@(s\.whatsapp\.net|lid)$/.test(value));
+    if (sender && isValidJid(sender)) {
+      sender = await getLidFromJidCached(nazu, sender);
     }
     
     // Debug: log do sender identificado
@@ -1603,7 +1587,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     const isStatus = from?.endsWith('@broadcast') || false;
     const nmrdn = buildUserId(numerodono, config);
     const subDonoList = loadSubdonos();
-    const isSubOwner = isSubdono(sender);
+    const isSubOwner = isSubdono(sender) && !automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe);
     const ownerJid = `${numerodono}@s.whatsapp.net`;
     const botId = getBotId(nazu);
     const isBotSender = sender === botId || sender === nazu.user?.id?.split(':')[0] + '@s.whatsapp.net' || sender === nazu.user?.id?.split(':')[0] + '@lid';
@@ -2377,8 +2361,8 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       // Usa a função idsMatch para comparação robusta
       const isAdminMatch = idInArray(sender, groupAdmins);
       
-      isRealGroupAdmin = isAdminMatch || isOwner;
-      isGroupAdmin = isRealGroupAdmin || isModeratorActionAllowed;
+      isRealGroupAdmin = isAdminMatch;
+      isGroupAdmin = isRealGroupAdmin || isOwner || isModeratorActionAllowed;
       
       // Debug: log das verificações de admin
       debugLog('Verificação de admin:', { 
@@ -2423,7 +2407,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
         memberIds,
         adminIds,
         superAdminIds,
-        ownerIds: [nmrdn, ownerJid, lidowner].filter(Boolean),
+        ownerIds: [nmrdn, ownerJid, lidowner, ...automacoesV9.getPrimaryOwners()].filter(Boolean),
         botIds: [botNumber, botNumberLid, nazu.user?.id, nazu.user?.lid].filter(Boolean),
         matcher: idsMatch
       });
@@ -6241,7 +6225,7 @@ case 'resetrpg':
       mencionado: (menc_jid2 && menc_jid2[0]) || null,
       membrosDoGrupo: AllgroupMembers || [],
       consultaBruta: q || '',
-      permissaoReset: { isOwner, isSubOwner, remetente: sender, donoPrincipal: nmrdn, enviadoPeloBot: isBotSender },
+      permissaoReset: { isOwner, isSubOwner, remetente: sender, donoPrincipal: automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe) ? sender : nmrdn, enviadoPeloBot: isBotSender },
       parAtivo: relationshipManager?.getActivePairForUser?.(sender) || null,
       capacidadeBanco: bankCapacity,
     },
@@ -6292,7 +6276,7 @@ case 'resetrpg':
     const mentioned = (menc_jid2 && menc_jid2[0]) || (q.includes('@') ? q.split(' ')[0].replace('@','') : null);
 
     if  (sub === 'resetrpg') {
-      if  (!(isOwner && !isSubOwner && (sender === nmrdn || isBotSender))) return reply('Apenas o Dono principal pode resetar usuários.');
+      if  (!(isOwner && !isSubOwner && (automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe) || isBotSender))) return reply('Apenas o Dono principal pode resetar usuários.');
     const target = (menc_jid2 && menc_jid2[0]) || null;
     const scope = (q||'').toLowerCase();
       if  (scope.includes('all') || scope.includes('todos')) {
@@ -19725,7 +19709,7 @@ case 'commands':
       mediaBuffer = fs.readFileSync(mediaPath);
     }
 
-    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign);
+    const customDesign = { ...getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign), accessFor: __commandAccessFor };
     const menuText = automacoesV9.highlightMenuCommands(await menu(prefix, customBotName, pushname, customDesign), prefix);
     const lerMaisPrefix = getMenuLerMaisText();
     
@@ -19781,7 +19765,7 @@ case 'commands':
         JSON.stringify({ ts: new Date().toISOString(), marca: 'MENU_PRINCIPAL_ERRO', erro: String(error && error.stack || error) }) + '\n'
       );
     } catch {}
-    const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
+    const customDesign = { ...getMenuDesignWithDefaults(nomebot, pushname, prefix), accessFor: __commandAccessFor };
     const menuText = await menu(prefix, nomebot, pushname, customDesign);
     await reply(`${menuText}\n\n⚠️ *Nota*: Ocorreu um erro ao carregar a mídia do menu.`);
     }
@@ -19800,14 +19784,12 @@ case 'changers':
     }
        break;
        
-case 'menuia':
-case 'aimenu':
-case 'menuias':
+case 'menushogun':
   try  {
-    await sendMenuWithMedia('ia', menuIa);
+    await sendMenuWithMedia('shogun', menuShogun);
     } catch (error) {
-    console.error('Erro ao enviar menu de IA:', error);
-    await reply("❌ Ocorreu um erro ao carregar o menu de IA");
+    console.error('Erro ao enviar menu do Shogun:', error);
+    await reply("❌ Ocorreu um erro ao carregar o menu do Shogun");
     }
        break;
        
@@ -19826,7 +19808,7 @@ case 'menubrincadeira':
 case 'menubrincadeiras':
 case 'gamemenu':
   try  {
-    const customDesign = getMenuDesignWithDefaults(nomebot, pushname, prefix);
+    const customDesign = { ...getMenuDesignWithDefaults(nomebot, pushname, prefix), accessFor: __commandAccessFor };
     let menuContent = await menubn(prefix, nomebot, pushname, isModoLite, customDesign);
     await sendMenuWithMedia('brincadeiras', async () => menuContent);
     } catch (error) {
@@ -20686,7 +20668,8 @@ case 'menufig':
     }
 
     // Obtém o design personalizado do menu
-    const customDesign = getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign);
+    const customDesign = { ...getMenuDesignWithDefaults(customBotName, pushname, prefix, customPersonaDesign),
+      accessFor: (token, entry) => __commandAccessFor(token, { ...entry, domain: menuType === 'menunexo' ? 'nexo' : 'legacy' }) };
     
     // Aplica o design personalizado ao menu
     const menuTextRaw = typeof menuFunction === 'function' ?
@@ -21428,14 +21411,14 @@ case 'setnvidia':
       if  (!isOwner) return reply("Este comando é exclusivo para o meu dono!");
     const accountUrl = resolveBunnyFyAccountUrl(process.env.BUNNYFY_ACCOUNT_URL);
     const plansLine = accountUrl ? `\n\nPlanos e chaves: ${accountUrl}` : '';
-    await reply(`🐰 *BunnyFy*\n\nCredenciais de IA não podem mais ser enviadas pelo WhatsApp. O acesso é configurado no ambiente privado da BunnyFy.${plansLine}`);
+    await reply(`🐰 *BunnyFy*\n\nCredenciais de conversa não podem mais ser enviadas pelo WhatsApp. O acesso é configurado no ambiente privado da BunnyFy.${plansLine}`);
     } catch (e) {
     console.error(e);
     await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes, por favor! 🥺");
     }
        break;
-case 'modeloia':
-case 'modelo-ia':
+case 'modeloconversa':
+case 'modeloshogun':
   try  {
       if  (!isOwner && (!isGroup || !isRealGroupAdmin)) return reply("Este comando é restrito ao dono ou a administradores reais do grupo!");
     let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
@@ -21446,7 +21429,7 @@ case 'modelo-ia':
       const catalogLines = NVIDIA_MODEL_CATALOG
         .map((entry, index) => `│ ${index + 1}. ${entry.label}${entry.id === currentModelId ? ' ✅' : ''}\n│    ${entry.description}`)
         .join('\n│\n');
-      return reply(`╭━━━⊱ 🧠 *MODELO DA IA* 🧠 ⊱━━━╮\n│\n│ Modelo atual: ${currentEntry ? currentEntry.label : currentModelId}\n│\n${catalogLines}\n│\n│ Para trocar: ${prefix}${command} <número ou id>\n│ Exemplo: ${prefix}${command} 2\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯`);
+      return reply(`╭━━━⊱ 🧠 *CONVERSA DO SHOGUN* 🧠 ⊱━━━╮\n│\n│ Modelo atual: ${currentEntry ? currentEntry.label : currentModelId}\n│\n${catalogLines}\n│\n│ Para trocar: ${prefix}${command} <número ou id>\n│ Exemplo: ${prefix}${command} 2\n╰━━━━━━━━━━━━━━━━━━━━━━━━╯`);
     }
     const trimmedChoice = q.trim();
     const byIndex = /^[1-9]\d*$/.test(trimmedChoice) ? NVIDIA_MODEL_CATALOG[Number(trimmedChoice) - 1] : null;
@@ -21459,7 +21442,7 @@ case 'modelo-ia':
       config.nvidia_model = chosenEntry.id;
       writeJsonFile(CONFIG_FILE, config);
     }
-    await reply(`✅ Modelo da IA ${isGroup ? 'deste grupo' : 'padrão'} alterado para *${chosenEntry.label}*!`);
+    await reply(`✅ Modelo de conversa ${isGroup ? 'deste grupo' : 'padrão'} alterado para *${chosenEntry.label}*!`);
     } catch (e) {
     console.error(e);
     await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes, por favor! 🥺");
@@ -23369,13 +23352,14 @@ case 'comandosmaisusados':
       console.warn('[COMMANDSTATS] getMostUsedCommands not available');
       return reply("Sistema de estatísticas temporariamente indisponível.");
     }
-    const topCommands = await commandStats.getMostUsedCommands(10);
+    const topCommands = (await commandStats.getMostUsedCommands(Infinity))
+      .filter(entry => __commandAccessFor(entry.name).visible).slice(0, 10);
     const menuVideoPath = __dirname + '/../midias/menu.mp4';
     const menuImagePath = __dirname + '/../midias/menu.jpg';
     const useVideo = fs.existsSync(menuVideoPath);
     const mediaPath = useVideo ? menuVideoPath : menuImagePath;
     const mediaBuffer = fs.readFileSync(mediaPath);
-    const menuText = await menuTopCmd(prefix, nomebot, pushname, topCommands);
+    const menuText = await menuTopCmd(prefix, nomebot, pushname, topCommands, { accessFor: __commandAccessFor });
     await nazu.sendMessage(from, {
       [useVideo ? 'video' : 'image']: mediaBuffer,
       caption: menuText,
@@ -23394,6 +23378,7 @@ case 'comandoinfo':
   try  {
       if  (!q) return reply(`📊 *Estatísticas de Comandos*\n\n📝 *Como usar:*\n• Especifique o comando após o comando\n• Ex: ${prefix}cmdinfo menu\n• Ex: ${prefix}cmdinfo ping\n\n📈 Visualize estatísticas detalhadas de uso do comando!`);
     const cmdName = q.startsWith(prefix) ? q.slice(prefix.length) : q;
+    if (!__commandAccessFor(cmdName).visible) return reply('Esse comando não está disponível para você.');
       if  (!commandStats || typeof commandStats.getCommandStats !== 'function') {
       console.warn('[COMMANDSTATS] getCommandStats not available');
       return reply("Sistema de estatísticas temporariamente indisponível.");
@@ -31564,10 +31549,10 @@ case 'rentalclean':
     const userName = pushname || getUserName(sender);
     const commandName = command || body.trim().slice(groupPrefix.length).split(/ +/).shift().trim();
     
-    const similarCommand = Commands(commandName, groupPrefix);
-    const totalCommands = getTotalCommands();
+    const similarCommand = Commands(commandName, groupPrefix, __commandAccessFor);
+    const totalCommands = getTotalCommands(__commandAccessFor);
     
-    const topSimilar = getTopSimilarCommands(commandName);
+    const topSimilar = getTopSimilarCommands(commandName, 3, __commandAccessFor);
    
     let notFoundMessage = `📊 *Total de comandos:* ${totalCommands}\n\n`;
     

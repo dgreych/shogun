@@ -255,7 +255,9 @@ function sanitizePublicState() {
     numerodono: '55DDDNUMERO',
     nomebot: 'SHOGUN',
     prefixo: '!',
-    lidowner: ''
+    lidowner: '',
+    site_vex: 'https://vexapi.com.br',
+    apikey_vex: 'COLOQUE_SUA_CHAVE_VEX'
   }, null, 2) + '\n');
 }
 

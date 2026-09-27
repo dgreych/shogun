@@ -35,9 +35,9 @@ test('ownership global acompanha o cutover Members sem fallback ou ownership mis
   const deltaTokens = members.state === 'active' ? 152 : 0;
 
   assert.equal(plan.ownership.nativeFamilies, 99 + deltaFamilies);
-  assert.equal(plan.ownership.nativeTokens, 559 + deltaTokens);
+  assert.equal(plan.ownership.nativeTokens, 557 + deltaTokens);
   assert.equal(plan.ownership.compatibilityFamilies, 429 - deltaFamilies);
   assert.equal(plan.ownership.compatibilityTokens, 1051 - deltaTokens);
   assert.equal(plan.ownership.nativeFamilies + plan.ownership.compatibilityFamilies, 528);
-  assert.equal(plan.ownership.nativeTokens + plan.ownership.compatibilityTokens, 1610);
+  assert.equal(plan.ownership.nativeTokens + plan.ownership.compatibilityTokens, 1608);
 });

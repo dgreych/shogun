@@ -33,13 +33,56 @@ export function toggleAutoTranscription(chatId) {
   return data.autoTranscriptionGroups[chatId];
 }
 
+export async function transcribeAudioUrl(audioUrl) {
+  const config = getConfig();
+  const site = String(config.site_vex || '').replace(/\/$/, '');
+  const apiKey = String(config.apikey_vex || '').trim();
+
+  if (!site || !apiKey || apiKey.startsWith('COLOQUE_')) {
+    return { ok: false, msg: 'Configure site_vex e apikey_vex em dados/src/config.json.' };
+  }
+  if (!audioUrl) return { ok: false, msg: 'Não foi possível gerar o link temporário do áudio.' };
+
+  try {
+    // O axios manda "Accept: application/json, text/plain, */*" por padrão, e
+    // como isso contém "application/json", ainda aciona o bug do roteador da Vex
+    // (devolve a documentação em vez do resultado). Precisa sobrescrever pra */*.
+    const url = `${site}/api/ias/transcrever?apikey=${encodeURIComponent(apiKey)}&query=${encodeURIComponent(audioUrl)}`;
+    const response = await axios.get(url, {
+      headers: { Accept: '*/*', 'User-Agent': 'Node.js' },
+      timeout: 120000
+    });
+    const data = response.data;
+    const text = data?.resultado?.data?.texto
+      || data?.resultado?.texto
+      || data?.data?.texto
+      || data?.data?.text
+      || data?.texto
+      || data?.text
+      || data?.resposta
+      || data?.result;
+
+    if (!text) {
+      return { ok: false, msg: data?.message || data?.msg || 'A API não retornou uma transcrição.' };
+    }
+    return { ok: true, texto: String(text).trim(), source: 'vex' };
+  } catch (error) {
+    return {
+      ok: false,
+      msg: error?.response?.data?.message
+        || error?.response?.data?.msg
+        || error?.response?.data?.detail
+        || error.message
+    };
+  }
+}
 
 /**
  * Transcreve áudio priorizando a BunnyFy (upload nativo do buffer + whisper
- * próprio). Só cai na serviço legado (`transcribeAudioUrl`) quando o modo da capacidade
+ * próprio). Só cai na Vex (`transcribeAudioUrl`) quando o modo da capacidade
  * é 'primary' e o erro é transitório (rede/timeout/5xx) — controlado por
  * BUNNYFY_TRANSCRIPTION_MODE. `uploadForFallback` é chamado sob demanda,
- * assim o upload pro storage externo da serviço legado só acontece se for realmente
+ * assim o upload pro storage externo da Vex só acontece se for realmente
  * necessário, não em todo áudio.
  */
 export async function transcribeAudio(buffer, { mime = 'audio/ogg', language, uploadForFallback } = {}) {
@@ -47,7 +90,13 @@ export async function transcribeAudio(buffer, { mime = 'audio/ogg', language, up
     return await transcriptionWithBunnyFy(buffer, {
       mime,
       language,
-      legacyFallback: async () => ({ ok: false, code: 'BUNNYFY_DISABLED', msg: 'A transcrição requer BunnyFy configurada nesta instância.' }),
+      legacyFallback: async () => {
+        if (typeof uploadForFallback !== 'function') {
+          return { ok: false, msg: 'Não foi possível gerar o link temporário do áudio.' };
+        }
+        const audioUrl = await uploadForFallback();
+        return transcribeAudioUrl(audioUrl);
+      }
     });
   } catch (error) {
     return { ok: false, msg: error?.message || 'Não foi possível transcrever o áudio agora.' };

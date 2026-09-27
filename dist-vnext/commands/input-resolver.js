@@ -3,6 +3,7 @@ export const BUILTIN_COMMAND_ALIASES = Object.freeze({
     del: 'delete',
     deletar: 'delete',
     delete: 'delete',
+    modelos: 'modeloconversa',
 });
 function normalizeLegacyText(value) {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

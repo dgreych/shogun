@@ -1,33 +1,13 @@
 import axios from 'axios';
 
 export const NVIDIA_CHAT_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
-export const DEFAULT_NVIDIA_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
+export const DEFAULT_NVIDIA_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b';
 
 export const NVIDIA_MODEL_CATALOG = Object.freeze([
   Object.freeze({
-    id: 'nvidia/nemotron-3-super-120b-a12b',
-    label: 'Nemotron 3 Super 120B',
-    description: 'Modelo NVIDIA de alta capacidade para uso geral e raciocínio. Padrão do SHOGUN.'
-  }),
-  Object.freeze({
-    id: 'nvidia/nemotron-3.5-lightning-30b-a3b',
-    label: 'Nemotron 3.5 Lightning 30B',
-    description: 'Resposta rápida da linha NVIDIA para conversa do dia a dia.'
-  }),
-  Object.freeze({
-    id: 'openai/gpt-oss-120b',
-    label: 'GPT-OSS 120B',
-    description: 'Modelo aberto da OpenAI de alta capacidade, bom para tarefas complexas.'
-  }),
-  Object.freeze({
-    id: 'openai/gpt-oss-20b',
-    label: 'GPT-OSS 20B',
-    description: 'Versão mais leve e rápida do GPT-OSS para respostas diretas.'
-  }),
-  Object.freeze({
-    id: 'moonshotai/kimi-k3',
-    label: 'Kimi K3',
-    description: 'Boa opção para raciocínio, contexto amplo e respostas estruturadas.'
+    id: 'minimaxai/minimax-m2.1',
+    label: 'MiniMax M2.1',
+    description: 'Modelo geral rápido para conversa, síntese e tarefas cotidianas.'
   }),
   Object.freeze({
     id: 'minimaxai/minimax-m3',
@@ -35,24 +15,44 @@ export const NVIDIA_MODEL_CATALOG = Object.freeze([
     description: 'Geração geral mais recente da família MiniMax disponível no pool.'
   }),
   Object.freeze({
-    id: 'mistralai/mistral-nemotron',
-    label: 'Mistral Nemotron',
-    description: 'Combinação Mistral/NVIDIA equilibrada entre velocidade e qualidade.'
+    id: 'moonshotai/kimi-k2.5',
+    label: 'Kimi K2.5',
+    description: 'Boa opção para raciocínio, contexto amplo e respostas estruturadas.'
   }),
   Object.freeze({
-    id: 'deepseek-ai/deepseek-v4-flash-0731',
-    label: 'DeepSeek V4 Flash',
-    description: 'Alternativa rápida da DeepSeek para conversa cotidiana.'
+    id: 'qwen/qwen3.5-397b-a17b',
+    label: 'Qwen 3.5 397B A17B',
+    description: 'Modelo grande para tarefas complexas, análise e produção detalhada.'
   }),
   Object.freeze({
-    id: 'meta/llama-3.2-90b-vision-instruct',
-    label: 'Llama 3.2 90B Vision',
-    description: 'Modelo Meta de alta capacidade, também apto a descrever imagens.'
+    id: 'qwen/qwen3.5-122b-a10b',
+    label: 'Qwen 3.5 122B A10B',
+    description: 'Equilíbrio entre capacidade, velocidade e custo de inferência.'
+  }),
+  Object.freeze({
+    id: 'qwen/qwen3-next-80b-a3b-thinking',
+    label: 'Qwen3 Next 80B Thinking',
+    description: 'Perfil de raciocínio explícito para problemas que exigem mais deliberação.'
+  }),
+  Object.freeze({
+    id: 'qwen/qwen3-next-80b-a3b-instruct',
+    label: 'Qwen3 Next 80B Instruct',
+    description: 'Perfil de instrução direta para respostas mais objetivas.'
+  }),
+  Object.freeze({
+    id: 'nvidia/nemotron-3-super-120b-a12b',
+    label: 'Nemotron 3 Super 120B',
+    description: 'Modelo NVIDIA de alta capacidade para uso geral e raciocínio.'
   }),
   Object.freeze({
     id: 'nvidia/nemotron-3-ultra-550b-a55b',
     label: 'Nemotron 3 Ultra 550B',
-    description: 'Modelo mais robusto do pool. Pode responder mais devagar; mantido por último no failover.'
+    description: 'Modelo mais capaz do pool validado e padrão do SHOGUN.'
+  }),
+  Object.freeze({
+    id: 'inclusionai/ling-flash-2.0',
+    label: 'Ling Flash 2.0',
+    description: 'Alternativa de baixa latência mantida no fim do failover ordenado.'
   })
 ]);
 

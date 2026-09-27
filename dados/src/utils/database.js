@@ -1,3 +1,5 @@
+import { createShogunMenuTheme, withShogunMenuTheme } from '../menus/theme.js';
+import { sanitizeMenuDisplayName } from '../menus/presentation.js';
 import fs from 'fs';
 import pathz from 'path';
 import crypto from 'crypto';
@@ -115,15 +117,7 @@ ensureJsonFileExists(DONO_DIVULGACAO_FILE, {
   },
   createdAt: new Date().toISOString()
 });
-ensureJsonFileExists(MENU_DESIGN_FILE, {
-        header: `╭┈⊰ 🫟 『 *{botName}* 』\n┊💭 *Usuário:* {userName}\n┊👑 *Prefixo:* {prefix}\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-  menuTopBorder: "╭┈",
-  bottomBorder: "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-  menuTitleIcon: "🍧ฺꕸ▸",
-  menuItemIcon: "•.̇𖥨֗🫟⭟",
-  separatorIcon: "❁",
-  middleBorder: "┊"
-});
+ensureJsonFileExists(MENU_DESIGN_FILE, createShogunMenuTheme());
 ensureJsonFileExists(ECONOMY_FILE, {
   users: {},
   shop: {
@@ -2809,30 +2803,13 @@ const getGlobalBlacklist = () => {
 const loadMenuDesign = () => {
   try {
     if (fs.existsSync(MENU_DESIGN_FILE)) {
-      return JSON.parse(fs.readFileSync(MENU_DESIGN_FILE, 'utf-8'));
-    } else {
-      return {
-  header: `╭┈⊰ 🫟 『 *{botName}* 』\n┊💭 *Usuário:* {userName}\n┊👑 *Prefixo:* {prefix}\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-  menuTopBorder: "╭┈",
-  bottomBorder: "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-  menuTitleIcon: "🍧ฺꕸ▸",
-  menuItemIcon: "•.̇𖥨֗🫟⭟",
-  separatorIcon: "❁",
-  middleBorder: "┊"
-      };
+      const saved = JSON.parse(fs.readFileSync(MENU_DESIGN_FILE, 'utf-8'));
+      return withShogunMenuTheme(saved);
     }
   } catch (error) {
-    console.error(`❌ Erro ao carregar design do menu: ${error.message}`);
-    return {
-  header: `╭┈⊰ 🫟 『 *{botName}* 』\n┊💭 *Usuário:* {userName}\n┊👑 *Prefixo:* {prefix}\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-  menuTopBorder: "╭┈",
-  bottomBorder: "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-  menuTitleIcon: "🍧ฺꕸ▸",
-  menuItemIcon: "•.̇𖥨֗🫟⭟",
-  separatorIcon: "❁",
-  middleBorder: "┊"
-    };
+    console.error('Erro ao carregar desenho do menu:', error.message);
   }
+  return createShogunMenuTheme();
 };
 
 const saveMenuDesign = (design) => {
@@ -2847,22 +2824,15 @@ const saveMenuDesign = (design) => {
 };
 
 const getMenuDesignWithDefaults = (botName, userName, prefix, overrideDesign = null) => {
-  const design = overrideDesign || loadMenuDesign();
-
-  // Substitui os placeholders pelos valores atuais
-  const processedDesign = {};
-  for (const [key, value] of Object.entries(design)) {
-    if (typeof value === 'string') {
-      processedDesign[key] = value
-        .replace(/{botName}/g, botName)
-        .replace(/{userName}/g, userName)
-        .replace(/{prefix}/g, prefix);
-    } else {
-      processedDesign[key] = value;
-    }
-  }
-
-  return processedDesign;
+  const design = withShogunMenuTheme(overrideDesign || loadMenuDesign());
+  const displayName = sanitizeMenuDisplayName(userName);
+  return Object.fromEntries(Object.entries(design).map(([key, value]) => [key,
+    typeof value === 'string'
+      ? value.replaceAll('{botName}', 'SHOGUN')
+        .replaceAll('{userName}', displayName).replaceAll('#nome#', displayName)
+        .replaceAll('{prefix}', prefix).replaceAll('#prefix#', prefix)
+      : value
+  ]));
 };
 
 // ===== Per-User Command Limiting System =====

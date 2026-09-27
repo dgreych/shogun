@@ -47,12 +47,12 @@ export const STICKER_MENU_DEFINITION: MenuDefinition = Object.freeze({
   sections: Object.freeze([
     Object.freeze({
       id: 'create',
-      title: '🎨 CRIAÇÃO DE FIGURINHAS',
+      title: 'CRIAÇÃO DE FIGURINHAS',
       entries: stickerCreationEntries,
     }),
     Object.freeze({
       id: 'management',
-      title: '⚙️ GERENCIAMENTO',
+      title: 'GERENCIAMENTO',
       entries: stickerManagementEntries,
     }),
   ]),
@@ -100,12 +100,12 @@ const downloadGamesEntries: readonly MenuEntry[] = Object.freeze([
 export const DOWNLOAD_MENU_DEFINITION: MenuDefinition = Object.freeze({
   id: 'menudown',
   sections: Object.freeze([
-    Object.freeze({ id: 'search', title: '🔍 PESQUISAS & CONSULTAS', entries: downloadSearchEntries }),
-    Object.freeze({ id: 'audio', title: '🎵 MÚSICA & ÁUDIO', entries: downloadAudioEntries }),
-    Object.freeze({ id: 'video', title: '🎬 VÍDEOS & STREAMING', entries: downloadVideoEntries }),
-    Object.freeze({ id: 'downloads', title: '📥 DOWNLOADS', entries: downloadEntries }),
-    Object.freeze({ id: 'media', title: '📱 MÍDIAS SOCIAIS', entries: downloadMediaEntries }),
-    Object.freeze({ id: 'games', title: '🎮 GAMING & APPS', entries: downloadGamesEntries }),
+    Object.freeze({ id: 'search', title: 'PESQUISAS & CONSULTAS', entries: downloadSearchEntries }),
+    Object.freeze({ id: 'audio', title: 'MÚSICA & ÁUDIO', entries: downloadAudioEntries }),
+    Object.freeze({ id: 'video', title: 'VÍDEOS & STREAMING', entries: downloadVideoEntries }),
+    Object.freeze({ id: 'downloads', title: 'DOWNLOADS', entries: downloadEntries }),
+    Object.freeze({ id: 'media', title: 'MÍDIAS SOCIAIS', entries: downloadMediaEntries }),
+    Object.freeze({ id: 'games', title: 'GAMING & APPS', entries: downloadGamesEntries }),
   ]),
 });
 

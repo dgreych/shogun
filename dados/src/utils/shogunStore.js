@@ -82,6 +82,8 @@ export function getConfig() {
   return {
     ...stored,
     nvidia_model: isKnownNvidiaModel(stored.nvidia_model) ? stored.nvidia_model : DEFAULT_NVIDIA_MODEL,
+    apikey_vex: process.env.VEX_API_KEY || stored.apikey_vex || '',
+    site_vex: process.env.VEX_SITE || stored.site_vex || '',
     upload_github_token: process.env.UPLOAD_GITHUB_TOKEN || stored.upload_github_token || '',
     upload_github_repo: process.env.UPLOAD_GITHUB_REPO || stored.upload_github_repo || 'uploadsnew/uploads'
   };

@@ -1,32 +1,31 @@
-export default async function menu(prefix, botName = "MeuBot", userName, {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊"
-} = {}) {
-    
-    let formattedHeader = header
-        .replace(/#nome#/g, userName)
-        .replace(/#prefix#/g, prefix);
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-    return `${formattedHeader}
+const sections = [
+    { title: "MÍDIA & CRIAÇÃO", entries: [
+        {"command":"menudown"},
+        {"command":"menufig"},
+        {"command":"menulogos"},
+        {"command":"alteradores"},
+    ] },
+    { title: "JOGOS & INTERAÇÕES", entries: [
+        {"command":"menubn"},
+        {"command":"menumemb"},
+        {"command":"menurpg"},
+    ] },
+    { title: "RECURSOS", entries: [
+        {"command":"ferramentas"},
+        {"command":"menunexo"},
+        {"command":"menushogun"},
+    ] },
+    { title: "ADMINISTRAÇÃO & GESTÃO", entries: [
+        {"command":"menuadm"},
+        {"command":"menudono"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} ${menuTitleIcon} *MENU PRINCIPAL*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}menuia -> Inteligencias IAs
-${middleBorder}${menuItemIcon}${prefix}menudown -> Downloads
-${middleBorder}${menuItemIcon}${prefix}menulogos -> Logos
-${middleBorder}${menuItemIcon}${prefix}menuadm -> Administração
-${middleBorder}${menuItemIcon}${prefix}menubn -> Brincadeiras
-${middleBorder}${menuItemIcon}${prefix}menudono -> Dono
-${middleBorder}${menuItemIcon}${prefix}menumemb -> Membros
-${middleBorder}${menuItemIcon}${prefix}ferramentas -> Ferramentas
-${middleBorder}${menuItemIcon}${prefix}menufig -> Figurinhas
-${middleBorder}${menuItemIcon}${prefix}alteradores -> Alteradores
-${middleBorder}${menuItemIcon}${prefix}menurpg -> RPG
-${middleBorder}${menuItemIcon}${prefix}menunexo -> NEXO
-${bottomBorder}`;
+export default async function menu(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "MENU PRINCIPAL", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }

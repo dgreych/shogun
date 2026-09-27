@@ -1,46 +1,35 @@
-export default async function menuLogos(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    Logos1txtTitle = "🎨 LOGOTIPOS 1TXT",
-    Logos2txtTitle = "🖼 LOGOTIPOS 2TXT"
-} = {}) {
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
- return `${formattedHeader}
+const sections = [
+    { title: "LOGOTIPOS 1TXT", entries: [
+        {"command":"darkgreen"},
+        {"command":"glitch"},
+        {"command":"write"},
+        {"command":"advanced"},
+        {"command":"typography"},
+        {"command":"pixel"},
+        {"command":"neon"},
+        {"command":"flag"},
+        {"command":"americanflag"},
+        {"command":"deleting"},
+    ] },
+    { title: "LOGOTIPOS 2TXT", entries: [
+        {"command":"pornhub"},
+        {"command":"avengers"},
+        {"command":"graffiti"},
+        {"command":"captainamerica"},
+        {"command":"stone3d"},
+        {"command":"neon2"},
+        {"command":"thor"},
+        {"command":"amongus"},
+        {"command":"deadpool"},
+        {"command":"blackpink"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *${Logos1txtTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}darkgreen
-${middleBorder}${menuItemIcon}${prefix}glitch
-${middleBorder}${menuItemIcon}${prefix}write
-${middleBorder}${menuItemIcon}${prefix}advanced 
-${middleBorder}${menuItemIcon}${prefix}typography
-${middleBorder}${menuItemIcon}${prefix}pixel
-${middleBorder}${menuItemIcon}${prefix}neon
-${middleBorder}${menuItemIcon}${prefix}flag
-${middleBorder}${menuItemIcon}${prefix}americanflag
-${middleBorder}${menuItemIcon}${prefix}deleting
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${Logos2txtTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}pornhub
-${middleBorder}${menuItemIcon}${prefix}avengers
-${middleBorder}${menuItemIcon}${prefix}graffiti
-${middleBorder}${menuItemIcon}${prefix}captainamerica
-${middleBorder}${menuItemIcon}${prefix}stone3d
-${middleBorder}${menuItemIcon}${prefix}neon2
-${middleBorder}${menuItemIcon}${prefix}thor
-${middleBorder}${menuItemIcon}${prefix}amongus
-${middleBorder}${menuItemIcon}${prefix}deadpool
-${middleBorder}${menuItemIcon}${prefix}blackpink
-${bottomBorder}`;
+export default async function menuLogos(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "LOGOS", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }

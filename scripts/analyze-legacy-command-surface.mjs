@@ -18,6 +18,7 @@ export const LEGACY_DUPLICATE_BASELINE = Object.freeze([
   'slots',
   'vender',
   'inventario',
+  'sairgp', // Já duplicado na produção incorporada em 26/09; o primeiro case continua valendo.
 ]);
 
 function isIdentifierPart(char) {

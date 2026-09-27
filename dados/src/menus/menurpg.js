@@ -1,273 +1,206 @@
-export default async function menurpg(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    profileMenuTitle = "👤 PERFIL & STATUS",
-    economyMenuTitle = "💰 ECONOMIA & FINANÇAS",
-    activitiesMenuTitle = "🎯 ATIVIDADES DIÁRIAS",
-    adventureMenuTitle = "🗺️ AVENTURA & EXPLORAÇÃO",
-    combatMenuTitle = "⚔️ COMBATE & BATALHAS",
-    craftingMenuTitle = "🔨 CRAFTING & EQUIPAMENTOS",
-    socialMenuTitle = "💝 SOCIAL & INTERAÇÕES",
-    familyMenuTitle = "👨‍👩‍👧‍👦 FAMÍLIA & ADOÇÃO",
-    guildMenuTitle = "🏰 CLÃ & COMUNIDADE",
-    questMenuTitle = "📜 MISSÕES & CONQUISTAS",
-    petsMenuTitle = "🐾 PETS & COMPANHEIROS",
-    reputationMenuTitle = "⭐ REPUTAÇÃO & FAMA",
-    investmentMenuTitle = "📈 INVESTIMENTOS & BOLSA",
-    gamblingMenuTitle = "🎰 CASSINO & APOSTAS",
-    evolutionMenuTitle = "🌟 EVOLUÇÃO & PRESTIGE",
-    eventsMenuTitle = "🎉 EVENTOS",
-    premiumMenuTitle = "💎 LOJA PREMIUM",
-    adminMenuTitle = "🔧 ADMIN RPG (DONO)"
-} = {}) {
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-  let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
- return `${formattedHeader} 
+const sections = [
+    { title: "PERFIL & STATUS", optionKey: "profileMenuTitle", entries: [
+        {"command":"perfilrpg"},
+        {"command":"carteira"},
+        {"command":"toprpg"},
+        {"command":"rankglobal"},
+        {"command":"ranklvl"},
+        {"command":"inv"},
+        {"command":"equipamentos"},
+        {"command":"conquistas"},
+    ] },
+    { title: "EVOLUÇÃO & PRESTIGE", optionKey: "evolutionMenuTitle", entries: [
+        {"command":"evoluir"},
+        {"command":"prestige"},
+        {"command":"streak"},
+        {"command":"reivindicar"},
+        {"command":"speedup"},
+    ] },
+    { title: "ECONOMIA & FINANÇAS", optionKey: "economyMenuTitle", entries: [
+        {"command":"dep","arguments":"<valor|all>"},
+        {"command":"sacar","arguments":"<valor|all>"},
+        {"command":"pix","arguments":"@user <valor>"},
+        {"command":"loja"},
+        {"command":"comprar","arguments":"<item>"},
+        {"command":"vender","arguments":"<item> <qtd>"},
+        {"command":"vagas"},
+        {"command":"emprego","arguments":"<vaga>"},
+        {"command":"demitir"},
+        {"command":"habilidades"},
+        {"command":"desafiosemanal"},
+        {"command":"desafiomensal"},
+    ] },
+    { title: "INVESTIMENTOS & BOLSA", optionKey: "investmentMenuTitle", entries: [
+        {"command":"investir"},
+        {"command":"investir","arguments":"<ação> <qtd>"},
+        {"command":"sell","arguments":"<ação> <qtd>"},
+    ] },
+    { title: "CASSINO & APOSTAS", optionKey: "gamblingMenuTitle", entries: [
+        {"command":"dados","arguments":"<valor>"},
+        {"command":"coinflip","arguments":"<cara|coroa> <valor>"},
+        {"command":"crash","arguments":"<valor>"},
+        {"command":"slots","arguments":"<valor>"},
+        {"command":"apostar","arguments":"<valor>"},
+        {"command":"roleta","arguments":"<valor> <cor>"},
+        {"command":"blackjack","arguments":"<valor>"},
+        {"command":"loteria"},
+        {"command":"loteria","arguments":"comprar <qtd>"},
+        {"command":"corrida","arguments":"<valor> <cavalo>"},
+        {"command":"leilao"},
+        {"command":"topriqueza"},
+    ] },
+    { title: "ATIVIDADES DIÁRIAS", optionKey: "activitiesMenuTitle", entries: [
+        {"command":"diario"},
+        {"command":"work"},
+        {"command":"mine"},
+        {"command":"fish"},
+        {"command":"coletar"},
+        {"command":"colher"},
+        {"command":"caçar"},
+        {"command":"plantar","arguments":"<planta>"},
+        {"command":"cultivar","arguments":"<planta>"},
+        {"command":"plantacao"},
+        {"command":"cook","arguments":"<receita>"},
+        {"command":"receitas"},
+        {"command":"ingredientes"},
+        {"command":"eat","arguments":"<comida>"},
+        {"command":"vendercomida","arguments":"<item>"},
+        {"command":"sementes"},
+    ] },
+    { title: "AVENTURA & EXPLORAÇÃO", optionKey: "adventureMenuTitle", entries: [
+        {"command":"explore"},
+        {"command":"masmorra"},
+        {"command":"bossrpg"},
+        {"command":"eventos"},
+    ] },
+    { title: "DUNGEONS & RAIDS", entries: [
+        {"command":"dungeon","description":"Listar dungeons"},
+        {"command":"dungeon","arguments":"criar <tipo>"},
+        {"command":"dungeon","arguments":"entrar <id>"},
+        {"command":"dungeon","arguments":"iniciar"},
+        {"command":"dungeon","arguments":"sair"},
+    ] },
+    { title: "CLASSES & PROFISSÕES", entries: [
+        {"command":"class","description":"Ver classes"},
+        {"command":"class","arguments":"<nome>","description":"Escolher"},
+    ] },
+    { title: "HOUSING", entries: [
+        {"command":"casa","description":"Ver sua casa"},
+        {"command":"casa","arguments":"comprar <tipo>"},
+        {"command":"casa","arguments":"coletar"},
+        {"command":"casa","arguments":"decorar <item>"},
+    ] },
+    { title: "MERCADO DE JOGADORES", entries: [
+        {"command":"auction","description":"Ver itens"},
+        {"command":"auction","arguments":"vender <item> <preço>"},
+        {"command":"auction","arguments":"comprar <nº>"},
+        {"command":"auction","arguments":"meus"},
+        {"command":"auction","arguments":"cancelar <nº>"},
+    ] },
+    { title: "MERCADO GERAL", entries: [
+        {"command":"mercado"},
+        {"command":"listar","arguments":"<item> <preço>"},
+        {"command":"cmerc","arguments":"<nº>"},
+        {"command":"meusan"},
+        {"command":"cancelar","arguments":"<nº>"},
+    ] },
+    { title: "COMBATE & BATALHAS", optionKey: "combatMenuTitle", entries: [
+        {"command":"duelrpg","arguments":"@user"},
+        {"command":"arena"},
+        {"command":"torneio"},
+        {"command":"assaltar","arguments":"@user"},
+        {"command":"crime"},
+        {"command":"guerra"},
+        {"command":"desafio"},
+    ] },
+    { title: "CRAFTING & EQUIPAMENTOS", optionKey: "craftingMenuTitle", entries: [
+        {"command":"forge","arguments":"<item>"},
+        {"command":"enchant"},
+        {"command":"dismantle","arguments":"<item>"},
+        {"command":"reparar","arguments":"<item>"},
+        {"command":"materiais"},
+        {"command":"precos"},
+    ] },
+    { title: "SOCIAL & INTERAÇÕES", optionKey: "socialMenuTitle", entries: [
+        {"command":"casar","arguments":"@user"},
+        {"command":"divorciar"},
+        {"command":"namorar","arguments":"@user"},
+        {"command":"terminar"},
+        {"command":"relacionamento"},
+        {"command":"casais"},
+        {"command":"abracarrpg","arguments":"@user"},
+        {"command":"beijarrpg","arguments":"@user"},
+        {"command":"baterrpg","arguments":"@user"},
+        {"command":"proteger","arguments":"@user"},
+    ] },
+    { title: "FAMÍLIA & ADOÇÃO", optionKey: "familyMenuTitle", entries: [
+        {"command":"familia"},
+        {"command":"adotaruser","arguments":"@user"},
+        {"command":"deserdar","arguments":"@user"},
+        {"command":"arvore"},
+    ] },
+    { title: "CLÃ & COMUNIDADE", optionKey: "guildMenuTitle", entries: [
+        {"command":"criarcla","arguments":"<nome>"},
+        {"command":"cla"},
+        {"command":"convidar","arguments":"@user"},
+        {"command":"sair"},
+        {"command":"aceitarconvite","arguments":"<clanId|nome>"},
+        {"command":"recusarconvite","arguments":"<clanId|nome>"},
+        {"command":"expulsar","arguments":"@user"},
+        {"command":"rmconvite","arguments":"@user"},
+    ] },
+    { title: "MISSÕES & CONQUISTAS", optionKey: "questMenuTitle", entries: [
+        {"command":"missoes"},
+        {"command":"conquistas"},
+    ] },
+    { title: "PETS & COMPANHEIROS", optionKey: "petsMenuTitle", entries: [
+        {"command":"pets"},
+        {"command":"adotar","arguments":"<pet>"},
+        {"command":"feed","arguments":"<nº>"},
+        {"command":"train","arguments":"<nº>"},
+        {"command":"evolve","arguments":"<nº>"},
+        {"command":"petbattle","arguments":"<nº>"},
+        {"command":"renamepet","arguments":"<nº> <nome>"},
+        {"command":"petbet","arguments":"<valor> <nº> @user"},
+        {"command":"equippet","arguments":"<nº> <nome do item>"},
+        {"command":"unequippet","arguments":"<nº> <slot?>"},
+    ] },
+    { title: "REPUTAÇÃO & FAMA", optionKey: "reputationMenuTitle", entries: [
+        {"command":"rep"},
+        {"command":"vote","arguments":"@user"},
+    ] },
+    { title: "EVENTOS", optionKey: "eventsMenuTitle", entries: [
+        {"command":"eventos"},
+    ] },
+    { title: "LOJA PREMIUM", optionKey: "premiumMenuTitle", entries: [
+        {"command":"lojapremium"},
+        {"command":"comprarpremium","arguments":"<item>"},
+        {"command":"boost"},
+        {"command":"propriedades"},
+        {"command":"cprop","arguments":"<id>"},
+        {"command":"cprops"},
+        {"command":"tributos"},
+        {"command":"meustats"},
+        {"command":"doar","arguments":"<valor>"},
+        {"command":"presente","arguments":"@user <item>"},
+    ] },
+    { title: "ADMIN RPG (DONO)", optionKey: "adminMenuTitle", entries: [
+        {"command":"rpgadd","arguments":"@user <valor>"},
+        {"command":"rpgremove","arguments":"@user <valor>"},
+        {"command":"rpgsetlevel","arguments":"@user <nivel>"},
+        {"command":"rpgadditem","arguments":"@user <item> <qtd>"},
+        {"command":"rpgremoveitem","arguments":"@user <item> <qtd>"},
+        {"command":"rpgresetplayer","arguments":"@user"},
+        {"command":"rpgresetglobal","arguments":"confirmar"},
+        {"command":"rpgstats"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *${profileMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}perfilrpg
-${middleBorder}${menuItemIcon}${prefix}carteira
-${middleBorder}${menuItemIcon}${prefix}toprpg
-${middleBorder}${menuItemIcon}${prefix}rankglobal
-${middleBorder}${menuItemIcon}${prefix}ranklvl
-${middleBorder}${menuItemIcon}${prefix}inv
-${middleBorder}${menuItemIcon}${prefix}equipamentos
-${middleBorder}${menuItemIcon}${prefix}conquistas
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${evolutionMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}evoluir
-${middleBorder}${menuItemIcon}${prefix}prestige
-${middleBorder}${menuItemIcon}${prefix}streak
-${middleBorder}${menuItemIcon}${prefix}reivindicar
-${middleBorder}${menuItemIcon}${prefix}speedup
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${economyMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}dep <valor|all>
-${middleBorder}${menuItemIcon}${prefix}sacar <valor|all>
-${middleBorder}${menuItemIcon}${prefix}pix @user <valor>
-${middleBorder}${menuItemIcon}${prefix}loja
-${middleBorder}${menuItemIcon}${prefix}comprar <item>
-${middleBorder}${menuItemIcon}${prefix}vender <item> <qtd>
-${middleBorder}${menuItemIcon}${prefix}vagas
-${middleBorder}${menuItemIcon}${prefix}emprego <vaga>
-${middleBorder}${menuItemIcon}${prefix}demitir
-${middleBorder}${menuItemIcon}${prefix}habilidades
-${middleBorder}${menuItemIcon}${prefix}desafiosemanal
-${middleBorder}${menuItemIcon}${prefix}desafiomensal
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${investmentMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}investir
-${middleBorder}${menuItemIcon}${prefix}investir <ação> <qtd>
-${middleBorder}${menuItemIcon}${prefix}sell <ação> <qtd>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${gamblingMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}dados <valor>
-${middleBorder}${menuItemIcon}${prefix}coinflip <cara|coroa> <valor>
-${middleBorder}${menuItemIcon}${prefix}crash <valor>
-${middleBorder}${menuItemIcon}${prefix}slots <valor>
-${middleBorder}${menuItemIcon}${prefix}apostar <valor>
-${middleBorder}${menuItemIcon}${prefix}roleta <valor> <cor>
-${middleBorder}${menuItemIcon}${prefix}blackjack <valor>
-${middleBorder}${menuItemIcon}${prefix}loteria
-${middleBorder}${menuItemIcon}${prefix}loteria comprar <qtd>
-${middleBorder}${menuItemIcon}${prefix}corrida <valor> <cavalo>
-${middleBorder}${menuItemIcon}${prefix}leilao
-${middleBorder}${menuItemIcon}${prefix}topriqueza
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${activitiesMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}diario
-${middleBorder}${menuItemIcon}${prefix}work
-${middleBorder}${menuItemIcon}${prefix}mine
-${middleBorder}${menuItemIcon}${prefix}fish
-${middleBorder}${menuItemIcon}${prefix}coletar
-${middleBorder}${menuItemIcon}${prefix}colher
-${middleBorder}${menuItemIcon}${prefix}caçar
-${middleBorder}${menuItemIcon}${prefix}plantar <planta>
-${middleBorder}${menuItemIcon}${prefix}cultivar <planta>
-${middleBorder}${menuItemIcon}${prefix}plantacao
-${middleBorder}${menuItemIcon}${prefix}cook <receita>
-${middleBorder}${menuItemIcon}${prefix}receitas
-${middleBorder}${menuItemIcon}${prefix}ingredientes
-${middleBorder}${menuItemIcon}${prefix}eat <comida>
-${middleBorder}${menuItemIcon}${prefix}vendercomida <item>
-${middleBorder}${menuItemIcon}${prefix}sementes
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${adventureMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}explore
-${middleBorder}${menuItemIcon}${prefix}masmorra
-${middleBorder}${menuItemIcon}${prefix}bossrpg
-${middleBorder}${menuItemIcon}${prefix}eventos
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🏰 DUNGEONS & RAIDS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}dungeon - Listar dungeons
-${middleBorder}${menuItemIcon}${prefix}dungeon criar <tipo>
-${middleBorder}${menuItemIcon}${prefix}dungeon entrar <id>
-${middleBorder}${menuItemIcon}${prefix}dungeon iniciar
-${middleBorder}${menuItemIcon}${prefix}dungeon sair
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *⚔️ CLASSES & PROFISSÕES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}class - Ver classes
-${middleBorder}${menuItemIcon}${prefix}class <nome> - Escolher
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🏠 HOUSING*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}casa - Ver sua casa
-${middleBorder}${menuItemIcon}${prefix}casa comprar <tipo>
-${middleBorder}${menuItemIcon}${prefix}casa coletar
-${middleBorder}${menuItemIcon}${prefix}casa decorar <item>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *🛒 MERCADO DE JOGADORES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}auction - Ver itens
-${middleBorder}${menuItemIcon}${prefix}auction vender <item> <preço>
-${middleBorder}${menuItemIcon}${prefix}auction comprar <nº>
-${middleBorder}${menuItemIcon}${prefix}auction meus
-${middleBorder}${menuItemIcon}${prefix}auction cancelar <nº>
-${middleBorder}
-${middleBorder}${menuTitleIcon} *MERCADO GERAL* ${menuTitleIcon}
-${middleBorder}${menuItemIcon}${prefix}mercado
-${middleBorder}${menuItemIcon}${prefix}listar <item> <preço>
-${middleBorder}${menuItemIcon}${prefix}cmerc <nº>
-${middleBorder}${menuItemIcon}${prefix}meusan
-${middleBorder}${menuItemIcon}${prefix}cancelar <nº>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${combatMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}duelrpg @user
-${middleBorder}${menuItemIcon}${prefix}arena
-${middleBorder}${menuItemIcon}${prefix}torneio
-${middleBorder}${menuItemIcon}${prefix}assaltar @user
-${middleBorder}${menuItemIcon}${prefix}crime
-${middleBorder}${menuItemIcon}${prefix}guerra
-${middleBorder}${menuItemIcon}${prefix}desafio
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${craftingMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}forge <item>
-${middleBorder}${menuItemIcon}${prefix}enchant
-${middleBorder}${menuItemIcon}${prefix}dismantle <item>
-${middleBorder}${menuItemIcon}${prefix}reparar <item>
-${middleBorder}${menuItemIcon}${prefix}materiais
-${middleBorder}${menuItemIcon}${prefix}precos
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${socialMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}casar @user
-${middleBorder}${menuItemIcon}${prefix}divorciar
-${middleBorder}${menuItemIcon}${prefix}namorar @user
-${middleBorder}${menuItemIcon}${prefix}terminar
-${middleBorder}${menuItemIcon}${prefix}relacionamento
-${middleBorder}${menuItemIcon}${prefix}casais
-${middleBorder}${menuItemIcon}${prefix}abracarrpg @user
-${middleBorder}${menuItemIcon}${prefix}beijarrpg @user
-${middleBorder}${menuItemIcon}${prefix}baterrpg @user
-${middleBorder}${menuItemIcon}${prefix}proteger @user
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${familyMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}familia
-${middleBorder}${menuItemIcon}${prefix}adotaruser @user
-${middleBorder}${menuItemIcon}${prefix}deserdar @user
-${middleBorder}${menuItemIcon}${prefix}arvore
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${guildMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}criarcla <nome>
-${middleBorder}${menuItemIcon}${prefix}cla
-${middleBorder}${menuItemIcon}${prefix}convidar @user
-${middleBorder}${menuItemIcon}${prefix}sair
-${middleBorder}${menuItemIcon}${prefix}aceitarconvite <clanId|nome>
-${middleBorder}${menuItemIcon}${prefix}recusarconvite <clanId|nome>
-${middleBorder}${menuItemIcon}${prefix}expulsar @user
-${middleBorder}${menuItemIcon}${prefix}rmconvite @user
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${questMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}missoes
-${middleBorder}${menuItemIcon}${prefix}conquistas
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${petsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}pets
-${middleBorder}${menuItemIcon}${prefix}adotar <pet>
-${middleBorder}${menuItemIcon}${prefix}feed <nº>
-${middleBorder}${menuItemIcon}${prefix}train <nº>
-${middleBorder}${menuItemIcon}${prefix}evolve <nº>
-${middleBorder}${menuItemIcon}${prefix}petbattle <nº>
-${middleBorder}${menuItemIcon}${prefix}renamepet <nº> <nome>
-${middleBorder}${menuItemIcon}${prefix}petbet <valor> <nº> @user
-${middleBorder}${menuItemIcon}${prefix}equippet <nº> <nome do item>
-${middleBorder}${menuItemIcon}${prefix}unequippet <nº> <slot?>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${reputationMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}rep
-${middleBorder}${menuItemIcon}${prefix}vote @user
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${eventsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}eventos
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${premiumMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}lojapremium
-${middleBorder}${menuItemIcon}${prefix}comprarpremium <item>
-${middleBorder}${menuItemIcon}${prefix}boost
-${middleBorder}${menuItemIcon}${prefix}propriedades
-${middleBorder}${menuItemIcon}${prefix}cprop <id>
-${middleBorder}${menuItemIcon}${prefix}cprops
-${middleBorder}${menuItemIcon}${prefix}tributos
-${middleBorder}${menuItemIcon}${prefix}meustats
-${middleBorder}${menuItemIcon}${prefix}doar <valor>
-${middleBorder}${menuItemIcon}${prefix}presente @user <item>
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${adminMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}rpgadd @user <valor>
-${middleBorder}${menuItemIcon}${prefix}rpgremove @user <valor>
-${middleBorder}${menuItemIcon}${prefix}rpgsetlevel @user <nivel>
-${middleBorder}${menuItemIcon}${prefix}rpgadditem @user <item> <qtd>
-${middleBorder}${menuItemIcon}${prefix}rpgremoveitem @user <item> <qtd>
-${middleBorder}${menuItemIcon}${prefix}rpgresetplayer @user
-${middleBorder}${menuItemIcon}${prefix}rpgresetglobal confirmar
-${middleBorder}${menuItemIcon}${prefix}rpgstats
-${bottomBorder}`
+export default async function menuRPG(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "RPG", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }

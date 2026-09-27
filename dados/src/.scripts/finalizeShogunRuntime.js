@@ -179,12 +179,38 @@ export function patchVNextOwnershipHook(source) {
   let output = replaceRequired(
     source,
     importAnchor,
-    `${importAnchor}\n${hookImport}\n${circuitDeclaration}`,
+    `${importAnchor}\n${hookImport}\nimport { findCommandAccessPolicy } from '../../dist-vnext/commands/access-catalog.js';\nimport { evaluateCommandAccess, commandAccessMessage } from '../../dist-vnext/commands/access-policy.js';\n${circuitDeclaration}`,
     'import e circuit breaker do seam vNext'
   );
 
   const membersScopeFactory = buildMembersScopeFactorySource();
   const hook = `${hookMarker}
+    const __transportSender = (isGroup
+      ? [info.key.participant, info.key.participantAlt]
+      : [info.key.remoteJid]).find(value => typeof value === 'string'
+        && /^\\d+(?::\\d+)?@(s\\.whatsapp\\.net|lid)$/.test(value));
+    const __vnextAccess = Object.freeze({
+      resolved: Boolean(__transportSender) && (!isGroup || Array.isArray(groupMetadata?.participants)),
+      isGroup, isOwner, isSubOwner,
+      isGroupAdmin: isRealGroupAdmin || isOwner,
+      isRealGroupAdmin, isBotAdmin,
+      isPrimaryOwner: automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe),
+      moderatorCommands: Object.freeze(isGroup && groupData.moderators?.some(id => idsMatch(id, sender))
+        ? (groupData.allowedModCommands || []).filter(canGrantModeratorCommand) : []),
+    });
+    const __commandAccessFor = (token, entry = {}) => {
+      const resolved = resolveCommandInput(token, aliases);
+      const parameters = [resolved.matchedAlias?.fixedParams, entry.arguments].filter(Boolean).join(' ');
+      return evaluateCommandAccess(findCommandAccessPolicy(resolved.command, { arguments: parameters, domain: entry.domain }), __vnextAccess);
+    };
+    if (isCmd && command) {
+      const __policy = findCommandAccessPolicy(command, { arguments: q });
+      const __decision = evaluateCommandAccess(__policy, __vnextAccess);
+      if (__policy && !__decision.executable) {
+        await reply(commandAccessMessage(__decision));
+        return;
+      }
+    }
     if (isCmd && command && !__gyomeiVNextContextCircuitOpen) {
       let __vnextContext;
       try {
@@ -198,6 +224,8 @@ export function patchVNextOwnershipHook(source) {
           botName: nomebot,
           pushName: pushname,
           isOwner,
+          access: __vnextAccess,
+          rawAliases: aliases,
           isLiteMode: isModoLite,
           reply,
           rejectInLiteMode,

@@ -56,6 +56,10 @@ test('patch insere seam exatamente uma vez depois do bridge e antes do switch pr
   assert.match(rootContext, /prefix:\s*groupPrefix,/);
   assert.doesNotMatch(rootContext, /\n\s*prefix,\s*\n/);
   assert.match(rootContext, /isOwner,/);
+  assert.match(rootContext, /access:\s*__vnextAccess/);
+  assert.match(rootContext, /resolved:\s*Boolean\(__transportSender\)\s*&&\s*\(!isGroup\s*\|\|\s*Array\.isArray\(groupMetadata\?\.participants\)\)/);
+  assert.match(rootContext, /isPrimaryOwner:\s*automacoesV9\.isPrimaryOwner/);
+  assert.match(rootContext, /moderatorCommands:/);
   assert.match(rootContext, /isLiteMode:\s*isModoLite,/);
   assert.match(rootContext, /reply,/);
   assert.match(rootContext, /rejectInLiteMode,/);
@@ -135,6 +139,9 @@ test('falha estrutural antes do dispatch abre circuit breaker e preserva o switc
   const syntheticSource = `${IMPORT_ANCHOR}
 async function shogunExec(command) {
   const isCmd = true;
+  const isGroup = false, isOwner = false, isSubOwner = false, isRealGroupAdmin = false, isBotAdmin = false;
+  const groupMetadata = null, automacoesV9 = { isPrimaryOwner: () => false }, sender = 'membro@lid';
+  const numerodono = '', lidowner = '', info = { key: { fromMe: false } }, groupData = {}, aliases = [], q = '';
   const __gyomeiMacrotrancheOwnedCommands = new Set(['calc']);
   const __gyomeiExecuteMacrotrancheLegacy = async () => {};
     switch (command) {
@@ -146,6 +153,8 @@ async function shogunExec(command) {
   let patched = patchVNextOwnershipHook(syntheticSource);
   patched = patched
     .replace(IMPORT_ANCHOR, '')
+    .replace("import { findCommandAccessPolicy } from '../../dist-vnext/commands/access-catalog.js';", 'const findCommandAccessPolicy = () => undefined;')
+    .replace("import { evaluateCommandAccess, commandAccessMessage } from '../../dist-vnext/commands/access-policy.js';", 'const evaluateCommandAccess = () => ({ executable: false }); const commandAccessMessage = () => "denied";')
     .replace(
       IMPORT_LINE,
       'let __vnextDispatchCalls = 0; const dispatchLegacySwitchVNext = async () => { __vnextDispatchCalls += 1; return true; };',

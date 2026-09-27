@@ -129,11 +129,30 @@ function validateConfig(config) {
   const bunnyfyBase = String(process.env.BUNNYFY_BASE_URL || config.BUNNYFY_BASE_URL || config.bunnyfy_base_url || '').trim();
   const bunnyfyToken = String(process.env.BUNNYFY_API_TOKEN || config.BUNNYFY_API_TOKEN || config.bunnyfy_api_token || config.bunnyfy_token || '').trim();
   const bunnyfyAiMode = String(process.env.BUNNYFY_AI_MODE || config.BUNNYFY_AI_MODE || config.bunnyfy_ai_mode || '').trim();
+
+  const vexKey = String(
+    process.env.VEX_API_KEY || config.apikey_vex || ''
+  ).trim();
+  const vexSite = String(
+    process.env.VEX_SITE || config.site_vex || ''
+  ).trim();
+
   if (bunnyfyAiMode === 'exclusive' && (isPlaceholder(bunnyfyBase) || isPlaceholder(bunnyfyToken))) {
     const message = 'BunnyFy AI exclusive está ativo, mas BUNNYFY_BASE_URL/BUNNYFY_API_TOKEN não estão completos neste ambiente local.';
     mode === 'deploy' ? fail(message) : warn(message);
   } else if (bunnyfyAiMode === 'exclusive') {
     ok('Configuração BunnyFy AI disponível sem ser exibida');
+  }
+
+  const vexKeyConfigured = !isPlaceholder(vexKey);
+  const vexSiteConfigured = !isPlaceholder(vexSite);
+  if (vexKeyConfigured !== vexSiteConfigured) {
+    const message = 'Fallback VEX está parcialmente configurado. Defina URL e chave juntas ou remova ambas pelo Quartel de Configuração.';
+    mode === 'deploy' ? fail(message) : warn(message);
+  } else if (vexKeyConfigured && vexSiteConfigured) {
+    ok('Fallback VEX disponível sem ser exibido');
+  } else {
+    ok('Fallback VEX opcional está desativado');
   }
 }
 

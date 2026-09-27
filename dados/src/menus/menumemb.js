@@ -1,90 +1,63 @@
-export default async function menuMembros(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    perfilMenuTitle = "👤 PERFIL & ESTATÍSTICAS",
-    botStatusMenuTitle = "🤖 STATUS DO BOT",
-    personalMenuTitle = "⚙️ CONFIGURAÇÕES PESSOAIS",
-    rankMenuTitle = "🏆 RANKINGS & GAMIFICAÇÃO",
-    gamingMenuTitle = "🎮 CONTEÚDO GAMER"
-} = {}) {
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
- return `${formattedHeader}
+const sections = [
+    { title: "PERFIL & ESTATÍSTICAS", optionKey: "perfilMenuTitle", entries: [
+        {"command":"perfil"},
+        {"command":"meustatus"},
+    ] },
+    { title: "STATUS DO BOT", optionKey: "botStatusMenuTitle", entries: [
+        {"command":"ping"},
+        {"command":"statusbot"},
+        {"command":"statusgp"},
+        {"command":"regras"},
+        {"command":"zipbot"},
+        {"command":"gitbot"},
+    ] },
+    { title: "CONFIGURAÇÕES PESSOAIS", optionKey: "personalMenuTitle", entries: [
+        {"command":"mention"},
+        {"command":"afk"},
+        {"command":"voltei"},
+    ] },
+    { title: "INTERAÇÃO SOCIAL", entries: [
+        {"command":"roles"},
+        {"command":"role.vou"},
+        {"command":"role.nvou"},
+        {"command":"role.confirmados"},
+    ] },
+    { title: "RANKINGS & GAMIFICAÇÃO", optionKey: "rankMenuTitle", entries: [
+        {"command":"rankativo"},
+        {"command":"rankinativo"},
+        {"command":"rankativos"},
+        {"command":"atividade"},
+        {"command":"checkativo"},
+        {"command":"totalcmd"},
+        {"command":"topcmd"},
+    ] },
+    { title: "CONQUISTAS & PRESENTES", entries: [
+        {"command":"conquistas"},
+        {"command":"caixa","arguments":"diaria"},
+        {"command":"caixa","arguments":"rara"},
+        {"command":"caixa","arguments":"lendaria"},
+        {"command":"presente","arguments":"@user <tipo>"},
+        {"command":"inv"},
+    ] },
+    { title: "REPUTAÇÃO & DENÚNCIAS", entries: [
+        {"command":"rep","arguments":"+ @user"},
+        {"command":"rep","description":"@user"},
+        {"command":"rep","arguments":"@user"},
+        {"command":"toprep"},
+        {"command":"denunciar","arguments":"@user <motivo>"},
+        {"command":"denuncias"},
+    ] },
+    { title: "CONTEÚDO GAMER", optionKey: "gamingMenuTitle", entries: [
+        {"command":"likeff"},
+        {"command":"infoff"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *${perfilMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}perfil
-${middleBorder}${menuItemIcon}${prefix}meustatus
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${botStatusMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}ping
-${middleBorder}${menuItemIcon}${prefix}statusbot
-${middleBorder}${menuItemIcon}${prefix}statusgp
-${middleBorder}${menuItemIcon}${prefix}regras
-${middleBorder}${menuItemIcon}${prefix}zipbot
-${middleBorder}${menuItemIcon}${prefix}gitbot
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${personalMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}mention
-${middleBorder}${menuItemIcon}${prefix}afk
-${middleBorder}${menuItemIcon}${prefix}voltei
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *👬 INTERAÇÃO SOCIAL*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}roles
-${middleBorder}${menuItemIcon}${prefix}role.vou
-${middleBorder}${menuItemIcon}${prefix}role.nvou
-${middleBorder}${menuItemIcon}${prefix}role.confirmados
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${rankMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}rankativo
-${middleBorder}${menuItemIcon}${prefix}rankinativo
-${middleBorder}${menuItemIcon}${prefix}rankativos
-${middleBorder}${menuItemIcon}${prefix}atividade
-${middleBorder}${menuItemIcon}${prefix}checkativo
-${middleBorder}${menuItemIcon}${prefix}totalcmd
-${middleBorder}${menuItemIcon}${prefix}topcmd
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} * CONQUISTAS & PRESENTES*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}conquistas
-${middleBorder}${menuItemIcon}${prefix}caixa diaria
-${middleBorder}${menuItemIcon}${prefix}caixa rara
-${middleBorder}${menuItemIcon}${prefix}caixa lendaria
-${middleBorder}${menuItemIcon}${prefix}presente @user <tipo>
-${middleBorder}${menuItemIcon}${prefix}inv
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *⭐ REPUTAÇÃO & DENÚNCIAS*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}rep + @user
-${middleBorder}${menuItemIcon}${prefix}rep - @user
-${middleBorder}${menuItemIcon}${prefix}rep @user
-${middleBorder}${menuItemIcon}${prefix}toprep
-${middleBorder}${menuItemIcon}${prefix}denunciar @user <motivo>
-${middleBorder}${menuItemIcon}${prefix}denuncias
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${gamingMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}likeff
-${middleBorder}${menuItemIcon}${prefix}infoff
-${bottomBorder}
-`;
+export default async function menuMembros(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "MEMBROS", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }

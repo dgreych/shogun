@@ -19,6 +19,8 @@ function context(overrides = {}) {
     pushName: 'Mauricio',
     isOwner: false,
     isLiteMode: false,
+    access: Object.freeze({ resolved: true, isGroup: true, isOwner: overrides.isOwner === true,
+      isSubOwner: false, isGroupAdmin: false, isRealGroupAdmin: false, isBotAdmin: true }),
     ...overrides,
   };
 }
@@ -35,10 +37,10 @@ function presenter() {
   };
 }
 
-test('catálogo possui 13 famílias e 45 tokens únicos de apresentação', () => {
+test('catálogo possui 13 famílias e 43 tokens únicos de apresentação', () => {
   assert.equal(MENU_COMMAND_DESCRIPTORS.length, 13);
-  assert.equal(MENU_COMMAND_TOKENS.length, 45);
-  assert.equal(new Set(MENU_COMMAND_TOKENS).size, 45);
+  assert.equal(MENU_COMMAND_TOKENS.length, 43);
+  assert.equal(new Set(MENU_COMMAND_TOKENS).size, 43);
 });
 
 test('todos os aliases do domínio resolvem para exatamente uma família', () => {
@@ -87,8 +89,8 @@ test('falha de apresentação não cai no legado e gera erro observável + respo
     async reportError(error, request) { calls.error.push({ error, request }); },
   });
 
-  assert.equal(await target.dispatch('menuia', context()), true);
+  assert.equal(await target.dispatch('menushogun', context()), true);
   assert.equal(calls.error.length, 1);
   assert.match(String(calls.error[0].error), /media quebrada/);
-  assert.deepEqual(calls.reply, ['❌ Ocorreu um erro ao carregar o menu de IA.']);
+  assert.deepEqual(calls.reply, ['❌ Ocorreu um erro ao carregar o menu do Shogun.']);
 });

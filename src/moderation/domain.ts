@@ -6,6 +6,8 @@ import {
   findModerationCommandDescriptor,
   type ModerationCommandDescriptor,
 } from './catalog.js';
+import { findCommandAccessPolicy } from '../commands/access-catalog.js';
+import { evaluateCommandAccess, commandAccessMessage, UNRESOLVED_COMMAND_ACCESS } from '../commands/access-policy.js';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -83,31 +85,9 @@ async function ensureAccess(
   context: ModerationExecutionContext,
   descriptor: ModerationCommandDescriptor,
 ): Promise<boolean> {
-  if (!context.isGroup) {
-    await context.reply('isso so pode ser usado em grupo 💔');
-    return false;
-  }
-
-  if (descriptor.requiresRealAdmin) {
-    if (!context.isRealGroupAdmin) {
-      await context.reply('Comando restrito a administradores do grupo. 💔');
-      return false;
-    }
-  } else if (!context.isGroupAdmin) {
-    await context.reply(
-      descriptor.kind === 'delete-message'
-        ? '🚫 Comando restrito a administradores ou moderadores autorizados.'
-        : 'você precisa ser adm 💔',
-    );
-    return false;
-  }
-
-  if (descriptor.requiresBotAdmin && !context.isBotAdmin) {
-    await context.reply('Eu preciso ser adm 💔');
-    return false;
-  }
-
-  return true;
+  const decision = evaluateCommandAccess(findCommandAccessPolicy(descriptor.tokens[0] || ''), context.access || UNRESOLVED_COMMAND_ACCESS);
+  if (!decision.executable) await context.reply(commandAccessMessage(decision));
+  return decision.executable;
 }
 
 async function requireTarget(

@@ -1,208 +1,156 @@
-async function menuDono(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    botConfigMenuTitle = "🤖 CONFIGURAÇÕES DO BOT",
-    menuDesignMenuTitle = "🎨 DESIGN & APARÊNCIA",
-    automationMenuTitle = "⚙️ SISTEMA & AUTOMAÇÃO",
-    commandCustomMenuTitle = "🛠️ PERSONALIZAÇÃO DE COMANDOS",
-    commandLimitingMenuTitle = "🚫 LIMITAÇÃO DE COMANDOS",
-    userManagementMenuTitle = "👥 GERENCIAMENTO DE USUÁRIOS",
-    rentalSystemMenuTitle = "💰 SISTEMA DE ALUGUEL",
-    subBotsMenuTitle = "🤖 GERENCIAMENTO DE SUB-BOTS",
-    botControlMenuTitle = "⚡ CONTROLE & MANUTENÇÃO",
-    monitoringMenuTitle = "📊 MONITORAMENTO & ANÁLISE",
-    broadcastMenuTitle = "📡 TRANSMISSÕES"
-} = {}) {
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
-    return `${formattedHeader}
+const sections = [
+    { title: "INÍCIO", entries: [
+        {"command":"tutorial"},
+    ] },
+    { title: "CONFIGURAÇÕES DO BOT", optionKey: "botConfigMenuTitle", entries: [
+        {"command":"prefixo"},
+        {"command":"numerodono"},
+        {"command":"nomedono"},
+        {"command":"nomebot"},
+        {"command":"configcmdnotfound"},
+        {"command":"setcmdmsg"},
+        {"command":"fotobot"},
+        {"command":"fotomenu"},
+        {"command":"videomenu"},
+        {"command":"audiomenu"},
+        {"command":"lermais"},
+        {"command":"personalizargrupo"},
+    ] },
+    { title: "DESIGN & APARÊNCIA", optionKey: "menuDesignMenuTitle", entries: [
+        {"command":"designmenu"},
+        {"command":"setborda"},
+        {"command":"setbordafim"},
+        {"command":"setbordameio"},
+        {"command":"setitem"},
+        {"command":"setseparador"},
+        {"command":"settitulo"},
+        {"command":"setheader"},
+        {"command":"resetdesign"},
+    ] },
+    { title: "SISTEMA & AUTOMAÇÃO", optionKey: "automationMenuTitle", entries: [
+        {"command":"addauto"},
+        {"command":"addautomidia"},
+        {"command":"listauto"},
+        {"command":"delauto"},
+        {"command":"addreact"},
+        {"command":"listreact"},
+        {"command":"delreact"},
+        {"command":"addnopref"},
+        {"command":"listnopref"},
+        {"command":"delnopref"},
+    ] },
+    { title: "PERSONALIZAÇÃO DE COMANDOS", optionKey: "commandCustomMenuTitle", entries: [
+        {"command":"addcmd"},
+        {"command":"addcmdmidia"},
+        {"command":"listcmd"},
+        {"command":"delcmd"},
+        {"command":"testcmd"},
+        {"command":"addalias"},
+        {"command":"listalias"},
+        {"command":"delalias"},
+        {"command":"addblackglobal"},
+        {"command":"listblackglobal"},
+        {"command":"rmblackglobal"},
+    ] },
+    { title: "LIMITAÇÃO DE COMANDOS", optionKey: "commandLimitingMenuTitle", entries: [
+        {"command":"cmdlimitar"},
+        {"command":"cmddeslimitar"},
+        {"command":"cmdlimites"},
+    ] },
+    { title: "GERENCIAMENTO DE USUÁRIOS", optionKey: "userManagementMenuTitle", entries: [
+        {"command":"addsubdono"},
+        {"command":"delsubdono"},
+        {"command":"listasubdonos"},
+        {"command":"addpremium"},
+        {"command":"delpremium"},
+        {"command":"listprem"},
+        {"command":"resetgold"},
+    ] },
+    { title: "INDICAÇÕES", entries: [
+        {"command":"addindicacao"},
+        {"command":"topindica"},
+        {"command":"delindicacao"},
+        {"command":"bangp"},
+        {"command":"unbangp"},
+        {"command":"listbangp"},
+    ] },
+    { title: "SISTEMA DE ALUGUEL", optionKey: "rentalSystemMenuTitle", entries: [
+        {"command":"modoaluguel"},
+        {"command":"addaluguel"},
+        {"command":"gerarcod"},
+        {"command":"listaraluguel"},
+        {"command":"infoaluguel"},
+        {"command":"estenderaluguel"},
+        {"command":"removeraluguel"},
+        {"command":"listaluguel"},
+        {"command":"limparaluguel"},
+        {"command":"dayfree"},
+        {"command":"setdiv"},
+        {"command":"divulgar"},
+    ] },
+    { title: "GERENCIAMENTO DE SUB-BOTS", optionKey: "subBotsMenuTitle", entries: [
+        {"command":"addsubbot"},
+        {"command":"removesubbot"},
+        {"command":"listarsubbots"},
+        {"command":"conectarsubbot"},
+    ], notes: ["🔑 Sub-bot use: #prefix#gerarcodigo"] },
+    { title: "CONTROLE & MANUTENÇÃO", optionKey: "botControlMenuTitle", entries: [
+        {"command":"atualizar"},
+        {"command":"reiniciar"},
+        {"command":"entrar"},
+        {"command":"sairgp"},
+        {"command":"seradm"},
+        {"command":"sermembro"},
+        {"command":"blockcmdg"},
+        {"command":"unblockcmdg"},
+        {"command":"blockuserg"},
+        {"command":"unblockuserg"},
+        {"command":"listblocks"},
+        {"command":"antibanmarcar"},
+        {"command":"imagem"},
+    ] },
+    { title: "MONITORAMENTO & ANÁLISE", optionKey: "monitoringMenuTitle", entries: [
+        {"command":"listagp"},
+        {"command":"antipv"},
+        {"command":"antipv2"},
+        {"command":"antipv3"},
+        {"command":"antipv4"},
+        {"command":"antipvmsg"},
+        {"command":"antispamcmd"},
+        {"command":"viewmsg"},
+        {"command":"cases"},
+        {"command":"getcase"},
+        {"command":"modoliteglobal"},
+        {"command":"iaclear"},
+        {"command":"limpardb"},
+        {"command":"limparrankg"},
+        {"command":"reviverqr"},
+        {"command":"nuke"},
+        {"command":"msgprefix"},
+    ] },
+    { title: "Transmissão em Grupos:", entries: [
+        {"command":"tm"},
+    ] },
+    { title: "Transmissão Privada:", entries: [
+        {"command":"tm2"},
+        {"command":"statustm"},
+    ], notes: ["📝 Usuários inscrevem com:","#prefix#inscrevertm (no PV)"] },
+    { title: "Divulgação do Dono (novo):", entries: [
+        {"command":"divdono","arguments":"add"},
+        {"command":"divdono","arguments":"rem"},
+        {"command":"divdono","arguments":"list"},
+        {"command":"divdono","arguments":"msg"},
+        {"command":"divdono","arguments":"send"},
+        {"command":"divdono","arguments":"time"},
+        {"command":"divdono","arguments":"status"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *📚 INÍCIO*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}tutorial
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${botConfigMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}prefixo
-${middleBorder}${menuItemIcon}${prefix}numerodono
-${middleBorder}${menuItemIcon}${prefix}nomedono
-${middleBorder}${menuItemIcon}${prefix}nomebot
-
-${middleBorder}${menuItemIcon}${prefix}configcmdnotfound
-${middleBorder}${menuItemIcon}${prefix}setcmdmsg
-${middleBorder}${menuItemIcon}${prefix}fotobot
-${middleBorder}${menuItemIcon}${prefix}fotomenu
-${middleBorder}${menuItemIcon}${prefix}videomenu
-${middleBorder}${menuItemIcon}${prefix}audiomenu
-${middleBorder}${menuItemIcon}${prefix}lermais
-${middleBorder}${menuItemIcon}${prefix}personalizargrupo
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${menuDesignMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}designmenu
-${middleBorder}${menuItemIcon}${prefix}setborda
-${middleBorder}${menuItemIcon}${prefix}setbordafim
-${middleBorder}${menuItemIcon}${prefix}setbordameio
-${middleBorder}${menuItemIcon}${prefix}setitem
-${middleBorder}${menuItemIcon}${prefix}setseparador
-${middleBorder}${menuItemIcon}${prefix}settitulo
-${middleBorder}${menuItemIcon}${prefix}setheader
-${middleBorder}${menuItemIcon}${prefix}resetdesign
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${automationMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addauto
-${middleBorder}${menuItemIcon}${prefix}addautomidia
-${middleBorder}${menuItemIcon}${prefix}listauto
-${middleBorder}${menuItemIcon}${prefix}delauto
-${middleBorder}${menuItemIcon}${prefix}addreact
-${middleBorder}${menuItemIcon}${prefix}listreact
-${middleBorder}${menuItemIcon}${prefix}delreact
-${middleBorder}${menuItemIcon}${prefix}addnopref
-${middleBorder}${menuItemIcon}${prefix}listnopref
-${middleBorder}${menuItemIcon}${prefix}delnopref
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${commandCustomMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addcmd
-${middleBorder}${menuItemIcon}${prefix}addcmdmidia
-${middleBorder}${menuItemIcon}${prefix}listcmd
-${middleBorder}${menuItemIcon}${prefix}delcmd
-${middleBorder}${menuItemIcon}${prefix}testcmd
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addalias
-${middleBorder}${menuItemIcon}${prefix}listalias
-${middleBorder}${menuItemIcon}${prefix}delalias
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addblackglobal
-${middleBorder}${menuItemIcon}${prefix}listblackglobal
-${middleBorder}${menuItemIcon}${prefix}rmblackglobal
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${commandLimitingMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}cmdlimitar
-${middleBorder}${menuItemIcon}${prefix}cmddeslimitar
-${middleBorder}${menuItemIcon}${prefix}cmdlimites
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${userManagementMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addsubdono
-${middleBorder}${menuItemIcon}${prefix}delsubdono
-${middleBorder}${menuItemIcon}${prefix}listasubdonos
-${middleBorder}${menuItemIcon}${prefix}addpremium
-${middleBorder}${menuItemIcon}${prefix}delpremium
-${middleBorder}${menuItemIcon}${prefix}listprem
-${middleBorder}${menuItemIcon}${prefix}resetgold
-${middleBorder}
-${middleBorder}${menuTitleIcon} *INDICAÇÕES* ${menuTitleIcon}
-${middleBorder}${menuItemIcon}${prefix}addindicacao
-${middleBorder}${menuItemIcon}${prefix}topindica
-${middleBorder}${menuItemIcon}${prefix}delindicacao
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}bangp
-${middleBorder}${menuItemIcon}${prefix}unbangp
-${middleBorder}${menuItemIcon}${prefix}listbangp
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${rentalSystemMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}modoaluguel
-${middleBorder}${menuItemIcon}${prefix}addaluguel
-${middleBorder}${menuItemIcon}${prefix}gerarcod
-${middleBorder}${menuItemIcon}${prefix}listaraluguel
-${middleBorder}${menuItemIcon}${prefix}infoaluguel
-${middleBorder}${menuItemIcon}${prefix}estenderaluguel
-${middleBorder}${menuItemIcon}${prefix}removeraluguel
-${middleBorder}${menuItemIcon}${prefix}listaluguel
-${middleBorder}${menuItemIcon}${prefix}limparaluguel
-${middleBorder}${menuItemIcon}${prefix}dayfree
-${middleBorder}${menuItemIcon}${prefix}setdiv
-${middleBorder}${menuItemIcon}${prefix}divulgar
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${subBotsMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}addsubbot
-${middleBorder}${menuItemIcon}${prefix}removesubbot
-${middleBorder}${menuItemIcon}${prefix}listarsubbots
-${middleBorder}${menuItemIcon}${prefix}conectarsubbot
-${middleBorder}
-${middleBorder}🔑 Sub-bot use: ${prefix}gerarcodigo
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${botControlMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}atualizar
-${middleBorder}${menuItemIcon}${prefix}reiniciar
-${middleBorder}${menuItemIcon}${prefix}entrar
-${middleBorder}${menuItemIcon}${prefix}sairgp
-${middleBorder}${menuItemIcon}${prefix}seradm
-${middleBorder}${menuItemIcon}${prefix}sermembro
-${middleBorder}${menuItemIcon}${prefix}blockcmdg
-${middleBorder}${menuItemIcon}${prefix}unblockcmdg
-${middleBorder}${menuItemIcon}${prefix}blockuserg
-${middleBorder}${menuItemIcon}${prefix}unblockuserg
-${middleBorder}${menuItemIcon}${prefix}listblocks
-${middleBorder}${menuItemIcon}${prefix}antibanmarcar
-${middleBorder}${menuItemIcon}${prefix}imagem
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${monitoringMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}listagp
-${middleBorder}${menuItemIcon}${prefix}antipv
-${middleBorder}${menuItemIcon}${prefix}antipv2
-${middleBorder}${menuItemIcon}${prefix}antipv3
-${middleBorder}${menuItemIcon}${prefix}antipv4
-${middleBorder}${menuItemIcon}${prefix}antipvmsg
-${middleBorder}${menuItemIcon}${prefix}antispamcmd
-${middleBorder}${menuItemIcon}${prefix}viewmsg
-${middleBorder}${menuItemIcon}${prefix}cases
-${middleBorder}${menuItemIcon}${prefix}getcase
-${middleBorder}${menuItemIcon}${prefix}modoliteglobal
-${middleBorder}${menuItemIcon}${prefix}iaclear
-${middleBorder}${menuItemIcon}${prefix}limpardb
-${middleBorder}${menuItemIcon}${prefix}limparrankg
-${middleBorder}${menuItemIcon}${prefix}reviverqr
-${middleBorder}${menuItemIcon}${prefix}nuke
-${middleBorder}${menuItemIcon}${prefix}msgprefix
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${broadcastMenuTitle}*
-${middleBorder}
-${middleBorder}${menuTitleIcon} *Transmissão em Grupos:*
-${middleBorder}${menuItemIcon}${prefix}tm
-${middleBorder}
-${middleBorder}${menuTitleIcon} *Transmissão Privada:*
-${middleBorder}${menuItemIcon}${prefix}tm2
-${middleBorder}${menuItemIcon}${prefix}statustm
-${middleBorder}
-${middleBorder}📝 Usuários inscrevem com:
-${middleBorder}   ${prefix}inscrevertm (no PV)
-${middleBorder}
-${middleBorder}${menuTitleIcon} *Divulgação do Dono (novo):*
-${middleBorder}${menuItemIcon}${prefix}divdono add
-${middleBorder}${menuItemIcon}${prefix}divdono rem
-${middleBorder}${menuItemIcon}${prefix}divdono list
-${middleBorder}${menuItemIcon}${prefix}divdono msg
-${middleBorder}${menuItemIcon}${prefix}divdono send
-${middleBorder}${menuItemIcon}${prefix}divdono time
-${middleBorder}${menuItemIcon}${prefix}divdono status
-${bottomBorder}
-`;
+export default async function menuDono(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "GESTÃO DO BOT", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }
-export default menuDono;

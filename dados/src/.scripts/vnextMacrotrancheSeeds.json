@@ -3,14 +3,14 @@
   "selectionMode": "all-non-native",
   "expected": {
     "nativeFamilies": 99,
-    "nativeTokens": 559,
+    "nativeTokens": 557,
     "compatibilityFamilies": 429,
     "compatibilityTokens": 1051
   },
   "nativeSeeds": [
     "menu",
     "alteradores",
-    "menuia",
+    "menushogun",
     "menulogo",
     "menubn",
     "menudown",
@@ -112,7 +112,8 @@
     "equip",
     "slots",
     "vender",
-    "inventario"
+    "inventario",
+    "sairgp"
   ],
   "buckets": {
     "moderation": [

@@ -95,7 +95,7 @@ flowchart LR
   A[Seu WhatsApp] <--> B[𝖘𝖍𝖔𝖌𝖚𝖓<br/>no seu aparelho]
   B --> C[Grupos<br/>moderação e jogos]
   B --> D[Downloads<br/>YouTube, TikTok e mais]
-  B -.opcional.-> E[API de IA<br/>imagem e transcrição]
+  B -.opcional.-> E[Serviços opcionais<br/>imagem e transcrição]
 ```
 
 A sessão e os dados dos grupos ficam **no seu aparelho**. Nada de servidor de
@@ -113,12 +113,12 @@ Pinterest e Kwai. Vídeo vira áudio, áudio vira texto, imagem vira figurinha e
 figurinha vira imagem. Faz figurinha animada de vídeo curto e mistura dois
 emojis num só.
 
-**Gera imagem por IA.** Texto vira imagem, remove fundo, aumenta resolução. O
+**Trabalha com imagens.** Texto vira imagem, remove fundo, aumenta resolução. O
 roteador escolhe o modelo pelo tipo de pedido: pedido rápido vai para o modelo
 rápido, pedido caprichado vai para o modelo de qualidade.
 
-**Conversa.** A assistente responde quando mencionada. Cada grupo escolhe a
-personalidade, e ela muda o tom das respostas e o visual dos menus junto.
+**Conversa.** Chame o Shogun pelo nome ou mencione o bot. O menu de conversa
+reúne os comandos disponíveis para a sua conta.
 
 **Tem um RPG inteiro.** Trabalho, mineração, pesca, caça, forja, plantio,
 cozinha, propriedades que rendem por dia, mercado entre jogadores, habilidades
@@ -126,6 +126,30 @@ que evoluem e ranking. Cada grupo tem a própria economia.
 
 **E jogos.** Velha, forca, quiz, roleta, caça-palavras e uma taverna de duelos
 por turnos.
+
+## Menus no WhatsApp
+
+Comece com `!menu` e use o prefixo configurado na sua instância. Os textos
+seguem a mesma composição em todas as categorias; as imagens continuam sendo
+as que você escolher para o bot.
+
+| Comando | O que abre |
+| --- | --- |
+| `!menu` | Categorias disponíveis para você |
+| `!menudown` | Downloads |
+| `!menufig` | Figurinhas |
+| `!menubn` | Brincadeiras |
+| `!menushogun` | Conversa com o Shogun |
+| `!menuadm` | Administração do grupo, quando você tiver acesso |
+| `!menudono` | Controles do dono, quando você tiver acesso |
+
+Comandos restritos ficam ocultos para quem não pode usá-los. Essa mesma
+verificação vale na execução, nos atalhos, nas sugestões, na ajuda e no ranking
+de comandos. Ser dono ou moderador do bot não transforma a conta em
+administrador real do WhatsApp; ações que exigem esse papel conferem o grupo.
+
+Cada instalação usa sua própria configuração e sessão. O repositório público
+não inclui os donos, os dados dos grupos ou as credenciais da instância hospedada.
 
 ## Configuração
 
@@ -162,12 +186,13 @@ como aparelho vinculado e responde por essa conta.
 **Preciso deixar o computador ligado?** Sim, enquanto quiser o bot no ar. Por
 isso muita gente usa um Android antigo na tomada.
 
-**Funciona sem chave de IA?** Funciona. Moderação, downloads, figurinhas, jogos
-e RPG não dependem de IA. Só geração de imagem e transcrição precisam.
+**Preciso configurar serviços de conversa e imagem?** São opcionais. Moderação,
+figurinhas, jogos e RPG funcionam sem eles. Alguns downloads podem precisar de
+um serviço de mídia, conforme a origem.
 
-**Vão banir meu número?** O bot usa a conexão oficial de aparelhos vinculados.
-O que causa bloqueio é comportamento: disparo em massa e spam. Use com bom
-senso.
+**Vão banir meu número?** O bot conecta como aparelho vinculado usando uma
+biblioteca independente. Não há garantia contra bloqueios; evite disparos em
+massa e spam.
 
 **Meus dados vão para algum servidor?** Não. Sessão, bancos e configuração
 ficam no aparelho onde o bot roda.

@@ -1,7 +1,7 @@
 export type LegacyMenuRendererKey =
   | 'menu'
   | 'menuAlterador'
-  | 'menuIa'
+  | 'menuShogun'
   | 'menuLogos'
   | 'menubn'
   | 'menudown'
@@ -58,13 +58,13 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     failureMessage: '❌ Ocorreu um erro ao carregar o menu de alteradores.',
   }),
   descriptor({
-    id: 'ia',
-    presentationKey: 'ia',
-    rendererKey: 'menuIa',
-    tokens: ['menuia', 'aimenu', 'menuias'],
+    id: 'shogun',
+    presentationKey: 'shogun',
+    rendererKey: 'menuShogun',
+    tokens: ['menushogun'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de IA.',
+    failureMessage: '❌ Ocorreu um erro ao carregar o menu do Shogun.',
   }),
   descriptor({
     id: 'logotipos',

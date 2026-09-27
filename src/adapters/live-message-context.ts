@@ -1,4 +1,5 @@
 import type { LiveCommandDispatchInput } from '../runtime/live-command-dispatcher.js';
+import { UNRESOLVED_COMMAND_ACCESS, type CommandAccessContext } from '../commands/access-policy.js';
 
 interface BaileysMessageLike {
   readonly key?: {
@@ -20,7 +21,8 @@ export interface LiveMessageContextSeed {
 export interface LegacyLiveContextPort {
   getPrefix(chatId: string, isGroup: boolean): Promise<string> | string;
   getAliases(chatId: string): Promise<unknown> | unknown;
-  isOwner(sender: string): Promise<boolean> | boolean;
+  isOwner?(sender: string): Promise<boolean> | boolean;
+  getCommandAccess?(chatId: string, sender: string, isGroup: boolean): Promise<CommandAccessContext> | CommandAccessContext;
   isLiteMode(chatId: string, isGroup: boolean): Promise<boolean> | boolean;
   getBotName(): Promise<string> | string;
 }
@@ -123,10 +125,26 @@ export async function resolveLiveCommandDispatchInput(
   reportInteractiveParseError?: InteractiveMessageParseErrorReporter,
 ): Promise<LiveCommandDispatchInput> {
   const identity = readIdentity(seed.message);
-  const [prefix, rawAliases, isOwner, isLiteMode, botName] = await Promise.all([
+  const resolveAccess = async (): Promise<CommandAccessContext> => {
+    if (!identity.chatId || !identity.sender || !legacy.getCommandAccess) return UNRESOLVED_COMMAND_ACCESS;
+    try {
+      const value = await legacy.getCommandAccess(identity.chatId, identity.sender, identity.isGroup);
+      const keys = ['resolved', 'isGroup', 'isOwner', 'isSubOwner', 'isGroupAdmin', 'isRealGroupAdmin', 'isBotAdmin'] as const;
+      if (!value || keys.some(key => typeof value[key] !== 'boolean') || value.resolved !== true || value.isGroup !== identity.isGroup) {
+        return UNRESOLVED_COMMAND_ACCESS;
+      }
+      return Object.freeze({ ...Object.fromEntries(keys.map(key => [key, value[key]])),
+        ...(typeof value.isPrimaryOwner === 'boolean' ? { isPrimaryOwner: value.isPrimaryOwner } : {}),
+        ...(Array.isArray(value.moderatorCommands) ? { moderatorCommands: Object.freeze(value.moderatorCommands.filter(token => typeof token === 'string')) } : {}),
+      } as unknown as CommandAccessContext);
+    } catch {
+      return UNRESOLVED_COMMAND_ACCESS;
+    }
+  };
+  const [prefix, rawAliases, access, isLiteMode, botName] = await Promise.all([
     legacy.getPrefix(identity.chatId, identity.isGroup),
     legacy.getAliases(identity.chatId),
-    legacy.isOwner(identity.sender),
+    resolveAccess(),
     legacy.isLiteMode(identity.chatId, identity.isGroup),
     legacy.getBotName(),
   ]);
@@ -142,7 +160,8 @@ export async function resolveLiveCommandDispatchInput(
     prefix: String(prefix || ''),
     botName: String(botName || ''),
     pushName: identity.pushName,
-    isOwner: Boolean(isOwner),
+    access,
+    isOwner: access.isOwner,
     isLiteMode: Boolean(isLiteMode),
     chatId: identity.chatId,
     sender: identity.sender,

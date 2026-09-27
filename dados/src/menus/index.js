@@ -16,7 +16,7 @@ const menuModules = {
     menuMembros: './menumemb.js',
     menuFerramentas: './ferramentas.js',
     menuSticker: './menufig.js',
-    menuIa: './menuia.js',
+    menuShogun: './menushogun.js',
     menuTopCmd: './topcmd.js',
     menuRPG: './menurpg.js',
     menuNexo: './menunexo.js'
@@ -35,7 +35,7 @@ const menuOptionsArgumentIndex = Object.freeze({
     menuMembros: 3,
     menuFerramentas: 3,
     menuSticker: 3,
-    menuIa: 3,
+    menuShogun: 3,
     menuTopCmd: 4,
     menuRPG: 3,
     menuNexo: 3

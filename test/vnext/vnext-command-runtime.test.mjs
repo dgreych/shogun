@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { createVNextCommandRuntime } from '../../dist-vnext/runtime/vnext-command-runtime.js';
 
-function dispatchInput(body) {
+function dispatchInput(body, isGroup = false) {
   return {
     socket: {},
     message: {},
@@ -14,10 +14,12 @@ function dispatchInput(body) {
     botName: '𝖘𝖍𝖔𝖌𝖚𝖓',
     pushName: 'Mauricio',
     isOwner: true,
+    access: Object.freeze({ resolved: true, isGroup, isOwner: true, isSubOwner: false,
+      isGroupAdmin: isGroup, isRealGroupAdmin: false, isBotAdmin: isGroup }),
     isLiteMode: false,
-    chatId: '5511999999999@s.whatsapp.net',
+    chatId: isGroup ? '120363000000000000@g.us' : '5511999999999@s.whatsapp.net',
     sender: '5511999999999@s.whatsapp.net',
-    isGroup: false,
+    isGroup,
     body,
     rawAliases: [],
   };
@@ -36,7 +38,7 @@ test('composition root entrega menus ao domínio vNext', async () => {
     },
   });
 
-  const receipt = await runtime.dispatch(dispatchInput('!menuadm'));
+  const receipt = await runtime.dispatch(dispatchInput('!menuadm', true));
   assert.equal(receipt.owner, 'vnext');
   assert.equal(calls.present.length, 1);
   assert.equal(calls.present[0].descriptor.id, 'admin');

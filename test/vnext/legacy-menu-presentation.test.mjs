@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import path from 'node:path';
 
 import { LegacyMenuPresentationAdapter } from '../../dist-vnext/adapters/legacy-menu-presentation.js';
 import { findMenuCommandDescriptor } from '../../dist-vnext/menu/catalog.js';
@@ -7,7 +8,7 @@ import { findMenuCommandDescriptor } from '../../dist-vnext/menu/catalog.js';
 const RENDERER_KEYS = [
   'menu',
   'menuAlterador',
-  'menuIa',
+  'menuShogun',
   'menuLogos',
   'menubn',
   'menudown',
@@ -25,7 +26,7 @@ function fixture(options = {}) {
   const calls = [];
   const rendererCalls = [];
   const logs = [];
-  const files = new Map(Object.entries(options.files || {}));
+  const files = new Map(Object.entries(options.files || {}).map(([file, value]) => [path.normalize(file), value]));
   const loadCounts = { menus: 0, database: 0, gyomei: 0 };
 
   const renderers = Object.fromEntries(RENDERER_KEYS.map((key) => [key, async (...args) => {
@@ -77,10 +78,10 @@ function fixture(options = {}) {
       };
     },
     fileSystem: {
-      existsSync: (filePath) => files.has(filePath),
+      existsSync: (filePath) => files.has(path.normalize(filePath)),
       readFileSync: (filePath) => {
-        if (!files.has(filePath)) throw new Error(`arquivo-ausente:${filePath}`);
-        return Buffer.from(String(files.get(filePath)));
+        if (!files.has(path.normalize(filePath))) throw new Error(`arquivo-ausente:${filePath}`);
+        return Buffer.from(String(files.get(path.normalize(filePath))));
       },
     },
     mediaRoot: '/media',
@@ -102,6 +103,9 @@ function fixture(options = {}) {
     pushName: options.pushName ?? 'Mauricio',
     isOwner: Boolean(options.isOwner),
     isLiteMode: Boolean(options.isLiteMode),
+    rawAliases: options.rawAliases || [],
+    access: Object.freeze({ resolved: true, isGroup: true, isOwner: Boolean(options.isOwner),
+      isSubOwner: false, isGroupAdmin: Boolean(options.isOwner), isRealGroupAdmin: false, isBotAdmin: true }),
   });
 
   return { adapter, context, calls, rendererCalls, logs, loadCounts };
@@ -143,7 +147,7 @@ test('preserva áudio antes da mídia e prioridade da mídia por categoria', asy
   assert.equal(fx.rendererCalls[0].args.length, 4);
 });
 
-test('personalização de grupo preserva nome, foto, persona e modo lite de brincadeiras', async () => {
+test('personalização antiga mantém foto e modo lite sem selecionar outro desenho', async () => {
   const fx = fixture({
     files: {
       '/custom/group.jpg': 'GROUP-PHOTO',
@@ -167,14 +171,26 @@ test('personalização de grupo preserva nome, foto, persona e modo lite de brin
   assert.equal(fx.rendererCalls[0].args.length, 5);
   assert.equal(fx.rendererCalls[0].args[1], 'GYOMEI DO GRUPO');
   assert.equal(fx.rendererCalls[0].args[3], true);
-  assert.deepEqual(fx.rendererCalls[0].args[4].overrideDesign, { header: 'GYOMEI-THEME' });
+  assert.equal(fx.rendererCalls[0].args[4].overrideDesign, undefined);
+});
+
+test('seleção nativa resolve aliases privados e seus parâmetros antes de mostrar o comando', async () => {
+  const fx = fixture({ files: { '/media/menu.jpg': 'GENERIC' }, rawAliases: [
+    { alias: 'play', command: 'reiniciar' },
+    { alias: 'resumir', command: 'nexo', fixedParams: 'ativar' },
+  ] });
+  await fx.adapter.present(request('menudown', fx.context));
+  const accessFor = fx.rendererCalls[0].args[3].accessFor;
+  assert.equal(accessFor('play').visible, false);
+  assert.equal(accessFor('resumir').visible, false);
+  assert.equal(accessFor('sticker').visible, true);
 });
 
 test('módulos de apresentação são carregados uma única vez por adapter', async () => {
   const fx = fixture({ files: { '/media/menu.jpg': 'GENERIC' } });
 
   await fx.adapter.present(request('menu', fx.context));
-  await fx.adapter.present(request('menuia', fx.context));
+  await fx.adapter.present(request('menushogun', fx.context));
 
   assert.deepEqual(fx.loadCounts, { menus: 1, database: 1, gyomei: 1 });
   assert.equal(fx.rendererCalls.length, 2);

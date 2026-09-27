@@ -1,50 +1,19 @@
-async function menuTopCmd(prefix, botName = "MeuBot", userName = "Usuário", topCommands = [], {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    topCommandsMenuTitle = "MAIS USADOS",
-    infoSectionTitle = "Informações"
-} = {}) {
+import { renderShogunMenu, selectMenuEntries } from './presentation.js';
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
-    
-    if (!topCommands || topCommands.length === 0) {
-return `${formattedHeader}
-
-${menuTopBorder}${separatorIcon} *${topCommandsMenuTitle}*
-${middleBorder}
-${middleBorder} Nenhum comando foi registrado ainda.
-${middleBorder} Use ${prefix}menu para ver a lista
-${middleBorder} de comandos disponíveis!
-${middleBorder}
-${bottomBorder}
-`;
-    }
-    const commandsList = topCommands.map((cmd, index) => {
-        const position = index + 1;
-        const emoji = position <= 3 ? ['🥇', '🥈', '🥉'][index] : '🏅';
-        return `${middleBorder}${emoji} ${position}º: *${prefix}${cmd.name}*\n${middleBorder}   ↳ ${cmd.count} usos por ${cmd.uniqueUsers} usuários`;
-    }).join('\n');
-    return `
-${formattedHeader}
-
-${menuTopBorder}${separatorIcon} *Top ${topCommands.length} Comandos*
-${commandsList}
-${middleBorder}
-${middleBorder}╭─▸ *${infoSectionTitle}:*
-${middleBorder}
-${middleBorder}🔍 Use ${prefix}cmdinfo [comando]
-${middleBorder}   ↳ Para ver estatísticas detalhadas
-${middleBorder}   ↳ Ex: ${prefix}cmdinfo menu
-${middleBorder}
-${bottomBorder}
-`;
+export default async function menuTopCmd(prefix, _botName = 'SHOGUN', userName = 'Usuário', topCommands = [], options = {}) {
+    const allowed = selectMenuEntries((Array.isArray(topCommands) ? topCommands : []).map(entry => ({ ...entry, command: entry.name })), options.accessFor);
+    const ranking = allowed.map((entry, index) => ({
+        command: entry.name,
+        description: `${index + 1}º · ${entry.count} usos por ${entry.uniqueUsers} usuários`,
+    }));
+    return renderShogunMenu({
+        title: 'RANKING DE COMANDOS', prefix, userName, accessFor: options.accessFor,
+        sections: [
+            { title: 'MAIS USADOS', entries: ranking },
+            { title: 'CONSULTA', entries: ranking.length
+                ? [{ command: 'cmdinfo', arguments: '[comando]', description: 'Ver estatísticas do comando.' }]
+                : [{ command: 'menu', description: 'Nenhum comando foi registrado ainda.' }],
+            },
+        ],
+    });
 }
-export default menuTopCmd;

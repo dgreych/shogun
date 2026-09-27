@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import {
   contextInfoFromContent,
   getAutomationData,
+  getConfig,
   identitiesMatch,
   normalizeIdentity,
   saveAutomationData,
@@ -434,14 +435,24 @@ export function resolveCommandTarget(message, text = '') {
   return normalizeIdentity(String(text || '').trim().split(/\s+/)[0]);
 }
 
+export function getPrimaryOwners() {
+  const configured = getConfig().primaryOwners;
+  if (!Array.isArray(configured)) return [];
+  return configured.filter(identity => typeof identity === 'string')
+    .map(normalizeIdentity)
+    .filter(identity => /^\d{10,15}$|^\d+@(lid|s\.whatsapp\.net)$/.test(identity));
+}
+
 export function isPrimaryOwner(sender, primaryNumber, primaryLid, fromMe = false) {
   return fromMe === true
     || identitiesMatch(sender, primaryNumber)
-    || (primaryLid && identitiesMatch(sender, primaryLid));
+    || Boolean(primaryLid && identitiesMatch(sender, primaryLid))
+    || getPrimaryOwners().some(owner => identitiesMatch(sender, owner));
 }
 
 export function isAdditionalOwner(sender) {
-  return getAutomationData().additionalOwners.some(owner => identitiesMatch(sender, owner));
+  return getPrimaryOwners().some(owner => identitiesMatch(sender, owner))
+    || getAutomationData().additionalOwners.some(owner => identitiesMatch(sender, owner));
 }
 
 export function addAdditionalOwner(identity) {

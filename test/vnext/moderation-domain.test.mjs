@@ -89,6 +89,13 @@ function fixture(overrides = {}) {
     removeUserFromMap,
     ...overrides,
   };
+  context.access = overrides.access ?? Object.freeze({
+    resolved: true, isGroup: context.isGroup, isOwner: context.isOwner, isSubOwner: false,
+    isGroupAdmin: context.isOwner || context.isRealGroupAdmin,
+    isRealGroupAdmin: context.isRealGroupAdmin, isBotAdmin: context.isBotAdmin,
+    moderatorCommands: context.isGroupAdmin && !context.isRealGroupAdmin && !context.isOwner
+      ? ['mute', 'desmute', 'mute2', 'desmute2', 'delete', 'blockuser', 'unblockuser'] : [],
+  });
 
   return {
     root,
@@ -129,7 +136,7 @@ test('ban exige administrador real mesmo quando moderador possui acesso efetivo'
     const target = new ModerationDomainDispatchTarget();
     assert.equal(await target.dispatch('ban', fx.context), true);
     assert.equal(fx.participantUpdates.length, 0);
-    assert.match(fx.replies[0].text, /administradores do grupo/i);
+    assert.match(fx.replies[0].text, /administradores reais do grupo/i);
   } finally {
     fx.cleanup();
   }

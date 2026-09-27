@@ -515,7 +515,7 @@ setInterval(() => {
       jsonFileCache.delete(path);
     }
   }
-}, 60000); // A cada 1 minuto
+}, 60000).unref(); // A limpeza não segura um utilitário aberto à toa.
 
 // ═══════════════════════════════════════════════════════════════════
 // SISTEMA DE SEGURANÇA JSON - Proteção contra corrupção de dados

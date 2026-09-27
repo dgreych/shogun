@@ -1,8 +1,12 @@
 import type { LegacyCommandExecutionInput } from '../adapters/legacy-command-executor.js';
 import type { VNextCommandDispatchTarget } from '../runtime/compatibility-dispatch.js';
 import { findMenuCommandDescriptor, type MenuCommandDescriptor } from './catalog.js';
+import { evaluateCommandAccess, commandAccessMessage, UNRESOLVED_COMMAND_ACCESS, type CommandAccessContext } from '../commands/access-policy.js';
+import { findCommandAccessPolicy } from '../commands/access-catalog.js';
 
 export interface MenuExecutionContext extends LegacyCommandExecutionInput {
+  readonly access: CommandAccessContext;
+  readonly rawAliases?: unknown;
   readonly prefix: string;
   readonly botName: string;
   readonly pushName: string;
@@ -30,8 +34,9 @@ export class MenuDomainDispatchTarget implements VNextCommandDispatchTarget<Menu
     const descriptor = findMenuCommandDescriptor(command);
     if (!descriptor) return false;
 
-    if (descriptor.ownerOnly && !context.isOwner) {
-      await this.presentation.replyText(context, OWNER_ONLY_MENU_MESSAGE);
+    const decision = evaluateCommandAccess(findCommandAccessPolicy(command), context.access || UNRESOLVED_COMMAND_ACCESS);
+    if (!decision.executable) {
+      await this.presentation.replyText(context, descriptor.ownerOnly ? OWNER_ONLY_MENU_MESSAGE : commandAccessMessage(decision));
       return true;
     }
 

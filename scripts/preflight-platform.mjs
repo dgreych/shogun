@@ -1,8 +1,17 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import path from 'path';
-import { spawnSync } from 'child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+
+import { loadLocalEnv } from '../dados/src/.scripts/envLoader.js';
+import {
+  BUNNYFY_MODE_KEYS,
+  loadInstanceConfig,
+  secretState,
+  validateEnvUpdates,
+  validateIdentity
+} from '../dados/src/.scripts/instanceConfigStore.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const MIN_NODE = [20, 19, 0];
@@ -32,6 +41,10 @@ function probe(label, command, args, required = true) {
   return false;
 }
 
+function isTrue(value) {
+  return ['1', 'true', 'yes', 'sim', 'on'].includes(String(value ?? '').trim().toLowerCase());
+}
+
 console.log('\n⛩️  Verificação do ambiente\n');
 
 const nodeVersion = versionTuple(process.versions.node);
@@ -46,23 +59,53 @@ const isTermux = Boolean(process.env.TERMUX_VERSION) || fs.existsSync('/data/dat
 const platformName = isTermux ? 'Termux/Android' : `${process.platform}/${process.arch}`;
 console.log(`✅ Plataforma detectada — ${platformName}`);
 
-if (isTermux && !probe('termux-wake-lock', 'termux-wake-lock', [], false)) {
-  warnings.push('Use pkg install termux-api e o aplicativo Termux:API para manter o aparelho acordado.');
+if (isTermux) {
+  const prefix = process.env.PREFIX || '/data/data/com.termux/files/usr';
+  const wakeLockPath = path.join(prefix, 'bin', 'termux-wake-lock');
+  if (fs.existsSync(wakeLockPath)) console.log('✅ termux-wake-lock — disponível');
+  else warnings.push('termux-wake-lock não foi encontrado. Instale/atualize termux-tools; Termux:API não é necessário apenas para o wake lock.');
 }
 
+const envState = loadLocalEnv();
+if (envState.exists) console.log('✅ .env.local — carregado sem exibir valores');
+else warnings.push('.env.local ainda não existe. Execute npm run setup; o painel cria o arquivo privado para você.');
+
 const configPath = path.join(ROOT, 'dados', 'src', 'config.json');
+if (fs.existsSync(configPath)) {
+  console.log('✅ Configuração local encontrada');
+  for (const problem of validateIdentity(loadInstanceConfig())) failures.push(problem);
+} else {
+  warnings.push('Configuração local ainda não criada; execute npm run setup.');
+}
+
 const modulesPath = path.join(ROOT, 'node_modules');
-if (fs.existsSync(configPath)) console.log('✅ Configuração local encontrada');
-else warnings.push('Configuração local ainda não criada; execute npm run setup.');
 if (fs.existsSync(modulesPath)) console.log('✅ Dependências locais encontradas');
 else warnings.push('Dependências ainda não instaladas; execute npm ci.');
+
+console.log('\n🔌 Integrações da instância\n');
+const envDraft = { ...process.env };
+for (const problem of validateEnvUpdates(envDraft)) failures.push(problem);
+
+const bunnyFyEnabled = isTrue(process.env.BUNNYFY_ENABLED);
+const activeModes = BUNNYFY_MODE_KEYS.filter(key => String(process.env[key] || 'off').trim().toLowerCase() !== 'off');
+if (!bunnyFyEnabled) {
+  console.log('ℹ️ BunnyFy — desativada');
+} else {
+  console.log(`✅ BunnyFy — habilitada; ${activeModes.length} capacidade(s) ativa(s)`);
+  console.log(`✅ Credencial BunnyFy — ${secretState(process.env.BUNNYFY_API_TOKEN)}`);
+}
+
+for (const key of activeModes) console.log(`  • ${key}=${String(process.env[key]).trim().toLowerCase()}`);
+console.log(`ℹ️ NVIDIA direta — ${secretState(process.env.NVIDIA_API_KEY)}`);
+console.log(`ℹ️ VEX legado — ${secretState(process.env.VEX_API_KEY)}`);
+console.log(`ℹ️ Upload GitHub legado — ${secretState(process.env.UPLOAD_GITHUB_TOKEN)}`);
 
 for (const warning of warnings) console.log(`⚠️ ${warning}`);
 for (const failure of failures) console.log(`❌ ${failure}`);
 
 if (failures.length) {
-  console.log('\n🚫 O ambiente ainda não está pronto. Corrija os itens acima e repita npm run preflight.\n');
+  console.log('\n🚫 O ambiente ainda não está pronto. Abra npm run setup, corrija os itens e repita npm run preflight.\n');
   process.exit(1);
 }
 
-console.log('\n🛡️ Ambiente pronto. Siga para a configuração.\n');
+console.log('\n🛡️ Ambiente base pronto. Recursos opcionais podem ser configurados pelo painel quando você quiser.\n');

@@ -8,7 +8,7 @@ function resolveLegacyExecutor(moduleValue) {
         throw new Error('Módulo legado de comandos inválido.');
     }
     const record = moduleValue;
-    const candidate = record.default ?? record.NazuninhaBotExec;
+    const candidate = record.default ?? record.shogunExec;
     if (typeof candidate !== 'function') {
         throw new Error('dados/src/index.js não exporta executor de comandos compatível.');
     }

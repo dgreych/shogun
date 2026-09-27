@@ -47,7 +47,7 @@ function patchIndexSource(source) {
   output = replaceRequired(
     output,
     `import * as ia from './funcs/private/ia.js';`,
-    `import * as ia from './funcs/private/.runtime-ia.js';\nimport * as automacoesV9 from './utils/shogunRuntime.js';`,
+    `import * as ia from './funcs/private/.runtime-ia.js';\nimport * as automacoesV9 from './utils/shogunRuntime.js';\nimport { createShogunMenuTheme } from './menus/theme.js';`,
     'imports de execução da IA e das automações'
   );
 
@@ -64,6 +64,21 @@ function patchIndexSource(source) {
     `    info.key.fromMe || \n    isBotSender ||\n    automacoesV9.isAdditionalOwner(sender);`,
     'privilégio dos donos adicionais'
   );
+
+  const assistantTriggerImport =
+    "import { containsPersonaName, shouldTriggerAssistant } from './utils/assistantTrigger.js';";
+
+  const assistantTriggerImportAnchor =
+    "import { promisify } from 'util';";
+
+  if (!output.includes(assistantTriggerImport)) {
+    output = replaceRequired(
+      output,
+      assistantTriggerImportAnchor,
+      assistantTriggerImportAnchor + '\n' + assistantTriggerImport,
+      'import do gatilho dinâmico da assistente'
+    );
+  }
 
   const automationHook = `
     // ===== AUTOMAÇÕES GYOMEI =====
@@ -102,40 +117,70 @@ function patchIndexSource(source) {
   const oldIaCondition = `if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {`;
   const newIaCondition = `const _quotedParticipantRaw = getQuotedContextInfo(info.message)?.participant || info.message?.extendedTextMessage?.contextInfo?.participant || '';
     const _quotedParticipant = String(_quotedParticipantRaw).split(':')[0].split('@')[0];
+
     const _replyBotIds = [
       _botShort,
       String(nazu.user?.id || '').split(':')[0].split('@')[0],
       String(nazu.user?.lid || '').split(':')[0].split('@')[0],
       String(botNumber || '').split(':')[0].split('@')[0]
     ].filter(Boolean);
+
     const _replyToBot = Boolean(
       automacoesV9.getQuotedMessageContent(info.message) &&
       _quotedParticipant &&
       _replyBotIds.includes(_quotedParticipant)
     );
 
-    try {
-      fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({
-        ts: new Date().toISOString(),
-        fromMe: info.key.fromMe,
-        isAssistente,
-        isCmd,
-        fromPro: Boolean(info._fromPro),
-        mencaoDetectada: Boolean(_botShort && budy2.includes(_botShort)),
-        mencOs2Match: Boolean(menc_os2 && menc_os2 == botNumber),
-        replyToBot: _replyToBot,
-        quotedParticipantPresent: Boolean(_quotedParticipant)
-      }) + '\\n');
-    } catch {}
+    const _triggerPersonaKey =
+      (
+        isGroup &&
+        isGroupCustomizationEnabled()
+          ? getGroupCustomization(from)?.customPersona
+          : null
+      )
+      ||
+      automacoesV9.getActivePersona();
 
-    if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && (((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber)) || _replyToBot)) {`;
+    const _triggerPersonaLabel =
+      automacoesV9.labelPersona?.(_triggerPersonaKey)
+      ||
+      _triggerPersonaKey;
+
+    const _triggerPersonaNames = [
+      _triggerPersonaKey,
+      _triggerPersonaLabel
+    ].filter(Boolean);
+
+    const _personaTriggered =
+      containsPersonaName(
+        budy2,
+        _triggerPersonaNames
+      );
+
+    const _assistantTriggered =
+      shouldTriggerAssistant({
+        fromMe: info.key.fromMe,
+        enabled: isAssistente,
+        isCommand: isCmd,
+        fromPro: Boolean(info._fromPro),
+        botShort: _botShort,
+        body: budy2,
+        quotedOrMentioned:
+          _replyToBot
+            ? botNumber
+            : menc_os2,
+        botNumber,
+        personaNames: _triggerPersonaNames
+      });
+
+    if (_assistantTriggered) {`;
 
   output = replaceRequired(output, oldIaCondition, newIaCondition, 'gatilho da IA por resposta');
 
   output = replaceRequired(
     output,
     `if (budy2.replaceAll('@' + _botShort, '').length > 2) {`,
-    `if (_replyToBot || budy2.replaceAll('@' + _botShort, '').length > 2) {\n    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ENTROU_BLOCO_IA_INDEX' }) + '\\n'); } catch {}`,
+    `if (_replyToBot || _personaTriggered || budy2.replaceAll('@' + _botShort, '').length > 2) {\n    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ENTROU_BLOCO_IA_INDEX' }) + '\\n'); } catch {}`,
     'liberação de respostas curtas à IA'
   );
 
@@ -448,17 +493,7 @@ case 'identidadepadrao':
     defaultConfig.nomebot = defaultDisplayName;
     writeJsonFile(CONFIG_FILE, defaultConfig);
 
-    // Fallback de segurança caso o design do Shogun não esteja carregado.
-    const shogunFallbackDesign = {
-      header: \`╭─⚔─⊰ 『 *{botName}* 』\\n┊ {userName}, no comando.\\n┊ Prefixo: {prefix}\\n╰────────⊱ 🜲 ⊰────────╯\`,
-      menuTopBorder: '╭─⚔─',
-      bottomBorder: '╰────────⊱ 🜲 ⊰────────╯',
-      menuTitleIcon: '🜲▸',
-      menuItemIcon: '⚔↳',
-      separatorIcon: '🜲',
-      middleBorder: '┊'
-    };
-    saveMenuDesign(automacoesV9.PERSONA_MENU_DESIGNS[automacoesV9.DEFAULT_PERSONA] || shogunFallbackDesign);
+    saveMenuDesign(createShogunMenuTheme());
 
     const defaultFotoMedia = automacoesV9.getCommandMedia(\`\${automacoesV9.DEFAULT_PERSONA}_profilep\`);
     if (defaultFotoMedia?.path && fs.existsSync(defaultFotoMedia.path)) {
@@ -623,6 +658,12 @@ function patchMenusIndexSource(source) {
 }
 
 function patchMenubnSource(source) {
+  if (source.includes('renderShogunMenu(') && source.includes('prepareMenuSections(')) {
+    if (/command:\s*['"]nazista['"]|"command"\s*:\s*"nazista"/.test(source)) {
+      throw new Error('Comando excluído reapareceu no menu de brincadeiras.');
+    }
+    return source;
+  }
   return replaceRequired(
     source,
     `    return menuContent;`,
@@ -650,12 +691,13 @@ function patchStartSource(source) {
 }
 
 export function prepareRuntimeSources() {
-  const indexSource = fs.readFileSync(path.join(SRC_DIR, 'index.js'), 'utf8');
-  const connectSource = fs.readFileSync(path.join(SRC_DIR, 'connect.js'), 'utf8');
-  const iaSource = fs.readFileSync(path.join(SRC_DIR, 'funcs', 'private', 'ia.js'), 'utf8');
-  const menusIndexSource = fs.readFileSync(path.join(SRC_DIR, 'menus', 'index.js'), 'utf8');
-  const menubnSource = fs.readFileSync(path.join(SRC_DIR, 'menus', 'menubn.js'), 'utf8');
-  const startSource = fs.readFileSync(path.join(SCRIPTS_DIR, 'start.js'), 'utf8');
+  const readSource = (...parts) => fs.readFileSync(path.join(...parts), 'utf8').replace(/\r\n?/g, '\n');
+  const indexSource = readSource(SRC_DIR, 'index.js');
+  const connectSource = readSource(SRC_DIR, 'connect.js');
+  const iaSource = readSource(SRC_DIR, 'funcs', 'private', 'ia.js');
+  const menusIndexSource = readSource(SRC_DIR, 'menus', 'index.js');
+  const menubnSource = readSource(SRC_DIR, 'menus', 'menubn.js');
+  const startSource = readSource(SCRIPTS_DIR, 'start.js');
 
   fs.writeFileSync(path.join(SRC_DIR, '.runtime-index.js'), patchIndexSource(indexSource));
   fs.writeFileSync(path.join(SRC_DIR, '.runtime-connect.js'), patchConnectSource(connectSource));

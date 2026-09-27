@@ -75,15 +75,15 @@ function run(command) {
 });
 
 test('baseline detecta duplicata nova e remoção não registrada', () => {
-  const clean = compareLegacyDuplicateBaseline(['vender', 'equip', 'slots', 'inventario']);
+  const clean = compareLegacyDuplicateBaseline(['vender', 'equip', 'slots', 'inventario', 'sairgp']);
   assert.equal(clean.ok, true);
 
-  const unexpected = compareLegacyDuplicateBaseline(['equip', 'slots', 'vender', 'inventario', 'novo']);
+  const unexpected = compareLegacyDuplicateBaseline(['equip', 'slots', 'vender', 'inventario', 'sairgp', 'novo']);
   assert.equal(unexpected.ok, false);
   assert.deepEqual(unexpected.unexpected, ['novo']);
   assert.deepEqual(unexpected.missing, []);
 
-  const missing = compareLegacyDuplicateBaseline(['equip', 'slots', 'vender']);
+  const missing = compareLegacyDuplicateBaseline(['equip', 'slots', 'vender', 'sairgp']);
   assert.equal(missing.ok, false);
   assert.deepEqual(missing.unexpected, []);
   assert.deepEqual(missing.missing, ['inventario']);

@@ -1,44 +1,31 @@
-async function menuSticker(prefix, botName = "MeuBot", userName = "Usuário", {
-    header = `╭┈⊰ 🫟 『 *${botName}* 』\n┊💭 *Usuário:* #nome#\n┊👑 *Prefixo:* #prefix#\n╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯`,
-    menuTopBorder = "╭┈",
-    bottomBorder = "╰─┈┈┈┈┈┈┈┈┈┈◜❁◞┈┈┈┈┈┈┈┈┈┈─╯",
-    menuTitleIcon = "🍧ฺꕸ▸",
-    menuItemIcon = "•.̇𖥨֗🫟⭟",
-    separatorIcon = "❁",
-    middleBorder = "┊", 
-    createStickerMenuTitle = "🎨 CRIAÇÃO DE FIGURINHAS",
-    managementMenuTitle = "⚙️ GERENCIAMENTO"
-} = {}) {
+import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
-    let formattedHeader = header
-    .replace(/#nome#/g, userName)
-    .replace(/#prefix#/g, prefix);
-    
-  return `${formattedHeader}
+const sections = [
+    { title: "CRIAÇÃO DE FIGURINHAS", optionKey: "createStickerMenuTitle", entries: [
+        {"command":"emojimix"},
+        {"command":"ttp"},
+        {"command":"attp"},
+        {"command":"sticker"},
+        {"command":"sticker2"},
+        {"command":"sbg"},
+        {"command":"sfundo"},
+        {"command":"qc"},
+        {"command":"brat"},
+        {"command":"bratvid"},
+    ] },
+    { title: "GERENCIAMENTO", optionKey: "managementMenuTitle", entries: [
+        {"command":"figualeatoria"},
+        {"command":"figurinhas"},
+        {"command":"rename"},
+        {"command":"rgtake"},
+        {"command":"take"},
+        {"command":"toimg"},
+    ] },
+];
 
-${menuTopBorder}${separatorIcon} *${createStickerMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}emojimix
-${middleBorder}${menuItemIcon}${prefix}ttp
-${middleBorder}${menuItemIcon}${prefix}attp
-${middleBorder}${menuItemIcon}${prefix}sticker
-${middleBorder}${menuItemIcon}${prefix}sticker2
-${middleBorder}${menuItemIcon}${prefix}sbg
-${middleBorder}${menuItemIcon}${prefix}sfundo
-${middleBorder}${menuItemIcon}${prefix}qc
-${middleBorder}${menuItemIcon}${prefix}brat
-${middleBorder}${menuItemIcon}${prefix}bratvid
-${bottomBorder}
-
-${menuTopBorder}${separatorIcon} *${managementMenuTitle}*
-${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}figualeatoria
-${middleBorder}${menuItemIcon}${prefix}figurinhas
-${middleBorder}${menuItemIcon}${prefix}rename
-${middleBorder}${menuItemIcon}${prefix}rgtake
-${middleBorder}${menuItemIcon}${prefix}take
-${middleBorder}${menuItemIcon}${prefix}toimg
-${bottomBorder}
-`;
+export default async function menuSticker(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
+    return renderShogunMenu({
+        title: "FIGURINHAS", prefix, userName,
+        sections: prepareMenuSections(sections, options),
+    });
 }
-export default menuSticker;
