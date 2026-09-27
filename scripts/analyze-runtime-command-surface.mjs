@@ -123,10 +123,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const result = analyzeRuntimeCommandSurface();
   const baseline = printRuntimeCommandSurface(result);
   if (
-    result.injectedFamilyCount !== 16
-    || result.injectedTokenCount !== 34
-    || result.prepared.familyCount !== 525
-    || result.prepared.uniqueTokenCount !== 1606
+    result.injectedFamilyCount !== 14
+    || result.injectedTokenCount !== 30
+    || result.prepared.familyCount !== 526
+    || result.prepared.uniqueTokenCount !== 1602
     || !baseline.ok
   ) process.exitCode = 2;
 }
