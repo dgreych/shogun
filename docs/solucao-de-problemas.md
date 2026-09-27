@@ -14,7 +14,7 @@ Maximize a janela, reduza a fonte ou escolha o código de pareamento. No Android
 
 ## A instalação pede chave SSH do GitHub
 
-Atualize o repositório e repita o instalador da sua plataforma. O instalador do Termux converte dependências públicas do GitHub para transporte HTTPS durante a instalação.
+Atualize o repositório e repita o instalador da sua plataforma. Os instaladores convertem dependências públicas do GitHub para transporte HTTPS durante a instalação.
 
 ## O Android encerra o SHOGUN
 
@@ -30,4 +30,4 @@ Não apague arquivos isolados da pasta de sessão. Faça backup privado da pasta
 
 ## Nada resolveu
 
-Execute `npm run preflight`, copie apenas as linhas de diagnóstico sem números, chaves ou sessão e procure o [grupo oficial](https://chat.whatsapp.com/Ju0zjLiBLe28eNGUu2gapY).
+Execute `npm run preflight`, copie apenas as linhas de diagnóstico sem números, chaves ou sessão e procure o [atendimento](https://wa.me/5522997028553).

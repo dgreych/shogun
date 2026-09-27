@@ -1,225 +1,55 @@
-<p align="center">
-  <img src="assets/brand/shogun-banner.png" alt="𝖘𝖍𝖔𝖌𝖚𝖓" width="100%">
-</p>
+# SHOGUN
 
-<h1 align="center">𝖘𝖍𝖔𝖌𝖚𝖓</h1>
+[Conheça o Shogun](https://dgreych.github.io/DOMO-BJI/shogun/)
 
-<p align="center">
-  <strong>Um bot para os seus grupos de WhatsApp.</strong><br>
-  Ele modera, baixa vídeo e música, faz figurinha, joga e tem um RPG inteiro.<br>
-  Roda no seu computador ou num celular Android parado na gaveta — e é de graça.
-</p>
+![SHOGUN](assets/brand/shogun-cat-hero.png)
 
-<p align="center">
-  <img src="docs/instalacao/img/painel.png" alt="Tela do bot conectando, com arte em pixel" width="44%">
-  &nbsp;&nbsp;
-  <img src="docs/instalacao/img/feed.png" alt="Feed mostrando comandos chegando em tempo real" width="44%">
-</p>
+O SHOGUN reúne ferramentas de grupo, figurinhas e comandos úteis no WhatsApp, com configuração local e menus que acompanham as permissões de cada pessoa.
 
-<p align="center">
-  <sub>Assim que ele fica quando está ligado: a tela de conexão e o
-  acompanhamento ao vivo de tudo que chega.</sub>
-</p>
+**Instalar e rodar sua própria instância é gratuito.** Você escolhe o aparelho ou servidor. Internet, energia, hospedagem e integrações de terceiros podem ter custos próprios.
 
----
+[Conheça o site](https://dgreych.github.io/DOMO-BJI/shogun/) · [Primeiros passos](docs/primeiros-passos.md) · [Contato pelo WhatsApp](https://wa.me/5522997028553)
 
-## 👉 Nunca instalou nada assim? Comece por aqui
+## Instalação
 
-Escolha onde o bot vai rodar. Cada guia começa do zero, mostra **o que aparece
-na sua tela** a cada passo e o que fazer quando não aparece.
+Escolha seu sistema. Os guias explicam os pré-requisitos, a configuração, o pareamento e como retomar a sessão.
 
-<table>
-<tr>
-<td align="center" width="33%">
-<a href="docs/instalacao/termux.md"><strong>📱 Android</strong></a><br>
-<sub>Celular reserva na tomada</sub><br>
-<sub>15 a 35 min</sub><br>
-<sub><a href="https://f-droid.org/repo/com.termux_1022.apk">baixar o Termux</a></sub>
-</td>
-<td align="center" width="33%">
-<a href="docs/instalacao/windows.md"><strong>🪟 Windows</strong></a><br>
-<sub>10 ou 11, no seu PC</sub><br>
-<sub>10 a 20 min</sub>
-</td>
-<td align="center" width="33%">
-<a href="docs/instalacao/linux.md"><strong>🐧 Linux</strong></a><br>
-<sub>Desktop, mini PC ou servidor</sub><br>
-<sub>10 a 20 min</sub>
-</td>
-</tr>
-</table>
+| Sistema | Guia | Iniciar, dentro da pasta do projeto |
+| --- | --- | --- |
+| Windows | [PowerShell](docs/instalacao/windows.md) | `npm start` |
+| Linux | [Terminal](docs/instalacao/linux.md) | `npm start` |
+| macOS | [Terminal e Homebrew](docs/instalacao/macos.md) | `npm start` |
+| Android | [Termux](docs/instalacao/termux.md) | `npm start` |
 
-<p align="center">
-  <img src="docs/instalacao/img/painel.png" alt="Painel de conexão do bot no terminal, com arte em pixel" width="46%">
-  &nbsp;&nbsp;
-  <img src="docs/instalacao/img/feed.png" alt="Feed do terminal mostrando comandos e mensagens chegando" width="46%">
-</p>
+O projeto requer Node.js 20.19 ou superior, npm 9 ou superior e Git. Para uma instalação nova, use Node.js 24 LTS.
 
-<p align="center">
-  <sub>À esquerda, a tela de conexão. À direita, o feed ao vivo — cada comando
-  e mensagem que chega aparece assim no seu terminal.</sub>
-</p>
+**FFmpeg e FFprobe:** `npm start` prepara os executáveis compatíveis no Windows, Linux e macOS quando eles não estão instalados. No Android, execute `pkg install -y ffmpeg` no Termux. Cada guia também explica como instalar manualmente caso a preparação automática falhe.
 
----
-
-## Vai rodar no Android?
-
-Antes de tudo, instale o **Termux** — é o aplicativo onde o bot roda. Toque e o
-download começa:
-
-**[⬇️ Baixar Termux (F-Droid)](https://f-droid.org/repo/com.termux_1022.apk)**
- · [alternativa no GitHub](https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_universal.apk)
-
-> Não use a versão da Play Store: está parada há anos e não funciona para isso.
-
-Depois siga o [guia do Android](docs/instalacao/termux.md), que explica o resto
-tela por tela.
-
-## Já usa terminal? Comece em três minutos
+## Iniciar a instância
 
 ```bash
-git clone https://github.com/dgreych/shogun.git
-cd shogun
-bash scripts/install-linux.sh   # Windows: install-windows.ps1 · Android: install-termux.sh
 npm start
 ```
 
-Leia o QR no WhatsApp, mande `!menu` no grupo e pronto. Se a palavra "terminal"
-já assusta, comece pelo [guia da sua plataforma](#-nunca-instalou-nada-assim-comece-por-aqui) — ele explica cada
-tela, sem pressupor nada.
+Depois de extrair o projeto, execute `npm start` dentro da pasta. As dependências são instaladas automaticamente. Informe somente nome do bot, número do dono, número do bot e chave BunnyFy opcional. Sem chave paga, conversa e modelos continuam disponíveis; os outros serviços têm 20 chamadas por dia, controladas na API. Não altere o endereço oficial da BunnyFy.
 
-## Como funciona
+Escolha QR ou código de pareamento quando solicitado. No WhatsApp conectado, envie `!menu` (ou o prefixo que você configurou). Comece em uma conversa ou grupo de teste.
 
-```mermaid
-flowchart LR
-  A[Seu WhatsApp] <--> B[𝖘𝖍𝖔𝖌𝖚𝖓<br/>no seu aparelho]
-  B --> C[Grupos<br/>moderação e jogos]
-  B --> D[Downloads<br/>YouTube, TikTok e mais]
-  B -.opcional.-> E[Serviços opcionais<br/>imagem e transcrição]
-```
+- `npm run setup` abre a configuração local.
+- `Ctrl+C` encerra o processo; `npm start` retoma a instalação.
+- [Primeiros passos](docs/primeiros-passos.md) explica conexão, permissões, backup e atualização.
+- [Solução de problemas](docs/solucao-de-problemas.md) ajuda a interpretar falhas comuns.
 
-A sessão e os dados dos grupos ficam **no seu aparelho**. Nada de servidor de
-terceiro, salvo as APIs que você mesmo configurar.
+## Controle e privacidade
 
-## O que ele faz
+O menu apresenta comandos conforme as permissões reais. Comandos administrativos exigem os papéis correspondentes; o menu não concede privilégios. Só dê cargo de administrador ao bot quando entender as rotinas que pretende usar.
 
-**Cuida do grupo.** Boas-vindas, anti-link, anti-flood e advertências com
-banimento automático na terceira. Moderadores com permissões próprias, separadas
-das do administrador do WhatsApp. Silenciar quem está atrapalhando, abrir e
-fechar o grupo por horário.
+Sessão e configuração ficam na sua instalação. O bot se conecta ao WhatsApp, e integrações opcionais podem enviar dados aos respectivos fornecedores. Não publique arquivos de sessão, chaves, códigos de pareamento ou backups privados. O SHOGUN é independente e não é um produto oficial do WhatsApp; mudanças na plataforma podem afetar a conexão.
 
-**Resolve mídia.** Baixa de YouTube, TikTok, Instagram, Twitter, Facebook,
-Pinterest e Kwai. Vídeo vira áudio, áudio vira texto, imagem vira figurinha e
-figurinha vira imagem. Faz figurinha animada de vídeo curto e mistura dois
-emojis num só.
+## Hospedagem, API e apoio
 
-**Trabalha com imagens.** Texto vira imagem, remove fundo, aumenta resolução. O
-roteador escolhe o modelo pelo tipo de pedido: pedido rápido vai para o modelo
-rápido, pedido caprichado vai para o modelo de qualidade.
+Você pode rodar por conta própria ou [conversar sobre serviços opcionais](https://wa.me/5522997028553). Disponibilidade, limites, suporte e preço são combinados no atendimento antes de qualquer contratação. Esses serviços não são requisito para acessar o código e instalar o bot.
 
-**Conversa.** Shogun tem uma voz própria e consistente. Chame pelo nome,
-mencione o bot ou responda a uma mensagem dele. No grupo, administradores
-ligam ou desligam a conversa com `!assistente on` e `!assistente off`.
-Donos ajustam as orientações com `!setprompt`, consultam com `!verprompt`
-e restauram o padrão com `!resetprompt`.
+## Licença e créditos
 
-**Tem um RPG inteiro.** Trabalho, mineração, pesca, caça, forja, plantio,
-cozinha, propriedades que rendem por dia, mercado entre jogadores, habilidades
-que evoluem e ranking. Cada grupo tem a própria economia.
-
-**E jogos.** Velha, forca, quiz, roleta, caça-palavras e uma taverna de duelos
-por turnos.
-
-## Menus no WhatsApp
-
-Comece com `!menu` e use o prefixo configurado na sua instância. Os textos
-seguem a mesma composição em todas as categorias; as imagens continuam sendo
-as que você escolher para o bot.
-
-| Comando | O que abre |
-| --- | --- |
-| `!menu` | Categorias disponíveis para você |
-| `!menudown` | Downloads |
-| `!menufig` | Figurinhas |
-| `!menubn` | Brincadeiras |
-| `!menushogun` | Conversa com o Shogun |
-| `!menuadm` | Administração do grupo, quando você tiver acesso |
-| `!menudono` | Controles do dono, quando você tiver acesso |
-
-Comandos restritos ficam ocultos para quem não pode usá-los. Essa mesma
-verificação vale na execução, nos atalhos, nas sugestões, na ajuda e no ranking
-de comandos. Ser dono ou moderador do bot não transforma a conta em
-administrador real do WhatsApp; ações que exigem esse papel conferem o grupo.
-
-Cada instalação usa sua própria configuração e sessão. O repositório público
-não inclui os donos, os dados dos grupos ou as credenciais da instância hospedada.
-
-## Configuração
-
-<p align="center">
-  <img src="docs/instalacao/img/preflight-linux.png" alt="Saída do comando de verificação do ambiente" width="80%">
-</p>
-
-<p align="center">
-  <sub><code>npm run preflight</code> confere tudo que o bot precisa antes de você começar.</sub>
-</p>
-
-O instalador pergunta seu nome, seu número com país e DDD, o nome do bot e o
-prefixo dos comandos. Nada disso sai do seu aparelho.
-
-## Manutenção
-
-```bash
-npm run preflight   # confere Node.js, npm, Git, FFmpeg e a plataforma
-npm run setup       # refaz a configuração inicial
-npm start           # inicia o bot
-```
-
-Atualizar:
-
-```bash
-git pull --ff-only && npm ci --no-audit --no-fund && npm start
-```
-
-## Dúvidas frequentes
-
-**Preciso de um número separado?** Sim. Use um chip só do bot — ele conecta
-como aparelho vinculado e responde por essa conta.
-
-**Preciso deixar o computador ligado?** Sim, enquanto quiser o bot no ar. Por
-isso muita gente usa um Android antigo na tomada.
-
-**Preciso configurar serviços de conversa e imagem?** São opcionais. Moderação,
-figurinhas, jogos e RPG funcionam sem eles. Alguns downloads podem precisar de
-um serviço de mídia, conforme a origem.
-
-**Vão banir meu número?** O bot conecta como aparelho vinculado usando uma
-biblioteca independente. Não há garantia contra bloqueios; evite disparos em
-massa e spam.
-
-**Meus dados vão para algum servidor?** Não. Sessão, bancos e configuração
-ficam no aparelho onde o bot roda.
-
-## Segurança
-
-A pasta `dados/database/qr-code/` guarda a sessão do WhatsApp. **Quem tem essa
-pasta entra na sua conta**: não compacte, não envie, não publique. Ela já está
-protegida pelo `.gitignore`.
-
-## Requisitos
-
-<p>
-  <img alt="Node.js 20.19+" src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&logoColor=white">
-  <img alt="WhatsApp Baileys" src="https://img.shields.io/badge/WhatsApp-Baileys-25D366?logo=whatsapp&logoColor=white">
-  <img alt="Windows, Linux e Termux" src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20Termux-ce141a">
-  <img alt="Licença ISC" src="https://img.shields.io/badge/licen%C3%A7a-ISC-deb054">
-</p>
-
-Node.js 20.19 ou superior · FFmpeg · Git · um número de WhatsApp dedicado
-
-Os instaladores cuidam disso para você. A lista está aqui para quem já tem o
-ambiente montado e quer conferir.
-
-## Licença
-
-Publicado sob a licença ISC. Veja [LICENSE](LICENSE) e [NOTICE](NOTICE).
+Distribuído sob a [licença ISC](LICENSE). Direção e manutenção: Maurício Almeida. Os créditos e avisos de autoria estão em [NOTICE](NOTICE); preserve-os ao redistribuir o projeto.

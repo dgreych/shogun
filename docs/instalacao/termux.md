@@ -1,4 +1,7 @@
-# Instalar o 𝖘𝖍𝖔𝖌𝖚𝖓 no Android
+# Instalar o SHOGUN no Android
+
+> **Ferramentas essenciais:** Node.js, Git e FFmpeg. A etapa de preparação instala os três pelo `pkg`. O FFmpeg do Termux já fornece o FFprobe. Os binários de Windows, macOS e Linux não substituem o pacote Android.
+
 
 Este guia começa do zero. Você não precisa conhecer programação nem ter usado
 um terminal antes. Faça uma etapa por vez e só passe para a próxima quando vir
@@ -30,32 +33,18 @@ Você vai precisar de:
 - o navegador do celular;
 - de preferência, um aparelho reserva para deixar o bot ligado direto.
 
-O 𝖘𝖍𝖔𝖌𝖚𝖓 funciona como um aparelho conectado à sua conta. Quando possível,
+O SHOGUN funciona como um aparelho conectado à sua conta. Quando possível,
 comece com um número e um grupo de testes antes de colocá-lo numa comunidade.
 
 ## Etapa 1 — baixar o Termux verdadeiro
 
 O Termux é o aplicativo que abre a linha de comando onde o bot vai rodar.
-Não use cópias encontradas em sites de APK e não use a edição antiga da Play
-Store.
+Use uma das fontes oficiais abaixo. Este guia segue a distribuição tradicional do Termux, disponível no F-Droid e no GitHub. A edição da Play Store tem desenvolvimento e suporte próprios; não misture suas instruções com as deste guia.
 
-### Baixe o APK
+- [F-Droid — Termux](https://f-droid.org/packages/com.termux/): abra a página e escolha o APK disponível.
+- [GitHub oficial — versões](https://github.com/termux/termux-app/releases): siga as orientações de instalação e arquitetura da versão escolhida.
 
-Toque no link e o download começa. Os dois servem; o do F-Droid costuma estar
-numa versão mais nova.
-
-| Fonte | Link direto | Observação |
-| --- | --- | --- |
-| **F-Droid** (recomendado) | [Baixar Termux](https://f-droid.org/repo/com.termux_1022.apk) | Versão mais recente. Não precisa instalar a loja F-Droid |
-| **GitHub oficial** | [Baixar Termux](https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_universal.apk) | Arquivo `universal`, funciona em qualquer aparelho |
-
-Se algum link estiver fora do ar ou você quiser conferir se saiu versão nova,
-as páginas oficiais são
-[F-Droid](https://f-droid.org/packages/com.termux/) e
-[GitHub Releases](https://github.com/termux/termux-app/releases).
-
-> ⚠️ **Não baixe o Termux da Play Store.** A versão de lá está congelada há
-> anos e não funciona para isso. Também não use sites de APK genéricos.
+Evite sites genéricos de APK. Os links acima permitem conferir a versão atual sem depender de um arquivo antigo.
 
 ### Instalar o arquivo baixado
 
@@ -107,10 +96,10 @@ Várias linhas vão passar pela tela. Isso é normal. Aguarde até o `$` aparece
 novamente. Se o Termux perguntar qual configuração manter, aceite a opção
 padrão pressionando Enter.
 
-Agora instale a ferramenta que vai buscar o 𝖘𝖍𝖔𝖌𝖚𝖓:
+Agora instale a ferramenta que vai buscar o SHOGUN:
 
 ```bash
-pkg install -y git
+pkg install -y git nodejs-lts ffmpeg
 ```
 
 Espere o `$` voltar.
@@ -123,7 +112,7 @@ Espere o `$` voltar.
 > ⚠️ **Se travar em "Waiting for headers":** sua rede está instável. Aguarde
 > ou troque de Wi-Fi e rode o comando de novo — repetir não estraga nada.
 
-## Etapa 4 — baixar o 𝖘𝖍𝖔𝖌𝖚𝖓
+## Etapa 4 — baixar o SHOGUN
 
 Cole:
 
@@ -151,75 +140,21 @@ O fim da linha deve ser `/shogun`.
 > ⚠️ **Se disser "already exists":** a pasta já foi baixada antes. Entre nela
 > com `cd shogun` e siga.
 
-## Etapa 5 — preparar o bot
+## Etapa 5 — iniciar e configurar
 
-Cole:
-
-```bash
-bash scripts/install-termux.sh
-```
-
-O instalador prepara Node.js, FFmpeg e os componentes do 𝖘𝖍𝖔𝖌𝖚𝖓. Pode parecer
-parado durante alguns minutos; não feche o Termux. A instalação chegou ao ponto
-certo quando aparecer o título **Quartel de configuração do 𝖘𝖍𝖔𝖌𝖚𝖓**.
-
-### Responder à configuração
-
-O assistente faz quatro perguntas. Digite a resposta e pressione Enter em cada
-uma:
-
-1. **Como o 𝖘𝖍𝖔𝖌𝖚𝖓 deve chamar você?** — por exemplo, `Mauricio`.
-2. **Seu número com país e DDD** — somente dígitos. Exemplo fictício:
-   `5511999999999` (`55` do Brasil, DDD e número; sem `+`, espaço ou traço).
-3. **Nome do bot** — pressione Enter para manter `𝖘𝖍𝖔𝖌𝖚𝖓`.
-4. **Prefixo de comando** — pressione Enter para manter `!`.
-
-Ao final, você deve ver **Configuração local salva** e **𝖘𝖍𝖔𝖌𝖚𝖓 pronto**. O
-arquivo com esses dados fica apenas no aparelho e não entra no repositório.
-
-Se digitou algo errado, não reinstale tudo. Rode:
-
-```bash
-npm run setup
-```
-
-> ✅ **Deu certo se você vir:** as perguntas de configuração aparecendo uma a
-> uma, e no fim uma mensagem de conclusão.
->
-> ⚠️ **Se parar com erro de permissão:** feche o Termux por completo, abra de
-> novo e repita a partir do `cd shogun`.
-
-## Etapa 6 — conferir se está tudo certo
-
-Cole:
-
-```bash
-npm run preflight
-```
-
-Node.js, npm, Git e FFmpeg devem aparecer aprovados. Um aviso sobre
-`termux-wake-lock` não impede o primeiro teste; cuidaremos disso depois.
-
-> ✅ **Deu certo se você vir:** uma lista de verificações com marcas de
-> aprovado, sem nenhuma linha vermelha.
-
-<p align="center">
-  <img src="img/preflight-termux.png" alt="Saída do comando de verificação, com Node.js, npm, Git e FFmpeg aprovados" width="100%">
-</p>
-
-<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
-configuração é esperado antes da etapa seguinte.</sub>
->
-> ⚠️ **Se o FFmpeg aparecer como ausente:** rode `pkg install ffmpeg -y` e
-> repita a verificação.
-
-## Etapa 7 — conectar o WhatsApp no mesmo celular
-
-Inicie o 𝖘𝖍𝖔𝖌𝖚𝖓:
+Na pasta `shogun`, execute:
 
 ```bash
 npm start
 ```
+
+O primeiro início instala as dependências e pede nome do bot, número do dono, número do bot e chave BunnyFy opcional. Informe os números com DDI e DDD, somente dígitos. Aperte Enter no campo da chave para usar a franquia gratuita.
+
+Mantenha o Termux aberto enquanto as dependências são instaladas. Ao concluir a configuração, o mesmo processo oferece a conexão com o WhatsApp. Se os requisitos falharem, confira com `npm run preflight`.
+
+## Etapa 6 — conectar o WhatsApp no mesmo celular
+
+Se o processo já está aberto após a configuração, continue nele. Para retomar um processo parado, execute `npm start`.
 
 Na primeira vez, o terminal oferece três opções. Como WhatsApp e Termux estão
 no mesmo celular, digite `2` para **código de pareamento** e pressione Enter.
@@ -234,7 +169,7 @@ Agora:
 3. abra **Aparelhos conectados** ou **Dispositivos conectados**;
 4. toque em **Conectar um aparelho**;
 5. escolha **Conectar com número de telefone**;
-6. digite o código mostrado pelo 𝖘𝖍𝖔𝖌𝖚𝖓.
+6. digite o código mostrado pelo SHOGUN.
 
 Volte ao Termux. Aguarde a confirmação de conexão. Na próxima abertura, essa
 sessão será reconhecida automaticamente e não será necessário parear de novo.
@@ -244,16 +179,11 @@ sessão será reconhecida automaticamente e não será necessário parear de nov
 Digite `1` para usar QR Code. No aparelho que tem o WhatsApp, abra **Aparelhos
 conectados → Conectar um aparelho** e leia o QR mostrado no Termux.
 
-> ✅ **Deu certo se você vir:** a palavra **CONECTADO** na tela e, logo
-> depois, uma mensagem chegando no WhatsApp do dono.
+> ✅ **Deu certo se você vir:** a confirmação de conexão no terminal. Teste `!menu` para confirmar o envio real.
 
-<p align="center">
-  <img src="img/boot.png" alt="Terminal mostrando o bot iniciando e detectando a sessão" width="100%">
-</p>
 
-<p align="center">
-  <img src="img/conectado.png" alt="Terminal mostrando a conexão estabelecida" width="100%">
-</p>
+
+
 >
 > ⚠️ **Se o QR sumir antes de você ler:** ele expira em segundos e é gerado de
 > novo sozinho. Deixe a câmera pronta antes de olhar a tela.
@@ -261,9 +191,9 @@ conectados → Conectar um aparelho** e leia o QR mostrado no Termux.
 > ⚠️ **Se pedir o QR toda vez que reinicia:** a sessão não está sendo salva.
 > Confirme que você não apagou a pasta `dados/database`.
 
-## Etapa 8 — o primeiro comando
+## Etapa 7 — o primeiro comando
 
-Com o 𝖘𝖍𝖔𝖌𝖚𝖓 conectado, abra uma conversa de teste no WhatsApp e envie:
+Com o SHOGUN conectado, abra uma conversa de teste no WhatsApp e envie:
 
 ```text
 !menu
@@ -279,10 +209,10 @@ administrador, teste comandos simples e leia o guia de
 > ⚠️ **Se ele não responder:** confirme que está no grupo, que o prefixo é o
 > mesmo que você configurou, e que a tela do Termux ainda mostra o bot ligado.
 
-## Etapa 9 — impedir que o Android desligue o bot
+## Etapa 8 — impedir que o Android desligue o bot
 
 O Android economiza bateria fechando aplicativos em segundo plano. Para o
-𝖘𝖍𝖔𝖌𝖚𝖓 permanecer conectado, faça as duas proteções abaixo.
+SHOGUN permanecer conectado, faça as duas proteções abaixo.
 
 ### Retirar a otimização de bateria
 
@@ -292,11 +222,10 @@ em segundo plano**. O nome muda conforme a marca do celular.
 
 ### Ativar o bloqueio de suspensão
 
-Instale o aplicativo **Termux:API** pela mesma fonte usada para o Termux. Depois
-abra o Termux e rode:
+O comando de bloqueio é fornecido pelas ferramentas do Termux. Se ele estiver ausente, atualize o pacote:
 
 ```bash
-pkg install -y termux-api
+pkg install -y termux-tools
 ```
 
 Ative a proteção:
@@ -314,7 +243,7 @@ termux-wake-unlock
 
 ## Sua rotina depois da instalação
 
-### Abrir o 𝖘𝖍𝖔𝖌𝖚𝖓 outro dia
+### Abrir o SHOGUN outro dia
 
 Abra o Termux e use, um por vez:
 
@@ -335,21 +264,18 @@ npm start
 Volte ao Termux e pressione `Ctrl+C`. Na fileira extra do Termux, toque em
 `CTRL` e depois na letra `C`. Quando o `$` reaparecer, o processo parou.
 
-### Atualizar o 𝖘𝖍𝖔𝖌𝖚𝖓
+### Atualizar o SHOGUN
 
 Pare o bot com `Ctrl+C`, confirme que está na pasta `shogun` e rode:
 
+Faça primeiro um backup privado da instalação, como explicado em [primeiros passos](../primeiros-passos.md). Depois:
+
 ```bash
 git pull --ff-only
-```
-
-```bash
-npm ci --no-audit --no-fund
-```
-
-```bash
 npm start
 ```
+
+Se o Git acusar divergência ou alterações locais, pare e revise o aviso sem forçar a atualização.
 
 Não apague `dados/database/qr-code/`: essa pasta contém a sessão conectada.
 
@@ -395,7 +321,7 @@ npm start >> "$HOME/shogun/termux-boot.log" 2>&1
 chmod 700 ~/.termux/boot/start-shogun
 ```
 
-O 𝖘𝖍𝖔𝖌𝖚𝖓 não altera `.bashrc` e não ativa isso sozinho. Para conferir depois
+O SHOGUN não altera `.bashrc` e não ativa isso sozinho. Para conferir depois
 de reiniciar, abra o Termux e veja:
 
 ```bash
@@ -413,10 +339,24 @@ tail -n 40 ~/shogun/termux-boot.log
 - **O código expirou:** pare com `Ctrl+C`, rode `npm start` e gere outro.
 - **O bot cai com a tela apagada:** revise a bateria, rode
   `termux-wake-lock` e mantenha a notificação do Termux ativa.
-- **Termux:API ou Termux:Boot não instala:** provavelmente as fontes foram
+- **Um complemento do Termux não instala:** provavelmente as fontes foram
   misturadas. Todos os aplicativos Termux precisam vir da mesma fonte.
 - **Apareceu um erro que você não entende:** rode `npm run preflight` e procure
   a seção correspondente em [solução de problemas](../solucao-de-problemas.md).
 
 Nunca envie a pasta de sessão, seu código de pareamento ou uma captura contendo
 credenciais. Para pedir ajuda, copie apenas a mensagem de erro.
+
+## Fontes oficiais
+
+[Instalação do Termux](https://github.com/termux/termux-app#installation) · [Termux:Boot](https://github.com/termux/termux-boot)
+
+Rodar sua própria instância é gratuito. O aparelho, a conexão e serviços externos que você ativar podem ter custos. [Contato](https://wa.me/5522997028553).
+
+## BunnyFy e serviços opcionais
+
+A configuração pede somente nome do bot, número do dono, número do bot e chave BunnyFy opcional. Use os números com DDI e DDD, somente dígitos; exemplo: `5522997028553`. O prefixo inicial é `!`. Para editar os quatro dados depois, execute `npm run setup`.
+
+Conversa e escolha de modelo não gastam a franquia. Sem chave paga, downloads, transcrição, geração de imagens e demais serviços têm 20 chamadas por dia por instância. A API conta o uso e renova à meia-noite de Brasília. Uma operação pode precisar de mais de uma chamada.
+
+Não altere `http://node1.vexhost.com.br:20056`: este é o endereço oficial já configurado. As chaves dos provedores ficam na BunnyFy. Hospedagem e assinaturas são opcionais: [atendimento](https://wa.me/5522997028553). Rodar sua própria instância é gratuito.

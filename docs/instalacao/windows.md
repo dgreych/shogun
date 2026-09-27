@@ -1,198 +1,83 @@
-# SHOGUN no Windows: instalação para iniciantes
+# Instalar o SHOGUN no Windows
 
-Este caminho serve para Windows 10 e 11. Reserve cerca de 20 minutos, use uma
-conta que possa instalar programas e mantenha o computador conectado à internet.
+> **Antes de baixar o bot:** instale Node.js e Git. No primeiro `npm start`, as dependências incluem FFmpeg e FFprobe para as plataformas compatíveis; o Shogun verifica e usa esses executáveis locais. Se o download falhar ou a plataforma não tiver um binário compatível, use a instalação manual destacada abaixo.
 
-## Etapa 1 — abrir o PowerShell
 
-1. Abra o menu **Iniciar**.
-2. Digite `PowerShell`.
-3. Abra **Windows PowerShell**. Não é necessário abrir como administrador para
-   rodar o SHOGUN.
+Use Windows 10 ou 11, uma conexão estável e uma conta do WhatsApp para testar. Abra o PowerShell e execute uma etapa por vez. O computador precisa ficar ligado para o bot continuar conectado.
 
-Você vai copiar uma caixa por vez, colar com o botão direito ou `Ctrl+V` e
-pressionar Enter. Espere o cursor voltar antes de seguir.
+## 1. Preparar as ferramentas
 
-## Etapa 2 — instalar as ferramentas
-
-O Windows 10/11 atualizado inclui o `winget`, instalador oficial do sistema.
-Confira:
+Confira se o gerenciador de pacotes está disponível:
 
 ```powershell
 winget --version
 ```
 
-Se o comando não existir, instale ou atualize **Instalador de Aplicativo** pela
-Microsoft Store, feche o PowerShell e abra-o de novo.
-
-Instale o Git:
+Instale Git e Node.js LTS:
 
 ```powershell
-winget install --id Git.Git -e --source winget
+winget install --id Git.Git --exact --source winget
+winget install --id OpenJS.NodeJS.LTS --exact --source winget
 ```
 
-Instale o Node.js LTS:
+Se `winget` não existir, atualize o [Instalador de Aplicativo da Microsoft](https://learn.microsoft.com/windows/package-manager/winget/) ou use os instaladores oficiais de [Git](https://git-scm.com/downloads/win), [Node.js](https://nodejs.org/en/download) e [FFmpeg](https://ffmpeg.org/download.html). No caso do FFmpeg, a pasta `bin` precisa estar no PATH.
 
-```powershell
-winget install --id OpenJS.NodeJS.LTS -e --source winget
-```
-
-Instale o FFmpeg:
-
-```powershell
-winget install --id Gyan.FFmpeg -e --source winget
-```
-
-Aceite os termos quando o Windows pedir. Feche completamente o PowerShell e
-abra uma janela nova para que os novos comandos sejam reconhecidos.
-
-Se preferir instalar clicando, use somente as páginas oficiais de
-[Node.js](https://nodejs.org/en/download),
-[Git](https://git-scm.com/install/windows) e
-[FFmpeg](https://ffmpeg.org/download.html). Escolha Node.js 22 ou 24 LTS e
-lembre-se de adicionar FFmpeg ao `PATH`.
-
-## Etapa 3 — conferir o terreno
-
-Na janela nova, rode um por vez:
-
-```powershell
-node --version
-```
-
-```powershell
-npm --version
-```
+Feche o PowerShell e abra uma janela nova. Confirme:
 
 ```powershell
 git --version
+node --version
+npm.cmd --version
 ```
 
+Use Node.js 24 LTS para uma instalação nova. O mínimo aceito pelo projeto é Node.js 20.19 e npm 9. Só continue quando Git, Node.js e npm mostrarem suas versões.
+
+### FFmpeg — instalação manual se o preparo automático falhar
+
+FFmpeg e FFprobe são usados para áudio, vídeo e figurinhas. No PowerShell:
+
 ```powershell
-ffmpeg -version
+winget install --id Gyan.FFmpeg --exact --source winget
 ```
 
-Cada comando deve mostrar uma versão. Se algum disser “não é reconhecido”,
-reinicie o computador uma vez antes de reinstalar.
+Feche e reabra o terminal. Confira `ffmpeg -version` e `ffprobe -version`. Ambos devem mostrar a versão. Se instalar pelo site do FFmpeg, extraia o pacote e adicione a pasta `bin` ao PATH. Depois execute `npm.cmd start` novamente.
 
-## Etapa 4 — baixar o SHOGUN
-
-Escolha uma pasta simples. Este comando vai para sua pasta de usuário:
+## 2. Baixar e iniciar
 
 ```powershell
-Set-Location $HOME
-```
-
-Baixe o projeto:
-
-```powershell
+Set-Location $env:USERPROFILE
 git clone https://github.com/dgreych/shogun.git
-```
-
-Entre no quartel:
-
-```powershell
 Set-Location shogun
+npm.cmd start
 ```
 
-## Etapa 5 — preparar e configurar
+Você também pode baixar o [ZIP do projeto](https://github.com/dgreych/shogun/archive/refs/heads/main.zip), extrair e abrir o terminal na pasta que contém `package.json`. Execute `npm.cmd start`. O primeiro início instala as dependências e abre a configuração de quatro campos; não exige executar um instalador separado.
+
+Se a pasta já existir, entre nela. Para atualizar, preserve seus arquivos privados e siga [primeiros passos](../primeiros-passos.md).
+
+## 3. Conectar e testar
+
+Siga a opção de QR ou código de pareamento exibida no terminal. No WhatsApp do número do bot, abra **Aparelhos conectados** e conclua o vínculo.
+
+Depois de conectar, envie `!menu` em uma conversa de teste. Se houver um erro, execute `npm run preflight` para conferir os requisitos e consulte [solução de problemas](../solucao-de-problemas.md).
+
+## 4. Retomar e atualizar
+
+Para parar, pressione `Ctrl+C`. Para voltar:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
+Set-Location "$env:USERPROFILE\shogun"
+npm.cmd start
 ```
 
-O preparo baixa os componentes do bot e depois faz quatro perguntas:
+Para atualizar, pare o bot, faça backup privado e siga [primeiros passos](../primeiros-passos.md). Não apague a sessão para atualizar. Se o PowerShell bloquear `npm.ps1`, use `npm.cmd` como nos comandos deste guia.
 
-1. como o SHOGUN deve chamar você;
-2. seu número com país e DDD, somente dígitos — exemplo fictício
-   `5511999999999`;
-3. nome do bot — pressione Enter para manter `SHOGUN`;
-4. prefixo — pressione Enter para manter `!`.
+[Primeiros passos](../primeiros-passos.md) · [Solução de problemas](../solucao-de-problemas.md)
 
-Espere aparecer **SHOGUN pronto**. Para corrigir uma resposta depois, use:
+## BunnyFy e serviços opcionais
 
-```powershell
-npm run setup
-```
+A configuração pede somente nome do bot, número do dono, número do bot e chave BunnyFy opcional. Use os números com DDI e DDD, somente dígitos; exemplo: `5522997028553`. O prefixo inicial é `!`. Para editar os quatro dados depois, execute `npm run setup`.
 
-## Etapa 6 — inspeção e conexão
+Conversa e escolha de modelo não gastam a franquia. Sem chave paga, downloads, transcrição, geração de imagens e demais serviços têm 20 chamadas por dia por instância. A API conta o uso e renova à meia-noite de Brasília. Uma operação pode precisar de mais de uma chamada.
 
-```powershell
-npm run preflight
-```
-
-<p align="center">
-  <img src="img/preflight-windows.png" alt="Saída da verificação do ambiente" width="100%">
-</p>
-
-<sub>Imagem gerada da execução real do comando. O aviso amarelo sobre
-configuração é esperado antes da etapa seguinte.</sub>
-
-Se todos os itens obrigatórios estiverem aprovados, inicie:
-
-```powershell
-npm start
-```
-
-Escolha `1` para QR Code. No telefone, abra WhatsApp → menu de três pontos →
-**Aparelhos conectados/Dispositivos conectados → Conectar um aparelho** e leia
-o QR da tela do computador.
-
-Se a câmera não puder ler a tela, pare com `Ctrl+C`, inicie novamente, escolha
-`2` e siga o código de pareamento.
-
-## Etapa 7 — confirmar a primeira missão
-
-Numa conversa de teste, envie:
-
-```text
-!menu
-```
-
-Recebeu o menu? O posto está pronto. O PowerShell precisa permanecer aberto
-enquanto o SHOGUN estiver em serviço.
-
-## Sua rotina
-
-Para parar com segurança, clique no PowerShell e pressione `Ctrl+C`.
-
-Para voltar outro dia:
-
-```powershell
-Set-Location "$HOME\shogun"
-```
-
-```powershell
-npm start
-```
-
-Para atualizar, pare o bot e rode:
-
-```powershell
-git pull --ff-only
-```
-
-```powershell
-npm ci --no-audit --no-fund
-```
-
-```powershell
-npm start
-```
-
-Não copie apenas `node_modules` para outro PC. Em uma máquina nova, clone o
-projeto e execute o instalador novamente. Preserve com cuidado a pasta local de
-sessão; ela vale como uma chave do WhatsApp.
-
-## Socorro rápido
-
-- **Execução de scripts foi desabilitada:** use exatamente o comando com
-  `-ExecutionPolicy Bypass` mostrado na etapa 5; ele vale apenas para esse
-  instalador.
-- **`ffmpeg` não é reconhecido:** feche todas as janelas do PowerShell e abra
-  outra. Se persistir, reinstale o FFmpeg e reinicie o Windows.
-- **O QR ficou pequeno:** maximize a janela ou use código de pareamento.
-- **A pasta `shogun` já existe:** entre nela com `Set-Location shogun`; não
-  clone por cima.
-- **Ainda não funcionou:** rode `npm run preflight` e consulte
-  [solução de problemas](../solucao-de-problemas.md).
+Não altere `http://node1.vexhost.com.br:20056`: este é o endereço oficial já configurado. As chaves dos provedores ficam na BunnyFy. Hospedagem e assinaturas são opcionais: [atendimento](https://wa.me/5522997028553). Rodar sua própria instância é gratuito.

@@ -1,36 +1,35 @@
-# Instalar o SHOGUN no Linux
+# Instalar o SHOGUN no macOS
 
 > **Antes de baixar o bot:** instale Node.js e Git. No primeiro `npm start`, as dependências incluem FFmpeg e FFprobe para as plataformas compatíveis; o Shogun verifica e usa esses executáveis locais. Se o download falhar ou a plataforma não tiver um binário compatível, use a instalação manual destacada abaixo.
 
 
-Você precisa de Git, Node.js, npm e FFmpeg, acesso ao terminal e internet. O processo precisa permanecer ativo para o bot responder. Comece com uma conta e um grupo de teste.
+Use um macOS suportado pelos pré-requisitos, uma conexão estável e o aplicativo Terminal. O Mac precisa permanecer ligado, conectado e com o processo ativo para o bot responder.
 
-## 1. Instalar os pré-requisitos
+## 1. Preparar Git, Node.js e FFmpeg
 
-Em Ubuntu ou Debian:
+Se ainda não tem Homebrew, siga a instalação no [site oficial](https://brew.sh/). O instalador mostra os comandos necessários para incluir o Homebrew no PATH; execute-os antes de continuar.
 
-```bash
-sudo apt update
-sudo apt install -y git curl
-```
-
-Em Arch Linux:
+Instale as ferramentas:
 
 ```bash
-sudo pacman -Syu git curl
+brew install git node@24
 ```
 
-Em outras distribuições, instale Git, curl e FFmpeg pelo gerenciador de pacotes da sua distribuição. Os nomes e repositórios podem variar.
-
-Para Node.js 24 LTS, esta é a instalação com nvm apresentada no [site oficial do Node.js](https://nodejs.org/en/download). Leia o script de instalação se quiser revisá-lo antes de executar:
+O pacote `node@24` tem um caminho próprio. Para disponibilizá-lo nesta janela:
 
 ```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.8/install.sh | bash
-. "$HOME/.nvm/nvm.sh"
-nvm install 24
+export PATH="$(brew --prefix node@24)/bin:$PATH"
 ```
 
-Se já usa Node.js compatível, não precisa instalar outro. Verifique:
+Para persistir o caminho no shell padrão zsh, adicione a mesma linha ao seu `~/.zprofile` uma única vez:
+
+```bash
+printf '\nexport PATH="$(brew --prefix node@24)/bin:$PATH"\n' >> "$HOME/.zprofile"
+```
+
+Se prefere instalar Node.js pelo [instalador oficial](https://nodejs.org/en/download), escolha Node.js 24 LTS e instale apenas Git e FFmpeg pelo Homebrew. Não precisa manter duas instalações do Node.js.
+
+Confirme:
 
 ```bash
 git --version
@@ -38,17 +37,17 @@ node --version
 npm --version
 ```
 
-O mínimo do projeto é Node.js 20.19 e npm 9; prefira Node.js 24 LTS em uma instalação nova.
+O mínimo do projeto é Node.js 20.19 e npm 9. Consulte os requisitos atuais do [Homebrew](https://docs.brew.sh/Installation), [Node.js 24](https://formulae.brew.sh/formula/node@24) e [FFmpeg](https://formulae.brew.sh/formula/ffmpeg) se sua versão do macOS for antiga.
 
 ### FFmpeg — instalação manual se o preparo automático falhar
 
-Em Ubuntu/Debian:
+No Terminal, com o Homebrew instalado:
 
 ```bash
-sudo apt install -y ffmpeg
+brew install ffmpeg
 ```
 
-Em Arch Linux, use `sudo pacman -S ffmpeg`. Em outras distribuições, instale o pacote `ffmpeg` pelo gerenciador do sistema. Confira `ffmpeg -version` e `ffprobe -version`: os dois devem mostrar a versão. Depois inicie novamente com `npm start`.
+Confira `ffmpeg -version` e `ffprobe -version`: ambos precisam mostrar a versão. Depois execute `npm start` novamente.
 
 ## 2. Baixar e iniciar
 
@@ -69,18 +68,16 @@ Siga a opção de QR ou código de pareamento exibida no terminal. No WhatsApp d
 
 Depois de conectar, envie `!menu` em uma conversa de teste. Se houver um erro, execute `npm run preflight` para conferir os requisitos e consulte [solução de problemas](../solucao-de-problemas.md).
 
-## 4. Retomar
+## 4. Abrir outro dia
 
-`Ctrl+C` para o processo. Para voltar:
+Pare com `Ctrl+C`. Para retomar:
 
 ```bash
 cd "$HOME/shogun"
 npm start
 ```
 
-Se `node` não aparecer numa janela nova após instalar com nvm, abra novamente o terminal ou carregue `. "$HOME/.nvm/nvm.sh"`.
-
-Um servidor acessado por SSH exige um gerenciador de processo ou sessão para continuar após fechar a conexão. Este instalador não cria automaticamente um serviço nem configura reinício. Configure isso somente depois de testar o bot manualmente.
+Se o Mac entrar em repouso, o bot pode ficar indisponível. Ajuste a energia conforme sua rotina; o instalador não modifica as preferências do macOS nem cria um serviço.
 
 [Primeiros passos e atualização](../primeiros-passos.md) · [Solução de problemas](../solucao-de-problemas.md)
 
