@@ -32,6 +32,7 @@ const sections = [
 
 export default async function menuNexo(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "NEXO · CRÔNICAS DA RUPTURA", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

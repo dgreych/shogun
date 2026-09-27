@@ -155,6 +155,7 @@ const sections = [
 
 export default async function menuDono(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "GESTÃO DO BOT", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

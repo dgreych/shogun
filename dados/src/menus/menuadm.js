@@ -139,6 +139,7 @@ const sections = [
 
 export default async function menuadm(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "ADMINISTRAÇÃO", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

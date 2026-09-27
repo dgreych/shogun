@@ -1,3 +1,4 @@
+import { withShogunMenuTheme } from './theme.js';
 const segmenter = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' });
 
 function plainText(value) {
@@ -33,26 +34,26 @@ export function selectMenuEntries(entries, accessFor) {
     });
 }
 
-export function renderShogunMenu({ title, prefix, userName, sections, accessFor }) {
-    const lines = [
-        '╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━',
-        '┃',
-        `┃  *${plainText(title)}*`,
-        `┃  Usuário › ${sanitizeMenuDisplayName(userName)}`,
-        `┃  Prefixo › ${prefix}`,
-        '┃',
-    ];
-    for (const section of prepareMenuSections(sections, { accessFor })) {
+export function renderShogunMenu({ title, prefix, userName, sections, accessFor, options = {} }) {
+    const theme = withShogunMenuTheme(options);
+    const heading = `${theme.menuTitleIcon}${plainText(title)}`;
+    const header = theme.header.replaceAll('#title#', heading).replaceAll('#titulo#', heading)
+        .replaceAll('{botName}', 'SHOGUN').replaceAll('{userName}', sanitizeMenuDisplayName(userName))
+        .replaceAll('#nome#', sanitizeMenuDisplayName(userName)).replaceAll('{prefix}', prefix)
+        .replaceAll('#prefix#', prefix).replaceAll('#separator#', theme.separator);
+    const lines = header.split('\n');
+    let sectionNumber = 0;
+    for (const section of prepareMenuSections(sections, { ...options, accessFor: accessFor || options.accessFor })) {
         if (!section.entries.length) continue;
-        lines.push(`┣━━〔 ◈ *${plainText(section.title)}* 〕`, '┃');
+        lines.push(`${theme.menuTopBorder} ${String(++sectionNumber).padStart(2, '0')} ${theme.separatorIcon} *${plainText(section.title)}*`, theme.middleBorder);
         for (const entry of section.entries) {
-            lines.push(`┃  ▸ ${prefix}${entry.command}${entry.arguments ? ` ${entry.arguments}` : ''}`);
-            if (entry.description) lines.push(`┃    ${plainText(entry.description)}`);
-            if (entry.unavailableReason) lines.push(`┃    Indisponível: ${plainText(entry.unavailableReason)}`);
+            lines.push(`${theme.middleBorder}${theme.menuItemIcon}${prefix}${entry.command}${entry.arguments ? ` ${entry.arguments}` : ''}`);
+            if (entry.description) lines.push(`${theme.middleBorder}    ${plainText(entry.description)}`);
+            if (entry.unavailableReason) lines.push(`${theme.middleBorder}    Indisponível: ${plainText(entry.unavailableReason)}`);
         }
-        for (const note of section.notes ?? []) lines.push(`┃    ${plainText(note).replaceAll('#prefix#', prefix)}`);
-        lines.push('┃');
+        for (const note of section.notes ?? []) lines.push(`${theme.middleBorder}    ${plainText(note).replaceAll('#prefix#', prefix)}`);
+        lines.push(theme.middleBorder);
     }
-    lines.push('╰━━━─〔 SHOGUN 〕─━━━━');
+    lines.push(theme.bottomBorder);
     return lines.join('\n');
 }

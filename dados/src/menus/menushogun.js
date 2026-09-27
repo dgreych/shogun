@@ -3,6 +3,7 @@ import { prepareMenuSections, renderShogunMenu } from './presentation.js';
 
 export default async function menuShogun(prefix, _botName = 'SHOGUN', userName = 'Usuário', options = {}) {
     return renderShogunMenu({
+        options,
         title: 'SHOGUN', prefix, userName,
         sections: prepareMenuSections([
             { title: 'CONVERSA & RECURSOS', entries: [

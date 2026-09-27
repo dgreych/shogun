@@ -38,6 +38,7 @@ const sections = [
 
 export default async function menudown(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "DOWNLOADS", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

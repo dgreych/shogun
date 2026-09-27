@@ -18,17 +18,19 @@ export function renderCommandCard({ title, fields = [], lines = [] }) {
     if (content.length && help.length) content.push('┃');
     content.push(...help.map(line => `┃  ${line}`));
     return [
-        '╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━',
+        '╭━╼ 🐈‍⬛ *SHOGUN*',
         `┃  *${singleLine(title)}*`,
         '┃',
         ...content,
         '┃',
-        '╰━━━─〔 SHOGUN 〕─━━━━',
+        '╰━╼ SHOGUN ━━━━━━━━━',
     ].join('\n');
 }
 
 export function formatCommandResponse(value, command) {
     if (typeof value !== 'string' || !value.trim()) return value;
+    if (/^(?:menu|menudown|menufig|menulogos|menulogo|alteradores|menubn|menumemb|menumembros|menurpg|ferramentas|menunexo|menushogun|menuadm|menudono|topcmd|designmenu|verdesign|configmenu)$/.test(command)) return value;
+    if (value.startsWith('╭━╼ 🐈‍⬛ *SHOGUN*')) return value;
     if (value.includes('〔 🐈‍⬛ SHOGUN 〕') || value.includes('```')) return value;
     const titles = { ping: 'CONEXÃO', statusbot: 'STATUS', infobot: 'STATUS', botinfo: 'STATUS', criador: 'CRIADOR', prefix: 'PREFIXO', prefixo: 'PREFIXO' };
     const framed = /^[\s\u200e]*[╭┌┏╔]/u.test(value);

@@ -25,6 +25,7 @@ const sections = [
 
 export default async function menu(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "MENU PRINCIPAL", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

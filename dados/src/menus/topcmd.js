@@ -7,6 +7,7 @@ export default async function menuTopCmd(prefix, _botName = 'SHOGUN', userName =
         description: `${index + 1}º · ${entry.count} usos por ${entry.uniqueUsers} usuários`,
     }));
     return renderShogunMenu({
+        options,
         title: 'RANKING DE COMANDOS', prefix, userName, accessFor: options.accessFor,
         sections: [
             { title: 'MAIS USADOS', entries: ranking },

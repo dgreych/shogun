@@ -53,6 +53,7 @@ const sections = [
 
 export default async function menuFerramentas(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "FERRAMENTAS", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

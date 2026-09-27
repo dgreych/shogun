@@ -200,6 +200,7 @@ const sections = [
 
 export default async function menuRPG(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "RPG", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

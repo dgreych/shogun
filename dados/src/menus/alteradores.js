@@ -83,6 +83,7 @@ const sections = [
 
 export default async function menuAlterador(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "ALTERADORES", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

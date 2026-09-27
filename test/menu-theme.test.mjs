@@ -9,13 +9,13 @@ test('tema padrão usa identidade SHOGUN sem ornamentação legada', () => {
 
     assert.match(theme.header, /SHOGUN/);
     assert.doesNotMatch(theme.header, /MeuBot|🫟|🍧|❁/u);
-    assert.equal(theme.menuItemIcon, '  ▸ ');
+    assert.equal(theme.menuItemIcon, '  ↳ ');
     assert.equal(theme.middleBorder, '┃');
 });
 
 test('marca do menu permanece SHOGUN mesmo com nome customizado da instância', () => {
     const theme = createShogunMenuTheme({ botName: 'Sentinela Norte' });
-    assert.match(theme.header, /🐈‍⬛ SHOGUN/);
+    assert.match(theme.header, /🐈‍⬛ \*SHOGUN\*/);
     assert.doesNotMatch(theme.header, /Sentinela Norte/);
 });
 
@@ -25,8 +25,8 @@ test('configuração antiga não substitui a moldura aprovada', () => {
         menuItemIcon: '>'
     }, { botName: 'SHOGUN' });
 
-    assert.match(themed.header, /🐈‍⬛ SHOGUN/);
-    assert.equal(themed.menuItemIcon, '  ▸ ');
+    assert.match(themed.header, /🐈‍⬛ \*SHOGUN\*/);
+    assert.equal(themed.menuItemIcon, '  ↳ ');
     assert.equal(themed.middleBorder, '┃');
 });
 
@@ -43,7 +43,7 @@ test('loader mantém identidade aprovada sobre header antigo no menu principal',
     });
 
     assert.doesNotMatch(output, /CABECALHO DO GRUPO/);
-    assert.match(output, /🐈‍⬛ SHOGUN/);
+    assert.match(output, /🐈‍⬛ \*SHOGUN\*/);
 });
 
 test('loader respeita contrato especial de menubn com isLiteMode', async () => {

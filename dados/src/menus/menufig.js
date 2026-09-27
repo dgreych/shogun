@@ -25,6 +25,7 @@ const sections = [
 
 export default async function menuSticker(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        options,
         title: "FIGURINHAS", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });

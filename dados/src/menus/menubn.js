@@ -398,6 +398,7 @@ const sections = [
 
 export default async function menubn(prefix, _botName = "SHOGUN", userName = "Usuário", isLiteMode = false, options = {}) {
     return renderShogunMenu({
+        options,
         title: "JOGOS & INTERAÇÕES", prefix, userName,
         sections: prepareMenuSections(sections, options, { isLiteMode }),
     });

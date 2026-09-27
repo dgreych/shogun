@@ -21741,29 +21741,20 @@ case 'configmenu':
       if  (!isOwner) return reply("Este comando é apenas para o meu dono");
     
     const currentDesign = loadMenuDesign();
-    const designText = `╭─⊰ 🎨 *CONFIGURAÇÕES DO DESIGN* 🎨 ⊱─╮
-┊
-┊ 🔸 *Cabeçalho:*
-┊ ${currentDesign.header.replace(/{botName}/g, nomebot).replace(/{userName}/g, pushname)}
-┊
-┊ 🔸 *Borda Superior:* ${currentDesign.menuTopBorder}
-┊ 🔸 *Borda Inferior:* ${currentDesign.bottomBorder}
-┊ 🔸 *Borda do Meio:* ${currentDesign.middleBorder}
-┊ 🔸 *Ícone do Item:* ${currentDesign.menuItemIcon}
-┊ 🔸 *Ícone Separador:* ${currentDesign.separatorIcon}
-┊ 🔸 *Ícone do Título:* ${currentDesign.menuTitleIcon}
-┊
-┊ 📝 *Comandos disponíveis:*
-┊ ${prefix}setborda - Alterar borda superior
-┊ ${prefix}setbordafim - Alterar borda inferior  
-┊ ${prefix}setbordameio - Alterar borda do meio
-┊ ${prefix}setitem - Alterar ícone dos itens
-┊ ${prefix}setseparador - Alterar ícone separador
-┊ ${prefix}settitulo - Alterar ícone do título
-┊ ${prefix}setheader - Alterar cabeçalho
-┊ ${prefix}resetdesign - Resetar para padrão
-┊
-╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`;
+    const { renderShogunMenu } = await import('./menus/presentation.js');
+    const designText = renderShogunMenu({
+      title: 'DESIGN DOS MENUS', prefix, userName: pushname, options: currentDesign,
+      sections: [{ title: 'AJUSTES', entries: [
+        { command: 'setborda', arguments: '<texto>', description: 'Abertura de cada categoria.' },
+        { command: 'setbordafim', arguments: '<texto>', description: 'Fechamento do menu.' },
+        { command: 'setbordameio', arguments: '<texto>', description: 'Linha lateral.' },
+        { command: 'setitem', arguments: '<símbolo>', description: 'Marcador dos comandos.' },
+        { command: 'setseparador', arguments: '<símbolo>', description: 'Separador das categorias.' },
+        { command: 'settitulo', arguments: '<símbolo>', description: 'Símbolo antes do título.' },
+        { command: 'setheader', arguments: '<texto>', description: 'Use #nome#, #prefix# e #title# no cabeçalho.' },
+        { command: 'resetdesign', description: 'Voltar ao desenho padrão do Shogun.' },
+      ] }],
+    });
     
     await reply(designText);
     } catch (e) {
