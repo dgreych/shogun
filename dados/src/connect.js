@@ -21,6 +21,7 @@ import axios from 'axios';
 import PerformanceOptimizer from './utils/performanceOptimizer.js';
 import RentalExpirationManager from './utils/rentalExpirationManager.js';
 import { setPromotionConnection } from './utils/promotionRuntime.js';
+import { OutboundRetryStore } from './utils/outboundRetryStore.js';
 import { loadMsgBotOn } from './utils/database.js';
 import { buildUserId } from './utils/helpers.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
@@ -862,6 +863,7 @@ async function createBotSocket(authDir) {
     const version = [2, 3000, 1044006379];
     console.log(`📱 Usando versão do WhatsApp: ${version.join('.')}`);
     
+    const outboundRetryStore = new OutboundRetryStore({ file: path.join(authDir, 'outbound-retry.json') });
     const ShogunSock = makeWASocket({
     version: version,
     emitOwnEvents: true,
@@ -875,9 +877,19 @@ async function createBotSocket(authDir) {
     keepAliveIntervalMs: 30_000,
     defaultQueryTimeoutMs: undefined,
     msgRetryCounterCache,
+    getMessage: async key => outboundRetryStore.get(key),
     auth: state,
     signalRepository,
     logger
+    });
+    const sendMessage = ShogunSock.sendMessage.bind(ShogunSock);
+    ShogunSock.sendMessage = async (...args) => {
+      const sent = await sendMessage(...args);
+      outboundRetryStore.put(sent);
+      return sent;
+    };
+    ShogunSock.ev.on('messages.upsert', ({ messages }) => {
+      for (const message of messages || []) if (message.key?.fromMe) outboundRetryStore.put(message);
     });
 
     if (codeMode && !ShogunSock.authState.creds.registered) {
