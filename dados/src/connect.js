@@ -2,7 +2,6 @@ import { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore, m
 import { Boom } from '@hapi/boom';
 import NodeCache from 'node-cache';
 import readline from 'readline';
-import pino from 'pino';
 import fs from 'fs/promises';
 import path, { dirname, join } from 'path';
 import qrcode from 'qrcode-terminal';
@@ -22,6 +21,7 @@ import PerformanceOptimizer from './utils/performanceOptimizer.js';
 import RentalExpirationManager from './utils/rentalExpirationManager.js';
 import { setPromotionConnection } from './utils/promotionRuntime.js';
 import { OutboundRetryStore } from './utils/outboundRetryStore.js';
+import { createWhatsAppDeliveryLogger } from './utils/whatsappDeliveryLogger.js';
 import { loadMsgBotOn } from './utils/database.js';
 import { buildUserId } from './utils/helpers.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
@@ -101,9 +101,7 @@ const rentalExpirationManager = new RentalExpirationManager(null, {
     logFile: path.join(__dirname, '../logs/rental_expiration.log')
 });
 
-const logger = pino({
-    level: 'silent'
-});
+const logger = createWhatsAppDeliveryLogger();
 
 const AUTH_DIR = path.join(__dirname, '..', 'database', 'qr-code');
 const DATABASE_DIR = path.join(__dirname, '..', 'database');
@@ -877,7 +875,11 @@ async function createBotSocket(authDir) {
     keepAliveIntervalMs: 30_000,
     defaultQueryTimeoutMs: undefined,
     msgRetryCounterCache,
-    getMessage: async key => outboundRetryStore.get(key),
+    getMessage: async key => {
+      const message = outboundRetryStore.get(key);
+      console.info('[WPP-REENVIO]', JSON.stringify({ id: key.id, available: Boolean(message), addressType: key.remoteJid?.includes('@g.us') ? 'group' : key.remoteJid?.includes('@lid') ? 'lid' : 'phone' }));
+      return message;
+    },
     auth: state,
     signalRepository,
     logger
