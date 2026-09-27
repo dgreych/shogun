@@ -19,10 +19,7 @@ export const DEFAULT_DATA = {
   commandMedia: {},
   additionalOwners: [],
   assistantPrompts: {},
-  // Sem escolha persistida, a persona nasce do Quartel de Configuração. O
-  // shogunCore valida esse valor e cai em SHOGUN se ele estiver ausente ou
-  // inválido. Uma escolha explícita feita depois pelo bot continua vencendo.
-  activePersona: process.env.DEFAULT_PERSONA || null
+  activePersona: 'shogun'
 };
 
 export function ensureDirectories() {
@@ -62,12 +59,23 @@ export function writeJson(file, value) {
 
 export function getAutomationData() {
   const stored = readJson(AUTOMATIONS_FILE, {});
+  const commandMedia = { ...(stored.commandMedia || {}) };
+  const previousScope = String(stored.activePersona || process.env.DEFAULT_PERSONA || '').trim().toLowerCase();
+  if (previousScope && previousScope !== 'shogun') {
+    const prefix = `${previousScope}_`;
+    for (const [command, media] of Object.entries(commandMedia)) {
+      if (!command.startsWith(prefix)) continue;
+      const current = `shogun_${command.slice(prefix.length)}`;
+      if (!Object.hasOwn(commandMedia, current)) commandMedia[current] = media;
+      delete commandMedia[command];
+    }
+  }
   return {
     ...DEFAULT_DATA,
     ...stored,
-    activePersona: stored.activePersona || DEFAULT_DATA.activePersona,
+    activePersona: 'shogun',
     autoTranscriptionGroups: stored.autoTranscriptionGroups || {},
-    commandMedia: stored.commandMedia || {},
+    commandMedia,
     additionalOwners: Array.isArray(stored.additionalOwners) ? stored.additionalOwners : [],
     assistantPrompts: stored.assistantPrompts || {}
   };

@@ -1,15 +1,4 @@
-/**
- * Contrato de qualidade da fala do bot.
- *
- * Isto NÃO é voz. É engenharia: as regras que valem para qualquer persona
- * ativa. Nazuna cumpre falando como vampira; Alaska cumpre falando como Alaska.
- * O contrato não tem sotaque.
- *
- * A separação existe porque a arquitetura anterior errava nisso: a identidade
- * base carregava traços de personalidade, então trocar de persona dava a
- * persona nova com o sotaque da antiga. É o defeito que o !changeperso tem
- * hoje, em que escolher uma persona ainda devolve menus com a voz de outra.
- */
+/** Regras das respostas do Shogun. */
 /** Teto de floreio por mensagem, igual para todas as personas. */
 export const MAX_FLOREIOS_POR_MENSAGEM = 1;
 /**

@@ -211,7 +211,7 @@ function installCommandMediaInterceptor(sock) {
         }
       }
     } catch (error) {
-      console.error('[GYOMEI/MÍDIA] Falha ao aplicar mídia personalizada:', error.message);
+      console.error('[SHOGUN/MÍDIA] Falha ao aplicar mídia personalizada:', error.message);
     }
     return originalSendMessage(jid, content, options);
   };
@@ -221,7 +221,6 @@ export function prepareCommandMediaContext(sock, chatId, command) {
   const normalized = normalizeCommand(command);
   const ignored = new Set([
     'setmidia', 'delmidia', 'remmidia', 'menumidia', 'listmidias',
-    'setmidia-profilep', 'setperfilpersona', 'changeperso', 'mudarpersona',
     'setprompt', 'verprompt', 'resetprompt', 'prompts', 'menuprompt',
     'adddono', 'deldono', 'listdonos'
   ]);

@@ -124,8 +124,8 @@ export function planVNextMacrotranche() {
     compatibilityTokens: CONFIG.expected.compatibilityTokens + overlay.delta.compatibilityTokens,
   };
   const contractDrift =
-    runtime.injectedFamilyCount !== 16
-    || runtime.injectedTokenCount !== 34
+    runtime.injectedFamilyCount !== 14
+    || runtime.injectedTokenCount !== 30
     || nativeIndexes.size !== expected.nativeFamilies
     || nativeTokens.size !== expected.nativeTokens
     || compatibilityIndexes.size !== expected.compatibilityFamilies

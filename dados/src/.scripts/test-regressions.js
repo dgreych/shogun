@@ -263,15 +263,9 @@ await test('JSON irrecuperável vira mensagem humana, nunca o payload', () => {
   assert.ok(texto.length > 0);
 });
 
-await test('Shogun é a identidade padrão e nenhuma persona foi perdida', () => {
-  // Shogun não é uma persona competindo com as outras: é como o bot chega
-  // numa instância nova. Por isso é ele, e não uma das personagens, que
-  // responde quando ninguém escolheu nada.
+await test('Shogun é a única identidade disponível', () => {
   assert.equal(DEFAULT_PERSONA, 'shogun');
-  assert.ok(PERSONALITY_KEYS.includes('shogun'));
-  for (const persona of ['alaska', 'gyomei', 'nazuna', 'tanjiro', 'zenitsu', 'inosuke', 'shinobu']) {
-    assert.ok(PERSONALITY_KEYS.includes(persona), `persona ${persona} sumiu da lista`);
-  }
+  assert.deepEqual(PERSONALITY_KEYS, ['shogun']);
 });
 
 await test('toda persona tem descrição própria, para a escolha não ser às cegas', () => {
@@ -285,11 +279,8 @@ await test('toda persona tem descrição própria, para a escolha não ser às c
 await test('a persona padrão tem tema de menu próprio, sem herdar o da anterior', () => {
   const tema = PERSONA_MENU_DESIGNS[DEFAULT_PERSONA];
   assert.ok(tema, 'a persona padrão precisa de tema próprio');
-  assert.ok(tema.header.includes('{botName}'));
-  // Se herdasse o tema da Nazuna, o menu continuaria com a identidade antiga
-  // mesmo depois do !default.
-  assert.notEqual(tema.header, PERSONA_MENU_DESIGNS.nazuna?.header);
-  assert.notEqual(tema.header, PERSONA_MENU_DESIGNS.gyomei?.header);
+  assert.match(tema.header, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+  assert.deepEqual(Object.keys(PERSONA_MENU_DESIGNS), ['shogun']);
 });
 
 await test('setmidia reconhece imagem e GIF citados', () => {
@@ -449,23 +440,21 @@ await test('o nome do bot sai na grafia canônica em todo texto voltado ao usuá
   const core = fs.readFileSync(new URL('../utils/shogunCore.js', import.meta.url), 'utf8');
   const contrato = fs.readFileSync(new URL('../../../dist-vnext/voice/contract.js', import.meta.url), 'utf8');
 
-  assert.ok(core.includes(`Você é ${CANONICO},`), 'o prompt precisa apresentar o bot na grafia canônica');
-  assert.ok(core.includes(`shogun: '⚔️ ${CANONICO}'`), 'o rótulo da persona precisa usar a grafia canônica');
+  assert.ok(core.includes(`Seu nome é ${CANONICO}.`), 'o prompt precisa apresentar o bot na grafia canônica');
+  assert.ok(core.includes(CANONICO) && core.includes('PERSONA_LABELS'), 'o rótulo da persona precisa usar a grafia canônica');
   assert.ok(contrato.includes(CANONICO), 'o nome padrão da voz precisa usar a grafia canônica');
   assert.ok(!/Você é SHOGUN/.test(core), 'o prompt não pode voltar à grafia simples');
 });
 
-await test('o menu da assistente não fixa personalidades numa lista à mão', () => {
-  // A lista escrita à mão ficou para trás: anunciava Gyomei como padrão e não
-  // conhecia shogun nem alaska, então a persona ativa aparecia como chave crua.
+await test('o comando de conversa só liga ou desliga Shogun', () => {
   const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-  assert.ok(!/gyomei: '🪨 Gyomei \(Padrão\)'/.test(fonte), 'Gyomei não é mais a persona padrão');
-  assert.ok(/labelPersona/.test(fonte), 'o rótulo precisa vir do catálogo de personas');
+  const inicio = fonte.indexOf("case 'assistente':");
+  const bloco = fonte.slice(inicio, fonte.indexOf("case 'antigore':", inicio));
+  assert.ok(bloco.includes('CONVERSA NO GRUPO'));
+  assert.ok(!bloco.includes('customPersona'));
 });
 
 await test('nenhum texto do bot menciona identidade anterior do projeto', () => {
-  // As personas gyomei e nazuna continuam validas e ficam de fora da checagem:
-  // sao recurso do produto, nao vestigio.
   const fontes = ['../index.js', '../utils/database.js', '../connect.js']
     .map((rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8'))
     .join('\n');

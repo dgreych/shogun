@@ -327,7 +327,8 @@ export function finalizeShogunRuntime() {
   try {
     const TextinCriadorInfo = \`╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ *Alaska dev* (Maurício)
+│ *Maurício Almeida*
+│ Criador e mantenedor do SHOGUN
 │
 │ 🌐 github.com/dgreych/shogun
 │ 📱 wa.me/5522997028553

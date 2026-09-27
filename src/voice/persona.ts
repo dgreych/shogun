@@ -1,37 +1,27 @@
 import { MAX_FLOREIOS_POR_MENSAGEM } from './contract.js';
 
-/**
- * Uma persona é a VOZ inteira do bot enquanto estiver ativa.
- *
- * O !changeperso troca a persona por completo: nada da anterior permanece.
- * Por isso todo vocabulário característico mora aqui dentro, e nunca em
- * camadas compartilhadas — o que estivesse compartilhado vazaria para todas.
- */
-/**
- * Nem toda persona é sobrenatural — depende do personagem. Isso muda a voz:
- * quem não tem pressa nem medo fala diferente de quem tem os dois.
- */
-export type Natureza = 'humana' | 'fantasma' | 'vampira' | 'outra-sobrenatural';
+export type Natureza = 'bot';
 
 export interface Persona {
-  /** Chave usada pelo !changeperso. */
+  /** Identidade única da conversa. */
   readonly chave: string;
   /** Nome exibido. */
   readonly nome: string;
   readonly natureza: Natureza;
-  /**
-   * Palavras e expressões que marcam esta voz. Servem para escrever as falas e,
-   * principalmente, para o teste de vazamento: se um termo desta lista aparecer
-   * com outra persona ativa, a separação foi quebrada.
-   */
+  /** Vocabulário reservado ao Shogun. */
   readonly marcadores: readonly string[];
   /** Interjeições disponíveis; o compositor usa no máximo uma por mensagem. */
   readonly floreios: readonly string[];
 }
 
-const registro = new Map<string, Persona>();
+export const SHOGUN: Persona = Object.freeze({
+  chave: 'shogun', nome: '𝖘𝖍𝖔𝖌𝖚𝖓', natureza: 'bot',
+  marcadores: Object.freeze([]), floreios: Object.freeze([]),
+});
+const registro = new Map<string, Persona>([['shogun', SHOGUN]]);
 
 export function registrarPersona(persona: Persona): void {
+  if (persona.chave !== 'shogun') throw new Error('A conversa usa somente Shogun.');
   registro.set(persona.chave, persona);
 }
 

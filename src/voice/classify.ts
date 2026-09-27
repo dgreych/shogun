@@ -50,7 +50,7 @@ const REGRAS: ReadonlyArray<readonly [RegExp, Intencao]> = [
   [/^(promover|promote|rebaixar|demote|seradm|sermembro|addmod|listmods|adddono|deldono|remdono|listdonos|donos|addsubdono|rmsubdono|listsubdonos|addpremium|addvip|rmpremium|rmvip|premiumlist|listpremium|listprem|vip)/, 'promover'],
   [/^(limpar|clear|clean|apagar|del|remove|^rem|fechar|abrir|opengp|closegp|marcar|marca|todos|hidetag|tagall|totag|cita|mark|group|linkgp|linkgroup|solicitacoes|pendentes|requests|aprovar|aceitar|approve|recusar|reject|captcha)/, 'moderar'],
   // Configuração
-  [/^(set|config|ativar|desativar|^on$|^off$|mudar|alterar|trocar|prefixo|prefix|idioma|tema|borda|midia|personaliz|reset|design|automsg|autorepo|autoresposta|personalidade|changeperso|mudarpersona|default|addauto|autoresponses|autorespostas|addnoprefix|addalias|addcmd|adicionarcmd|edcmd|editcmd|addcmdmidia|cmdlimit|limitarcmd|cmddeslimit|rmcmdlimit|litemode|soadm|onlyadm|soadmin|minmessage|msgprefix|msgboton|addreact|boton|botoff|aluguel|addaluguel|rental|dayfree|addxp|freetemu)/, 'configurar'],
+  [/^(set|config|ativar|desativar|^on$|^off$|mudar|alterar|trocar|prefixo|prefix|idioma|tema|borda|midia|personaliz|reset|design|automsg|autorepo|autoresposta|default|addauto|autoresponses|autorespostas|addnoprefix|addalias|addcmd|adicionarcmd|edcmd|editcmd|addcmdmidia|cmdlimit|limitarcmd|cmddeslimit|rmcmdlimit|litemode|soadm|onlyadm|soadmin|minmessage|msgprefix|msgboton|addreact|boton|botoff|aluguel|addaluguel|rental|dayfree|addxp|freetemu)/, 'configurar'],
   // Ajuda e menus
   [/(menu|help|ajuda|comandos|commands|guia|tutorial|creditos|criador|sobre|^info$|botinfo|cmdinfo|comandoinfo|changers|alteradores|ferramentas|tools|lermais)/, 'ajudar'],
   // Perfil e status pessoal

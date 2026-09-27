@@ -3104,7 +3104,13 @@ const setGroupCustomizationEnabled = (enabled) => {
 const getGroupCustomization = (groupId) => {
   if (!isGroupCustomizationEnabled()) return null;
   const data = loadGroupCustomization();
-  return data.groups[groupId] || null;
+  const custom = data.groups[groupId];
+  if (!custom) return null;
+  if (custom.customPersona && custom.customPersona !== 'shogun') {
+    const { customPersona, customName, ...current } = custom;
+    return current;
+  }
+  return custom;
 };
 
 const setGroupCustomName = (groupId, customName) => {
@@ -3113,6 +3119,7 @@ const setGroupCustomName = (groupId, customName) => {
     data.groups[groupId] = {};
   }
   data.groups[groupId].customName = customName;
+  delete data.groups[groupId].customPersona;
   saveGroupCustomization(data);
   return true;
 };

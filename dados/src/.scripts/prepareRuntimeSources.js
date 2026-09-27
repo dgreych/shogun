@@ -131,15 +131,7 @@ function patchIndexSource(source) {
       _replyBotIds.includes(_quotedParticipant)
     );
 
-    const _triggerPersonaKey =
-      (
-        isGroup &&
-        isGroupCustomizationEnabled()
-          ? getGroupCustomization(from)?.customPersona
-          : null
-      )
-      ||
-      automacoesV9.getActivePersona();
+    const _triggerPersonaKey = 'shogun';
 
     const _triggerPersonaLabel =
       automacoesV9.labelPersona?.(_triggerPersonaKey)
@@ -227,64 +219,52 @@ case 'autotransc':
 case 'prompts':
 case 'menuprompt':
 case 'promptmenu':
-  if (!isOwner) return reply('🚫 Apenas donos podem configurar a personalidade.');
-  await reply(\`╭━━━⊱ 🪨 *PROMPTS DO GYOMEI* 🪨 ⊱━━━╮
-│
-│ *Ver o prompt personalizado:*
-│ \${prefix}verprompt gyomei
-│
-│ *Definir por texto:*
-│ \${prefix}setprompt gyomei seu texto
-│
-│ *Definir respondendo a uma mensagem:*
-│ responda ao texto com \${prefix}setprompt gyomei
-│
-│ *Restaurar o padrão:*
-│ \${prefix}resetprompt gyomei
-│
-│ Também disponíveis: humana e ia.
-│ As regras de identidade, interação e JSON continuam protegidas.
-╰━━━━━━━━━━━━━━━━━━━━━━━━╯\`);
+  if (!isOwner) return reply('Somente donos podem configurar a conversa.');
+  await reply(\`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+┃
+┃  *ORIENTAÇÕES DE CONVERSA*
+┃  Ver › \${prefix}verprompt
+┃  Salvar › \${prefix}setprompt seu texto
+┃  Também aceita resposta a uma mensagem.
+┃  Restaurar › \${prefix}resetprompt
+┃
+╰━━━─〔 SHOGUN 〕─━━━━\`);
   break;
 
 case 'setprompt':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem configurar a personalidade.');
-    const promptArgs = String(q || '').trim().split(/\\s+/).filter(Boolean);
-    const possibleKey = String(promptArgs[0] || 'gyomei').toLowerCase();
-    const knownPromptKeys = ['gyomei', 'nazuna', 'humana', 'ia'];
-    const promptKey = knownPromptKeys.includes(possibleKey) ? promptArgs.shift() : 'gyomei';
-    const promptText = promptArgs.join(' ').trim() || automacoesV9.getQuotedText(info.message);
-    const savedPrompt = automacoesV9.setAssistantPrompt(promptKey, promptText);
-    if (!savedPrompt.ok) return reply(\`❌ \${savedPrompt.msg}\`);
-    await reply(\`✅ Prompt de *\${savedPrompt.key === 'nazuna' ? 'GYOMEI' : savedPrompt.key}* atualizado com \${savedPrompt.length} caracteres.\`);
+    if (!isOwner) return reply('Somente donos podem configurar a conversa.');
+    const promptText = String(q || '').trim().replace(/^shogun\\s+/i, '') || automacoesV9.getQuotedText(info.message);
+    const savedPrompt = automacoesV9.setAssistantPrompt('shogun', promptText);
+    if (!savedPrompt.ok) return reply(savedPrompt.msg);
+    await reply(\`Orientações do *Shogun* salvas: \${savedPrompt.length} caracteres.\`);
   } catch (e) {
-    console.error('[SETPROMPT] Erro:', e);
-    await reply(\`❌ Não foi possível salvar o prompt: \${e.message}\`);
+    console.error('[SETPROMPT]', e.message);
+    await reply('Não consegui salvar as orientações. Tente novamente.');
   }
   break;
 
 case 'verprompt':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem consultar os prompts.');
-    const promptInfo = automacoesV9.getAssistantPrompt(String(q || 'gyomei').trim());
-    if (!promptInfo.ok) return reply(\`❌ \${promptInfo.msg}\`);
-    if (!promptInfo.custom) return reply(\`🪨 *\${promptInfo.key === 'nazuna' ? 'GYOMEI' : promptInfo.key}* está usando o prompt padrão protegido.\`);
+    if (!isOwner) return reply('Somente donos podem consultar as orientações.');
+    const promptInfo = automacoesV9.getAssistantPrompt('shogun');
+    if (!promptInfo.ok) return reply(promptInfo.msg);
+    if (!promptInfo.custom) return reply('*Shogun* está usando as orientações padrão.');
     const preview = promptInfo.prompt.length > 3500 ? promptInfo.prompt.slice(0, 3500) + '\\n[prévia limitada]' : promptInfo.prompt;
-    await reply(\`🪨 *Prompt personalizado — \${promptInfo.key === 'nazuna' ? 'GYOMEI' : promptInfo.key}:*\\n\\n\${preview}\`);
+    await reply(\`*Orientações do Shogun*\\n\\n\${preview}\`);
   } catch (e) {
-    await reply(\`❌ Não foi possível ler o prompt: \${e.message}\`);
+    await reply('Não consegui consultar as orientações. Tente novamente.');
   }
   break;
 
 case 'resetprompt':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem restaurar os prompts.');
-    const resetPrompt = automacoesV9.resetAssistantPrompt(String(q || 'gyomei').trim());
-    if (!resetPrompt.ok) return reply(\`❌ \${resetPrompt.msg}\`);
-    await reply(\`✅ Prompt de *\${resetPrompt.key === 'nazuna' ? 'GYOMEI' : resetPrompt.key}* restaurado para o padrão.\`);
+    if (!isOwner) return reply('Somente donos podem restaurar as orientações.');
+    const resetPrompt = automacoesV9.resetAssistantPrompt('shogun');
+    if (!resetPrompt.ok) return reply(resetPrompt.msg);
+    await reply('Orientações padrão do *Shogun* restauradas.');
   } catch (e) {
-    await reply(\`❌ Não foi possível restaurar o prompt: \${e.message}\`);
+    await reply('Não consegui restaurar as orientações. Tente novamente.');
   }
   break;
 
@@ -356,20 +336,20 @@ case 'setmidia':
       const setmidiaConhecidas = ['default', ...automacoesV9.PERSONALITY_KEYS].join(', ');
       if (!automacoesV9.PERSONALITY_KEYS.includes(setmidiaFirstLower)) {
         return reply(
-          \`❌ "\${setmidiaArgs[0]}" não é uma personalidade conhecida.\\n\\n\`
-          + \`Personalidades: \${setmidiaConhecidas}\\n\`
+          \`❌ "\${setmidiaArgs[0]}" não é um escopo de mídia válido.\\n\\n\`
+          + \`Escopos: \${setmidiaConhecidas}\\n\`
           + \`Exemplos: \${prefix}setmidia menu  |  \${prefix}setmidia default menu\`
         );
       }
     }
     const setmidiaSlot = (setmidiaPersonaScope ? setmidiaArgs[1] : setmidiaArgs[0])?.replace(/^[!./#]+/, '').toLowerCase();
-    if (!setmidiaSlot) return reply(\`Use: \${prefix}setmidia [personalidade] comando, respondendo a uma foto, GIF ou vídeo.\\n\\nExemplos:\\n\${prefix}setmidia menu\\n\${prefix}setmidia gyomei menu\`);
+    if (!setmidiaSlot) return reply(\`Use: \${prefix}setmidia [shogun] comando, respondendo a uma foto, GIF ou vídeo.\\n\\nExemplos:\\n\${prefix}setmidia menu\\n\${prefix}setmidia shogun menu\`);
     const mediaCommand = setmidiaPersonaScope ? \`\${setmidiaPersonaScope}_\${setmidiaSlot}\` : setmidiaSlot;
     const quotedMedia = automacoesV9.getQuotedMediaSource(info.message);
     if (!quotedMedia) return reply('Responda a uma foto, GIF ou vídeo para associar ao comando.');
     const mediaBuffer = await getFileBuffer(quotedMedia.message, quotedMedia.type);
     const savedMedia = await automacoesV9.saveCommandMedia(mediaCommand, mediaBuffer, quotedMedia.type, quotedMedia.gifPlayback);
-    const setmidiaScopeLabel = setmidiaPersonaScope ? \` (personalidade *\${setmidiaPersonaScope.toUpperCase()}*)\` : '';
+    const setmidiaScopeLabel = setmidiaPersonaScope ? \` (Shogun: *\${setmidiaPersonaScope.toUpperCase()}*)\` : '';
     await reply(\`✅ Mídia \${savedMedia.gifPlayback ? 'GIF' : savedMedia.type === 'image' ? 'foto' : 'vídeo'} vinculada a \${prefix}\${setmidiaSlot}\${setmidiaScopeLabel}.\`);
   } catch (e) {
     console.error('[SETMIDIA] Erro:', e);
@@ -377,196 +357,52 @@ case 'setmidia':
   }
   break;
 
-case 'setmidia-profilep':
-case 'setperfilpersona':
-  try {
-    if (!isOwner) return reply('🚫 Apenas donos podem configurar mídias de personalidade.');
-    const profilepPersona = String(q || '').trim().split(/\\s+/)[0]?.toLowerCase();
-    if (!profilepPersona || !automacoesV9.PERSONALITY_KEYS.includes(profilepPersona)) {
-      return reply(\`Use: \${prefix}setmidia-profilep <personalidade>, respondendo a uma foto.\\n\\nPersonalidades: \${automacoesV9.PERSONALITY_KEYS.join(', ')}\`);
-    }
-    const profilepMedia = await automacoesV9.downloadQuotedCommandMedia(info.message);
-    if (!profilepMedia.ok) return reply(\`❌ \${profilepMedia.msg}\`);
-    if (profilepMedia.type !== 'image') return reply('❌ A foto de perfil precisa ser uma imagem (não vídeo/GIF).');
-    await automacoesV9.saveCommandMedia(\`\${profilepPersona}_profilep\`, profilepMedia.buffer, 'image', false);
-    await reply(\`✅ Foto de perfil da personalidade *\${profilepPersona.toUpperCase()}* configurada. Ative com \${prefix}changeperso \${profilepPersona}.\`);
-  } catch (e) {
-    console.error('[SETMIDIA-PROFILEP] Erro:', e);
-    await reply(\`❌ Falha ao configurar a foto de perfil: \${e.message}\`);
-  }
-  break;
-
-case 'changeperso':
-case 'mudarpersona':
-  try {
-    // Por grupo, a pedido do dono (não é mais identidade global da conta
-    // toda): cada grupo define a sua própria identidade completa, sem
-    // afetar os outros grupos. Segue o mesmo gate/armazenamento que
-    // nomegrupo/fotomenugrupo já usavam (isGroupCustomizationEnabled +
-    // isGroupAdmin), só que agora também cobrindo a persona da IA.
-    if (!isGroup) return reply('🚫 Use este comando dentro do grupo que você quer personalizar.');
-    if (!isGroupAdmin) return reply('Você precisa ser administrador do grupo 💔');
-    if (!isGroupCustomizationEnabled()) {
-      return reply(\`⚠️ O sistema de personalização de grupos está desativado. Peça ao dono do bot pra ativar com \${prefix}personalizargrupo.\`);
-    }
-
-    const changepersoKey = String(q || '').trim().toLowerCase();
-    if (!changepersoKey || !automacoesV9.PERSONALITY_KEYS.includes(changepersoKey)) {
-      // Marcar a padrão na própria lista evita o beco de trocar de persona e
-      // não descobrir como voltar.
-      // Uma linha por persona: lista de nomes soltos não diz o que se está
-      // escolhendo, e a escolha acaba sendo às cegas.
-      const changepersoLista = automacoesV9.PERSONALITY_KEYS
-        .map((chave) => {
-          const nome = chave.charAt(0).toUpperCase() + chave.slice(1);
-          const marca = chave === automacoesV9.DEFAULT_PERSONA ? ' *(padrão)*' : '';
-          return \`*\${nome}*\${marca}\\n   \${automacoesV9.describePersona(chave)}\`;
-        })
-        .join('\\n\\n');
-      return reply(
-        \`Escolha quem comanda este grupo:\\n\\n\${changepersoLista}\\n\\n\`
-        + \`Use: \${prefix}changeperso <nome>\\n\`
-        + \`Para voltar à identidade padrão: \${prefix}default\`
-      );
-    }
-
-    setGroupCustomPersona(from, changepersoKey);
-
-    const changepersoDisplayName = changepersoKey.charAt(0).toUpperCase() + changepersoKey.slice(1);
-    setGroupCustomName(from, changepersoDisplayName);
-
-    const changepersoFotoMedia = automacoesV9.getCommandMedia(\`\${changepersoKey}_profilep\`);
-    if (changepersoFotoMedia?.path && fs.existsSync(changepersoFotoMedia.path)) {
-      try {
-        const changepersoGroupPhotoPath = __dirname + \`/../database/grupos/\${from}_menu.jpg\`;
-        fs.copyFileSync(changepersoFotoMedia.path, changepersoGroupPhotoPath);
-        setGroupCustomPhoto(from, changepersoGroupPhotoPath);
-      } catch (changepersoFotoError) {
-        console.error('[CHANGEPERSO] Erro ao copiar a foto pro grupo:', changepersoFotoError);
-      }
-
-      // A foto de perfil da CONTA do WhatsApp é única pro número inteiro
-      // (não existe "foto de conta por grupo" na plataforma) — confirmado
-      // com o dono que, mesmo assim, ele quer que ela acompanhe o último
-      // !changeperso usado em qualquer grupo. A foto REAL do ícone do
-      // grupo no WhatsApp NUNCA deve ser trocada por este comando (só a
-      // foto de menu interna acima, via setGroupCustomPhoto) -- trocar o
-      // ícone real do grupo automaticamente causou problemas reais com
-      // clientes e foi removido a pedido do dono.
-      let changepersoProcessedBuffer = null;
-      try {
-        const changepersoFotoBuffer = fs.readFileSync(changepersoFotoMedia.path);
-        changepersoProcessedBuffer = await processImageForProfile(changepersoFotoBuffer);
-      } catch (changepersoProcessaError) {
-        console.error('[CHANGEPERSO] Erro ao processar a foto:', changepersoProcessaError);
-      }
-
-      if (changepersoProcessedBuffer) {
-        try {
-          await nazu.updateProfilePicture(nazu.user.id, changepersoProcessedBuffer);
-        } catch (changepersoContaFotoError) {
-          console.error('[CHANGEPERSO] Erro ao trocar a foto de perfil da conta:', changepersoContaFotoError);
-        }
-      }
-    }
-
-    await reply(\`✅ Este grupo agora usa a identidade *\${changepersoKey.toUpperCase()}*: tema do menu, nome exibido, foto do menu e a personalidade da assistente de IA — tudo só aqui. A foto de perfil da conta do WhatsApp também foi atualizada (essa é única pra conta inteira, então reflete sempre o último !changeperso usado em qualquer grupo).\\n\\nPara voltar à identidade padrão (*Shogun*): \${prefix}default\`);
-  } catch (e) {
-    console.error('[CHANGEPERSO] Erro:', e);
-    await reply(\`❌ Falha ao trocar a identidade do grupo: \${e.message}\`);
-  }
-  break;
-
 case 'default':
 case 'resetidentidade':
 case 'identidadepadrao':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem restaurar a identidade padrão do bot.');
-
-    // A identidade padrão passou a ser Alaska. A Nazuna continua existindo e
-    // selecionável pelo !changeperso — o que mudou é para onde o bot VOLTA.
-    const defaultPersonaResult = automacoesV9.setActivePersona(automacoesV9.DEFAULT_PERSONA);
-    if (!defaultPersonaResult.ok) return reply(\`❌ \${defaultPersonaResult.msg}\`);
-
+    if (!isOwner) return reply('Somente donos podem restaurar a identidade do bot.');
+    const defaultPersonaResult = automacoesV9.setActivePersona('shogun');
+    if (!defaultPersonaResult.ok) return reply(defaultPersonaResult.msg);
     const defaultDisplayName = 'SHOGUN';
-    let defaultConfig = JSON.parse(fs.readFileSync(CONFIG_FILE));
+    const defaultConfig = JSON.parse(fs.readFileSync(CONFIG_FILE));
     defaultConfig.nomebot = defaultDisplayName;
     writeJsonFile(CONFIG_FILE, defaultConfig);
-
     saveMenuDesign(createShogunMenuTheme());
-
-    const defaultFotoMedia = automacoesV9.getCommandMedia(\`\${automacoesV9.DEFAULT_PERSONA}_profilep\`);
-    if (defaultFotoMedia?.path && fs.existsSync(defaultFotoMedia.path)) {
-      try {
-        const defaultFotoBuffer = fs.readFileSync(defaultFotoMedia.path);
-        const defaultProcessedBuffer = await processImageForProfile(defaultFotoBuffer);
-        await nazu.updateProfilePicture(nazu.user.id, defaultProcessedBuffer);
-      } catch (defaultFotoError) {
-        console.error('[DEFAULT] Erro ao trocar a foto:', defaultFotoError);
-      }
-    }
-
     try {
       await nazu.updateProfileName(defaultDisplayName);
-    } catch (defaultNomeError) {
-      console.error('[DEFAULT] Erro ao trocar o nome:', defaultNomeError);
+    } catch (e) {
+      console.error('[IDENTIDADE] Não foi possível atualizar o nome:', e.message);
     }
-
-    // O caminho de volta precisa estar escrito: sem isto, quem trocar de
-    // persona não descobre sozinho como retornar à identidade padrão.
-    await reply(
-      \`✅ Identidade padrão restaurada: *Shogun*.\\n\\n\`
-      + \`Para trocar: \${prefix}changeperso <nome>\\n\`
-      + \`Disponíveis: \${automacoesV9.PERSONALITY_KEYS.join(', ')}\\n\`
-      + \`Para voltar à Alaska a qualquer momento: \${prefix}default\`
-    );
+    await reply('Nome e design padrão do *Shogun* restaurados.');
   } catch (e) {
-    console.error('[DEFAULT] Erro:', e);
-    await reply(\`❌ Falha ao restaurar a identidade padrão: \${e.message}\`);
+    console.error('[IDENTIDADE]', e.message);
+    await reply('Não consegui restaurar a identidade. Tente novamente.');
   }
   break;
 
 case 'menumidia':
 case 'listmidias':
   try {
-    if (!isOwner) return reply('🚫 Apenas donos podem consultar as mídias configuradas.');
+    if (!isOwner) return reply('Somente donos podem consultar as mídias configuradas.');
     const configuredMedia = automacoesV9.listCommandMedia();
-    const personaMediaLines = [];
-    const globalMediaLines = [];
-    for (const item of configuredMedia) {
-      const personaMatch = automacoesV9.PERSONALITY_KEYS.find(key => item.command.startsWith(\`\${key}_\`));
-      if (personaMatch && item.command === \`\${personaMatch}_profilep\`) {
-        personaMediaLines.push(\`│ • [\${personaMatch.toUpperCase()}] foto de perfil\`);
-      } else if (personaMatch) {
-        personaMediaLines.push(\`│ • [\${personaMatch.toUpperCase()}] \${item.command.slice(personaMatch.length + 1)} — \${item.gifPlayback ? 'GIF' : item.type}\`);
-      } else {
-        globalMediaLines.push(\`│ • \${prefix}\${item.command} — \${item.gifPlayback ? 'GIF' : item.type}\`);
-      }
-    }
-    const mediaLines = [...personaMediaLines, ...globalMediaLines].join('\\n') || '│ Nenhuma mídia personalizada configurada.';
-    await reply(\`╭━━━⊱ 🖼️ *MÍDIAS DOS MENUS* 🖼️ ⊱━━━╮
-│
-│ Mídia global (vale pra qualquer personalidade):
-│ \${prefix}setmidia menu
-│ \${prefix}setmidia menubn
-│ \${prefix}setmidia qualquercomando
-│
-│ Mídia só de uma personalidade (tem prioridade sobre a global):
-│ \${prefix}setmidia <personalidade> menu
-│ \${prefix}setmidia <personalidade> menubn
-│ \${prefix}setmidia-profilep <personalidade>
-│
-│ Trocar a identidade ativa do bot:
-│ \${prefix}changeperso <personalidade>
-│
-│ Para remover:
-│ \${prefix}delmidia comando (mídia global) ou \${prefix}delmidia <personalidade>_<comando>
-│
-│ *Configuradas:*
+    const mediaLines = configuredMedia.map(item => \`┃  \${prefix}\${item.command} › \${item.gifPlayback ? 'GIF' : item.type}\`).join('\\n') || '┃  Nenhuma mídia personalizada.';
+    await reply(\`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+┃
+┃  *MÍDIAS DOS COMANDOS*
+┃  Responda a uma foto, GIF ou vídeo:
+┃  \${prefix}setmidia menu
+┃  \${prefix}setmidia menubn
+┃  \${prefix}setmidia nome_do_comando
+┃
+┃  Remover › \${prefix}delmidia nome_do_comando
+┃
+┃  *CONFIGURADAS*
 \${mediaLines}
-╰━━━━━━━━━━━━━━━━━━━━━━━━╯\`);
+┃
+╰━━━─〔 SHOGUN 〕─━━━━\`);
   } catch (e) {
-    await reply(\`❌ Não foi possível abrir o menu de mídias: \${e.message}\`);
+    await reply('Não consegui consultar as mídias. Tente novamente.');
   }
   break;
 

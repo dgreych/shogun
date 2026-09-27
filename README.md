@@ -117,8 +117,11 @@ emojis num só.
 roteador escolhe o modelo pelo tipo de pedido: pedido rápido vai para o modelo
 rápido, pedido caprichado vai para o modelo de qualidade.
 
-**Conversa.** Chame o Shogun pelo nome ou mencione o bot. O menu de conversa
-reúne os comandos disponíveis para a sua conta.
+**Conversa.** Shogun tem uma voz própria e consistente. Chame pelo nome,
+mencione o bot ou responda a uma mensagem dele. No grupo, administradores
+ligam ou desligam a conversa com `!assistente on` e `!assistente off`.
+Donos ajustam as orientações com `!setprompt`, consultam com `!verprompt`
+e restauram o padrão com `!resetprompt`.
 
 **Tem um RPG inteiro.** Trabalho, mineração, pesca, caça, forja, plantio,
 cozinha, propriedades que rendem por dia, mercado entre jogadores, habilidades

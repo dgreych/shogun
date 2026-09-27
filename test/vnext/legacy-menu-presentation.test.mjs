@@ -27,7 +27,7 @@ function fixture(options = {}) {
   const rendererCalls = [];
   const logs = [];
   const files = new Map(Object.entries(options.files || {}).map(([file, value]) => [path.normalize(file), value]));
-  const loadCounts = { menus: 0, database: 0, gyomei: 0 };
+  const loadCounts = { menus: 0, database: 0, shogun: 0 };
 
   const renderers = Object.fromEntries(RENDERER_KEYS.map((key) => [key, async (...args) => {
     rendererCalls.push({ key, args });
@@ -69,10 +69,10 @@ function fixture(options = {}) {
       return database;
     },
     loadShogunRuntime: async () => {
-      loadCounts.gyomei += 1;
+      loadCounts.shogun += 1;
       return {
         PERSONA_MENU_DESIGNS: {
-          gyomei: { header: 'GYOMEI-THEME' },
+          shogun: { header: 'SHOGUN-THEME' },
         },
         highlightMenuCommands: (text, prefix) => `HIGHLIGHT(${prefix}):${text}`,
       };
@@ -155,9 +155,9 @@ test('personalização antiga mantém foto e modo lite sem selecionar outro dese
     },
     groupCustomizationEnabled: true,
     groupCustomization: {
-      customName: 'GYOMEI DO GRUPO',
+      customName: 'PERFIL ANTIGO',
       customPhoto: '/custom/group.jpg',
-      customPersona: 'gyomei',
+      customPersona: 'perfil_antigo',
     },
     isLiteMode: true,
   });
@@ -169,7 +169,7 @@ test('personalização antiga mantém foto e modo lite sem selecionar outro dese
   assert.equal(fx.calls[0].content.video, undefined);
   assert.equal(fx.rendererCalls[0].key, 'menubn');
   assert.equal(fx.rendererCalls[0].args.length, 5);
-  assert.equal(fx.rendererCalls[0].args[1], 'GYOMEI DO GRUPO');
+  assert.equal(fx.rendererCalls[0].args[1], fx.context.botName);
   assert.equal(fx.rendererCalls[0].args[3], true);
   assert.equal(fx.rendererCalls[0].args[4].overrideDesign, undefined);
 });
@@ -192,7 +192,7 @@ test('módulos de apresentação são carregados uma única vez por adapter', as
   await fx.adapter.present(request('menu', fx.context));
   await fx.adapter.present(request('menushogun', fx.context));
 
-  assert.deepEqual(fx.loadCounts, { menus: 1, database: 1, gyomei: 1 });
+  assert.deepEqual(fx.loadCounts, { menus: 1, database: 1, shogun: 1 });
   assert.equal(fx.rendererCalls.length, 2);
 });
 

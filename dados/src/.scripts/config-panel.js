@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import path from 'node:path';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { spawnSync } from 'node:child_process';
@@ -19,7 +18,6 @@ import {
 } from './instanceConfigStore.js';
 
 const rl = readline.createInterface({ input, output });
-const BASIC_SETUP = process.argv.includes('--basic');
 
 const MODE_LABELS = Object.freeze({
   BUNNYFY_AI_MODE: 'Assistente / IA',
@@ -39,7 +37,6 @@ const MODE_LABELS = Object.freeze({
   BUNNYFY_NEXO_RENDER_MODE: 'Renderização NEXO'
 });
 
-const KNOWN_PERSONAS = ['shogun', 'alaska', 'gyomei', 'nazuna', 'tanjiro', 'zenitsu', 'inosuke', 'shinobu'];
 
 function clear() {
   if (output.isTTY) output.write('\x1Bc');
@@ -55,15 +52,6 @@ function envValue(draft, key, fallback = '') {
 
 function yes(value) {
   return ['1', 'true', 'yes', 'sim', 's', 'on'].includes(String(value ?? '').trim().toLowerCase());
-}
-
-function printHeader(subtitle) {
-  clear();
-  output.write('\n╭──────────────────────────────────────────────────────────────╮\n');
-  output.write('│                SHOGUN · QUARTEL DE CONFIGURAÇÃO             │\n');
-  output.write('├──────────────────────────────────────────────────────────────┤\n');
-  output.write(`│ ${subtitle.padEnd(60, ' ')} │\n`);
-  output.write('╰──────────────────────────────────────────────────────────────╯\n');
 }
 
 async function askText(label, current = '', { required = false, normalize = value => value, validate = null } = {}) {
@@ -123,51 +111,6 @@ async function askSecret(label, current = '') {
   return answer.trim();
 }
 
-async function editBasicIdentity(config, envDraft) {
-  title('Configuração inicial');
-
-  const ownerCurrent = config.nomedono === 'Comandante' ? '' : config.nomedono;
-  const normalizedCurrentNumber = normalizeOwnerNumber(config.numerodono);
-  const numberCurrent = /^\d{10,15}$/.test(normalizedCurrentNumber) ? normalizedCurrentNumber : '';
-
-  config.nomedono = await askText('Como o SHOGUN deve chamar você?', ownerCurrent, { required: true });
-  config.numerodono = await askText('Seu número com país e DDD (somente dígitos)', numberCurrent, {
-    required: true,
-    normalize: normalizeOwnerNumber,
-    validate: value => /^\d{10,15}$/.test(value) ? null : 'Use entre 10 e 15 dígitos.'
-  });
-  config.nomebot = await askText('Nome do bot', config.nomebot || 'SHOGUN', { required: true });
-  config.prefixo = await askText('Prefixo de comando', config.prefixo || '!', {
-    required: true,
-    validate: value => String(value).length === 1 ? null : 'Use exatamente um caractere.'
-  });
-
-  envDraft.DEFAULT_PERSONA = 'shogun';
-  envDraft.BOT_NAME = config.nomebot;
-}
-
-async function runBasicSetup(config, envDraft) {
-  printHeader('Primeiro uso: só o necessário para ligar o bot.');
-  output.write('\nVocê responderá quatro perguntas. Integrações avançadas ficam para depois.\n');
-  output.write('A persona padrão desta instalação será shogun.\n');
-
-  await editBasicIdentity(config, envDraft);
-
-  const failures = validateIdentity(config);
-  if (failures.length) throw new Error(failures.join(' '));
-
-  saveInstanceConfig(config);
-  saveEnvUpdates({
-    DEFAULT_PERSONA: 'shogun',
-    BOT_NAME: config.nomebot
-  });
-
-  output.write('\n✅ Configuração local salva.\n');
-  output.write('✅ Persona padrão: shogun.\n');
-  output.write('ℹ️ BunnyFy, NVIDIA e integrações legadas não são necessárias para o primeiro uso.\n');
-  output.write('ℹ️ Para configuração avançada, use: npm run config\n');
-}
-
 async function editIdentity(config, envDraft) {
   title('Identidade da instância');
   config.nomedono = await askText('Nome do dono principal', config.nomedono, { required: true });
@@ -182,13 +125,7 @@ async function editIdentity(config, envDraft) {
     validate: value => String(value).length === 1 ? null : 'Use exatamente um caractere.'
   });
 
-  const currentPersona = envValue(envDraft, 'DEFAULT_PERSONA', 'shogun').toLowerCase();
-  const personaChoices = [...KNOWN_PERSONAS, 'outra (digitar)'];
-  const currentPersonaIndex = Math.max(0, KNOWN_PERSONAS.indexOf(currentPersona));
-  const personaIndex = await askChoice('Persona padrão', personaChoices, currentPersonaIndex);
-  envDraft.DEFAULT_PERSONA = personaIndex === personaChoices.length - 1
-    ? await askText('Identificador da persona', currentPersona, { required: true })
-    : personaChoices[personaIndex];
+  envDraft.DEFAULT_PERSONA = 'shogun';
   envDraft.BOT_NAME = config.nomebot;
 }
 
@@ -250,6 +187,18 @@ async function editDirectProviders(envDraft) {
   output.write('Essas credenciais são opcionais. Deixe em branco quando a BunnyFy assumir a capacidade.\n\n');
   envDraft.NVIDIA_API_KEY = await askSecret('NVIDIA direta', envValue(envDraft, 'NVIDIA_API_KEY'));
 
+  const vexEnabled = await askYesNo(
+    'Usar fallback VEX legado para transcrição?',
+    Boolean(envValue(envDraft, 'VEX_API_KEY') || envValue(envDraft, 'VEX_SITE'))
+  );
+  if (vexEnabled) {
+    envDraft.VEX_SITE = await askText('URL/site VEX', envValue(envDraft, 'VEX_SITE'), { required: true });
+    envDraft.VEX_API_KEY = await askSecret('Chave VEX', envValue(envDraft, 'VEX_API_KEY'));
+  } else {
+    envDraft.VEX_SITE = '';
+    envDraft.VEX_API_KEY = '';
+  }
+
   const uploadEnabled = await askYesNo(
     'Usar upload GitHub legado?',
     Boolean(envValue(envDraft, 'UPLOAD_GITHUB_TOKEN') || envValue(envDraft, 'UPLOAD_GITHUB_REPO'))
@@ -271,10 +220,11 @@ function showReview(config, envDraft) {
   output.write(`Número do dono: ${normalizeOwnerNumber(config.numerodono) ? 'configurado' : 'não configurado'}\n`);
   output.write(`Nome do bot: ${config.nomebot || 'não configurado'}\n`);
   output.write(`Prefixo: ${config.prefixo || 'não configurado'}\n`);
-  output.write(`Persona padrão: ${envValue(envDraft, 'DEFAULT_PERSONA', 'shogun')}\n`);
+  output.write(`Identidade: ${'shogun'}\n`);
   output.write(`BunnyFy: ${yes(envValue(envDraft, 'BUNNYFY_ENABLED')) ? 'ativa' : 'desativada'}\n`);
   output.write(`Credencial BunnyFy: ${secretState(envValue(envDraft, 'BUNNYFY_API_TOKEN'))}\n`);
   output.write(`NVIDIA direta: ${secretState(envValue(envDraft, 'NVIDIA_API_KEY'))}\n`);
+  output.write(`VEX legado: ${secretState(envValue(envDraft, 'VEX_API_KEY'))}\n`);
   output.write(`Upload GitHub legado: ${secretState(envValue(envDraft, 'UPLOAD_GITHUB_TOKEN'))}\n`);
 
   const activeModes = BUNNYFY_MODE_KEYS
@@ -295,8 +245,7 @@ function showReview(config, envDraft) {
 
 function runPreflight() {
   title('Diagnóstico pós-configuração');
-  const preflightPath = path.join(ROOT_DIR, 'scripts', 'preflight-platform.mjs');
-  const result = spawnSync(process.execPath, [preflightPath], {
+  const result = spawnSync(process.execPath, ['scripts/preflight-platform.mjs'], {
     cwd: ROOT_DIR,
     stdio: 'inherit',
     env: process.env
@@ -309,20 +258,20 @@ async function main() {
   const envDocument = loadEnvDocument();
   const envDraft = Object.fromEntries(envDocument.values);
 
-  if (BASIC_SETUP) {
-    await runBasicSetup(config, envDraft);
-    return;
-  }
-
-  printHeader('Configuração avançada: integrações e ajustes opcionais.');
-  output.write('\nUse este painel depois do primeiro uso quando precisar de BunnyFy, NVIDIA ou compatibilidade legada.\n');
+  clear();
+  output.write('\n╭──────────────────────────────────────────────────────────────╮\n');
+  output.write('│                SHOGUN · QUARTEL DE CONFIGURAÇÃO             │\n');
+  output.write('├──────────────────────────────────────────────────────────────┤\n');
+  output.write('│ Configure a instância sem abrir JSON ou .env manualmente.   │\n');
+  output.write('│ Segredos nunca são mostrados na revisão do painel.          │\n');
+  output.write('╰──────────────────────────────────────────────────────────────╯\n');
 
   let dirty = false;
   while (true) {
-    const choice = await askChoice('Painel avançado', [
+    const choice = await askChoice('Painel principal', [
       'Identidade, dono e persona',
       'BunnyFy e capacidades',
-      'NVIDIA e integrações legadas',
+      'NVIDIA, VEX e integrações legadas',
       'Revisar configuração sem revelar segredos',
       'Salvar configuração',
       'Salvar e executar diagnóstico',

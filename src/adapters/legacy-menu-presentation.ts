@@ -275,7 +275,8 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
       const custom = modules.database.getGroupCustomization(chatId);
       if (custom && typeof custom === 'object') {
         const record = custom as UnknownRecord;
-        if (typeof record.customName === 'string' && record.customName) {
+        const currentIdentity = !record.customPersona || record.customPersona === 'shogun';
+        if (currentIdentity && typeof record.customName === 'string' && record.customName) {
           botName = record.customName;
         }
         if (

@@ -87,6 +87,8 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
                 prepareRuntimeSources();
                 finalizeShogunRuntime();
                 applyCriticalRuntimeFixes();
+                const runtimeIndex = fs.readFileSync(${JSON.stringify(path.join(temp, 'dados/src/.runtime-index.js'))}, 'utf8');
+                assert.ok(runtimeIndex.includes('*Maurício Almeida*'), 'o preparo deve preservar o cartão atual do criador');
                 const { default: menu } = await import(${JSON.stringify(menuUrl)} + '?pass=' + attempt);
                 const output = await menu('!', 'SHOGUN', 'Maurício', true);
                 assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);

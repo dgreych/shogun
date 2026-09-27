@@ -122,27 +122,6 @@ case 'd': {
     'comando d/delete com mensagem citada'
   );
 
-  output = replaceAllRequired(
-    output,
-    `│ *Alaska dev* (Maurício)\n│\n│ 🌐 github.com/dgreych/shogun`,
-    `│ *Maurício Almeida*\n│ Criador e mantenedor do SHOGUN\n│ Alaska dev · dgreych\n│\n│ 🌐 github.com/dgreych/shogun`,
-    'todos os cartões legados de autoria do SHOGUN'
-  );
-
-  output = replaceAllRequired(
-    output,
-    `Para voltar à Alaska a qualquer momento: \${prefix}default`,
-    `Para voltar ao SHOGUN a qualquer momento: \${prefix}default`,
-    'todas as referências legadas de retorno à Alaska'
-  );
-
-  if (output.includes('*Alaska dev* (Maurício)')) {
-    throw new Error('Cartão legado de autoria ainda presente após correção global.');
-  }
-  if (output.includes('Para voltar à Alaska a qualquer momento')) {
-    throw new Error('Referência legada à Alaska ainda presente após correção global.');
-  }
-
   return output;
 }
 

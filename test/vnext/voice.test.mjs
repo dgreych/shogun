@@ -58,7 +58,7 @@ test('erro sem próximo passo ainda diz o que foi tentado', () => {
   assert.match(msg, /link quebrado/);
 });
 
-test('o teto de floreio é respeitado, que é o que evita cara de IA', () => {
+test('o teto de floreio é respeitado, sem acumular enfeites', () => {
   const texto = comFloreio('🔍 Procurando "gatos".', ['Já volto.', 'Ah, e mais uma coisa.', 'E outra.']);
   assert.equal(texto.includes('Já volto.'), true);
   assert.equal(texto.includes('Ah, e mais uma coisa.'), false);
@@ -73,6 +73,6 @@ test('sem floreio o texto passa intacto', () => {
 
 test('o nome vem de configuração, porque vai mudar', () => {
   assert.equal(resolveBotName({}), NOME_PADRAO);
-  assert.equal(resolveBotName({ BOT_NAME: 'Alaska' }), 'Alaska');
+  assert.equal(resolveBotName({ BOT_NAME: 'Exemplo' }), 'Exemplo');
   assert.equal(resolveBotName({ BOT_NAME: '  Outro  ' }), 'Outro');
 });

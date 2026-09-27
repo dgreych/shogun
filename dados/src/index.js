@@ -260,7 +260,7 @@ import { parseCustomCommandMeta, buildUsageFromParams, parseArgsFromString, esca
 import { intencaoDoComando } from '../../dist-vnext/voice/classify.js';
 import { emojiDaIntencao, gerundioDaIntencao } from '../../dist-vnext/voice/intents.js';
 import { reacaoDoComando, temaDoComando } from '../../dist-vnext/voice/reacoes.js';
-import { ALASKA } from '../../dist-vnext/voice/personas/alaska.js';
+import { SHOGUN } from '../../dist-vnext/voice/personas/shogun.js';
 import { aplicarFloreio } from '../../dist-vnext/voice/persona.js';
 import { despachar as despacharEconomiaRpg } from '../../dist-vnext/rpg/economia/despachante.js';
 import {
@@ -605,7 +605,7 @@ function pickLoadingMessage(comando, assunto) {
   const base = recorte
     ? `${emojiDaIntencao(intencao)} ${gerundioDaIntencao(intencao)} "${recorte}".`
     : `${emojiDaIntencao(intencao)} ${gerundioDaIntencao(intencao)}.`;
-  return aplicarFloreio(base, ALASKA);
+  return aplicarFloreio(base, SHOGUN);
 }
 
 /**
@@ -4627,230 +4627,17 @@ Código: *${roleCode}*`,
     // Verifica se o objeto ia existe antes de usar
     if  (!ia || typeof ia.makeAssistentRequest !== 'function') {
     console.warn('[IA] makeAssistentRequest not available');
-    reply('🤖 Sistema de IA temporariamente indisponível. Tente novamente em alguns minutos.');
+    reply('A conversa com Shogun está indisponível agora. Tente novamente em alguns minutos.');
     return;
     }
     
-    // A identidade é por grupo: tema do menu, nome exibido, foto e persona da
-    // assistente. Grupo sem personalização, ou conversa privada, usa a
-    // identidade global padrão.
-    const groupPersonaOverride = isGroup && isGroupCustomizationEnabled()
-      ? getGroupCustomization(from)?.customPersona
-      : null;
-    const personality = groupPersonaOverride || automacoesV9.getActivePersona();
-    
+    const personality = 'shogun';
+
     ia.makeAssistentRequest({
     mensagens: [jSoNzIn],
     model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined
     }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {
       if  (respAssist.erro === 'Sistema de IA temporariamente desativado') {
-      return;
-    }
-    
-    // Tratamento especial para personalidade 'pro' (interpretador de comandos)
-      if  (respAssist.isPro) {
-    if  (respAssist.isCommand && respAssist.command) {
-    // Se falta algo para executar o comando, avisa o usuário
-    if  (respAssist.falta) {
-      reply(`⚠️ Para executar *${prefix}${respAssist.command}*, preciso que você informe: ${respAssist.falta}`);
-      return;
-    }
-    
-    console.log(`🤖 [PRO] Comando identificado: ${respAssist.command} ${respAssist.args || ''}`);
-    
-    // Simular execução do comando reutilizando o objeto info original
-    const simulatedCommand = respAssist.command.toLowerCase();
-    let simulatedArgs = respAssist.args || '';
-    
-    // Obter menções originais da mensagem e filtrar a menção do bot
-    const originalMentions = info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    
-    // Usar os mesmos identificadores do bot para filtrar
-    const botLidPro = nazu.user?.lid ? nazu.user.lid.split(':')[0] : null;
-    const botJidPro = nazu.user?.id ? nazu.user.id.split(':')[0] : null;
-    const botIdentifiersPro = [_botShort, botLidPro, botJidPro, botNumber].filter(Boolean);
-    
-    const mentionsWithoutBot = originalMentions.filter(m => {
-      const mNumber = m.split('@')[0].split(':')[0];
-      return !botIdentifiersPro.some(id => {
-    const idNumber = id.split('@')[0].split(':')[0];
-    return mNumber === idNumber;
-      });
-    });
-    const targetMention = mentionsWithoutBot.length > 0 ? mentionsWithoutBot[0] : null;
-    
-    // Se não tem menção no texto, pode ter marcado mensagem de alguém (resposta)
-    const quotedParticipant = info.message?.extendedTextMessage?.contextInfo?.participant;
-    // Verificar se o quotedParticipant não é o próprio bot
-    const isQuotedBot = quotedParticipant ? botIdentifiersPro.some(id => {
-      const idNumber = id.split('@')[0].split(':')[0];
-      const qNumber = quotedParticipant.split('@')[0].split(':')[0];
-      return qNumber === idNumber;
-    }) : true;
-    const mentionOrQuoted = targetMention || (quotedParticipant && !isQuotedBot ? quotedParticipant : null);
-    
-    console.log(`🤖 [PRO] Menções originais: ${JSON.stringify(originalMentions)}`);
-    console.log(`🤖 [PRO] Menções sem bot: ${JSON.stringify(mentionsWithoutBot)}`);
-    console.log(`🤖 [PRO] Target menção: ${targetMention}`);
-    console.log(`🤖 [PRO] Quoted participant: ${quotedParticipant}`);
-    console.log(`🤖 [PRO] Menção ou quoted final: ${mentionOrQuoted}`);
-    
-    // Lista de comandos que precisam de menção (@user)
-    const commandsNeedMention = ['ban', 'ban2', 'kick', 'promover', 'rebaixar', 'mute', 'desmute', 
-      'mute2', 'desmute2', 'adv', 'rmadv', 'userinfo', 'perfil', 'rep', 'presente', 'denunciar',
-      'blockuser', 'unblockuser', 'addblacklist', 'delblacklist', 'addmod', 'delmod'];
-    
-    // Se o comando precisa de menção e temos uma menção/quoted, adiciona ao args
-    if  (commandsNeedMention.includes(simulatedCommand) && mentionOrQuoted && !simulatedArgs.includes('@')) {
-      // Adicionar a menção ao início dos argumentos
-      const mentionNumber = mentionOrQuoted.split('@')[0];
-      simulatedArgs = `@${mentionNumber} ${simulatedArgs}`.trim();
-    }
-    
-    const simulatedBody = `${prefix}${simulatedCommand} ${simulatedArgs}`.trim();
-    
-    // Clonar o objeto info original mantendo estrutura completa
-    const fakeMessage = JSON.parse(JSON.stringify(info));
-    
-    // Atualizar timestamp para o momento atual
-    fakeMessage.messageTimestamp = Math.floor(Date.now() / 1000);
-    
-    // Marcar como mensagem processada pelo PRO para evitar loop infinito
-    fakeMessage._fromPro = true;
-    
-    // Determinar o tipo de mídia original para preservar
-    const hasImage = !!info.message?.imageMessage;
-    const hasVideo = !!info.message?.videoMessage;
-    const hasAudio = !!info.message?.audioMessage;
-    const hasDocument = !!info.message?.documentMessage;
-    const hasSticker = !!info.message?.stickerMessage;
-    const hasQuotedImage = !!quotedMessageContent?.imageMessage;
-    const hasQuotedVideo = !!quotedMessageContent?.videoMessage;
-    const hasQuotedAudio = !!quotedMessageContent?.audioMessage;
-    const hasQuotedSticker = !!quotedMessageContent?.stickerMessage;
-    const hasQuotedDocument = !!quotedMessageContent?.documentMessage;
-    
-    // Preservar contexto de mídia e menções
-    if  (fakeMessage.message) {
-      // Se tem imagem com legenda, preservar imagem e mudar legenda
-      if  (hasImage && fakeMessage.message.imageMessage) {
-    fakeMessage.message.imageMessage.caption = simulatedBody;
-    // Limpar outros tipos de mensagem de texto
-    delete fakeMessage.message.conversation;
-    delete fakeMessage.message.extendedTextMessage;
-      }
-      // Se tem vídeo com legenda, preservar vídeo e mudar legenda
-      else if (hasVideo && fakeMessage.message.videoMessage) {
-    fakeMessage.message.videoMessage.caption = simulatedBody;
-    delete fakeMessage.message.conversation;
-    delete fakeMessage.message.extendedTextMessage;
-      }
-      // Se tem áudio, preservar áudio e adicionar comando como extendedTextMessage
-      else if (hasAudio && fakeMessage.message.audioMessage) {
-    // Áudio não tem caption, então criamos extendedTextMessage junto
-    fakeMessage.message.extendedTextMessage = {
-    text: simulatedBody,
-    contextInfo: info.message?.extendedTextMessage?.contextInfo || {}
-    };
-    delete fakeMessage.message.conversation;
-      }
-      // Se tem documento, preservar e mudar caption
-      else if (hasDocument && fakeMessage.message.documentMessage) {
-    fakeMessage.message.documentMessage.caption = simulatedBody;
-    delete fakeMessage.message.conversation;
-    delete fakeMessage.message.extendedTextMessage;
-      }
-      // Se tem sticker, preservar sticker e adicionar texto
-      else if (hasSticker && fakeMessage.message.stickerMessage) {
-    const stickerMentions = (info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [])
-    .filter(m => m !== botNumber && !m.includes(_botShort));
-    // Adicionar menção do alvo se não estiver na lista
-    if  (mentionOrQuoted && !stickerMentions.includes(mentionOrQuoted)) {
-    stickerMentions.push(mentionOrQuoted);
-    }
-    fakeMessage.message.extendedTextMessage = {
-    text: simulatedBody,
-    contextInfo: {
-      ...info.message?.extendedTextMessage?.contextInfo,
-      mentionedJid: stickerMentions
-    }
-    };
-    delete fakeMessage.message.conversation;
-      }
-      // Se tem mensagem marcada com mídia, preservar o contextInfo
-      else if (info.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
-    const originalContext = info.message.extendedTextMessage.contextInfo;
-    // Filtrar menção do bot e adicionar menção do alvo
-    const quotedMentions = (originalContext.mentionedJid || [])
-    .filter(m => m !== botNumber && !m.includes(_botShort));
-    // Se temos um alvo e ele não está na lista, adiciona
-    if  (mentionOrQuoted && !quotedMentions.includes(mentionOrQuoted)) {
-    quotedMentions.push(mentionOrQuoted);
-    }
-    fakeMessage.message.extendedTextMessage = {
-    text: simulatedBody,
-    contextInfo: {
-      ...originalContext,
-      // Preservar menções filtradas + alvo
-      mentionedJid: quotedMentions,
-      // Preservar mensagem marcada
-      quotedMessage: originalContext.quotedMessage,
-      participant: originalContext.participant,
-      stanzaId: originalContext.stanzaId
-    }
-    };
-    delete fakeMessage.message.conversation;
-    delete fakeMessage.message.imageMessage;
-    delete fakeMessage.message.videoMessage;
-    delete fakeMessage.message.audioMessage;
-    delete fakeMessage.message.documentMessage;
-    delete fakeMessage.message.stickerMessage;
-      }
-      // Mensagem de texto simples
-      else {
-    // Preservar menções se existirem (sem a menção do bot)
-    const mentionedJid = info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    const filteredMentions = mentionedJid.filter(m => m !== botNumber && !m.includes(_botShort));
-    
-    // Se temos menção de um alvo (não bot), adicionar ao mentionedJid
-    const targetMentionsForContext = mentionOrQuoted && !filteredMentions.includes(mentionOrQuoted) 
-    ? [...filteredMentions, mentionOrQuoted] 
-    : filteredMentions;
-    
-    if  (targetMentionsForContext.length > 0) {
-    fakeMessage.message.extendedTextMessage = {
-      text: simulatedBody,
-      contextInfo: {
-    mentionedJid: targetMentionsForContext
-      }
-    };
-    delete fakeMessage.message.conversation;
-    } else {
-    fakeMessage.message.conversation = simulatedBody;
-    delete fakeMessage.message.extendedTextMessage;
-    }
-    
-    delete fakeMessage.message.imageMessage;
-    delete fakeMessage.message.videoMessage;
-    delete fakeMessage.message.audioMessage;
-    delete fakeMessage.message.documentMessage;
-    delete fakeMessage.message.stickerMessage;
-      }
-    } else {
-      fakeMessage.message = { conversation: simulatedBody };
-    }
-        
-    reagir('🫟', {
-      key: info.key
-    }).then(() => {
-      // Emitir novamente o evento de mensagem com o objeto completo
-      nazu.ev.emit('messages.upsert', {
-    messages: [fakeMessage],
-    type: 'notify'
-      });
-    });
-      }
-      // Se não é comando, não responde nada (comportamento esperado do pro)
       return;
     }
     
@@ -23536,7 +23323,8 @@ case 'criador':
   try  {
     const TextinCriadorInfo = `╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ *Alaska dev* (Maurício)
+│ *Maurício Almeida*
+│ Criador e mantenedor do SHOGUN
 │
 │ 🌐 github.com/dgreych/shogun
 │ 📱 wa.me/5522997028553
@@ -23616,62 +23404,6 @@ case 'fixdb': {
        break;
       }
       
-case 'testpersonalidade':
-  try {
-    if (!isOwner) return reply(OWNER_ONLY_MESSAGE);
-    const personalidadeTeste = q.trim() || automacoesV9.getActivePersona();
-    let resultadoTeste;
-    let erroTeste = null;
-    try {
-      resultadoTeste = automacoesV9.buildAssistantSystemPrompt(personalidadeTeste, 'PROMPT_LEGADO_DE_TESTE_XYZ');
-    } catch (e) {
-      erroTeste = e;
-    }
-    if (erroTeste) {
-      await reply(`❌ buildAssistantSystemPrompt jogou um erro:\n\n${erroTeste.stack || erroTeste.message}`);
-    } else {
-      await reply(`🔬 *Teste direto de personalidade*\n\npersonalidade recebida: ${personalidadeTeste}\ntipo do resultado: ${typeof resultadoTeste}\ncontém "PROMPT_LEGADO_DE_TESTE_XYZ": ${String(resultadoTeste).includes('PROMPT_LEGADO_DE_TESTE_XYZ')}\ncontém "GYOMEI": ${String(resultadoTeste).includes('GYOMEI')}\nprimeiros 300 caracteres:\n\n${String(resultadoTeste).slice(0, 300)}`);
-    }
-  } catch (error) {
-    console.error(error);
-    reply(`❌ Erro no teste: ${error.message}`);
-  }
-     break;
-case 'testia':
-  try {
-    if (!isOwner) return reply(OWNER_ONLY_MESSAGE);
-    const personalidadeTesteIa = q.trim() || automacoesV9.getActivePersona();
-    const msgTeste = {
-      data_atual: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-      data_mensagem: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-      texto: 'oi, isso é um teste direto do comando testia, responda normalmente',
-      id_enviou: sender,
-      nome_enviou: pushname || 'Teste',
-      id_grupo: isGroup ? from : false,
-      nome_grupo: isGroup ? groupName : false,
-      tem_midia: false,
-      marcou_mensagem: false,
-      marcou_sua_mensagem: false,
-      mensagem_marcada: false,
-      id_enviou_marcada: false,
-      tem_midia_marcada: false,
-      id_mensagem: 'teste_' + Date.now()
-    };
-    await reply(`🔬 tipo de ia.funcaoNovaTesteMauricio: ${typeof ia.funcaoNovaTesteMauricio}\n\n🔬 Chamando funcaoNovaTesteMauricio (deve jogar erro sempre)...`);
-    try {
-      await ia.funcaoNovaTesteMauricio();
-      await reply('🔬 funcaoNovaTesteMauricio NÃO jogou erro! Isso não deveria ser possível.');
-    } catch (erroNovaFuncao) {
-      await reply(`🔬 funcaoNovaTesteMauricio jogou erro como esperado:\n\n${erroNovaFuncao.message}`);
-    }
-    await reply(`🔬 Chamando ia.makeAssistentRequest diretamente com personalidade "${personalidadeTesteIa}"... aguarde.`);
-    const respostaTesteIa = await ia.makeAssistentRequest({ mensagens: [msgTeste] }, nazu, nmrdn, personalidadeTesteIa);
-    await reply(`🔬 *Resultado bruto de ia.makeAssistentRequest*\n\n${JSON.stringify(respostaTesteIa, null, 2).slice(0, 1500)}`);
-  } catch (error) {
-    console.error(error);
-    reply(`❌ Erro no teste da IA: ${error.stack || error.message}`);
-  }
-     break;
 case 'ping':
   try  {
     const timestamp = Date.now();
@@ -27713,80 +27445,39 @@ case 'autoresposta':
        break;
 case 'assistente':
 case 'assistent':
-case 'set-personalidade':
-case 'setpersonalidade':
-case 'personalidade':
-  try  {
-
-      if  (!isGroup) return reply("Isso só pode ser usado em grupo 💔");
-      if  (!isGroupAdmin) return reply("Você precisa ser administrador 💔");
-
-    // set-personalidade/setpersonalidade/personalidade existiam só pra
-    // escolher persona por grupo — descontinuado a pedido do dono. Duas
-    // formas de mudar persona (isso e !changeperso) podiam divergir e
-    // confundir; agora só existe uma: !changeperso, que muda a
-    // identidade inteira do bot (tema do menu, nome, foto e a persona da
-    // assistente) só dentro do grupo onde foi usado — cada grupo define
-    // a sua, sem afetar os outros.
-      if  (['set-personalidade', 'setpersonalidade', 'personalidade'].includes(command)) {
-      return reply(`❌ Esse comando foi descontinuado.\n\n` +
-    `A personalidade da assistente agora é definida junto com toda a identidade do bot neste grupo — use ${prefix}changeperso <nome>.`);
-    }
-
+  try {
+    if (!isGroup) return reply('Use este comando em um grupo.');
+    if (!isGroupAdmin) return reply('Somente administradores podem configurar a conversa.');
     const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
-    let groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {};
+    const groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {};
     const isAssistenteOn = groupData.assistente !== false;
-    const rotulosEspeciais = {
-      humana: '👤 Humana',
-      ia: '🤖 IA Normal',
-      pro: '⚡ Pro (Comandos)'
-    };
-    const currentPersonalityKey = (isGroupCustomizationEnabled() && getGroupCustomization(from)?.customPersona)
-      || automacoesV9.getActivePersona();
-    const currentPersonalityLabel = rotulosEspeciais[currentPersonalityKey]
-      || automacoesV9.labelPersona?.(currentPersonalityKey)
-      || currentPersonalityKey;
-
-    // Sem argumento: mostra o menu de status, nunca alterna sozinho
-      if  (!q) {
-      return reply(`╭━━━⊱ 🪨 *ASSISTENTE* 🪨 ⊱━━━╮\n` +
-    `│\n` +
-    `│ Status: ${isAssistenteOn ? '✅ Ativada' : '❌ Desativada'}\n` +
-    `│ Personalidade atual: ${currentPersonalityLabel}\n` +
-    `│\n` +
-    `│ *Ligar/desligar:*\n` +
-    `│ ${prefix}assistente on\n` +
-    `│ ${prefix}assistente off\n` +
-    `│\n` +
-    `│ Pra trocar de personalidade (e de toda a identidade do bot NESTE grupo), use ${prefix}changeperso <nome>.\n` +
-    `│\n` +
-    `│ Mencione o bot ou responda a uma mensagem dele pra conversar.\n` +
-    `╰━━━━━━━━━━━━━━━━━━━━━━━━╯`);
-    }
-
+    if (!q) return reply(`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+┃
+┃  *CONVERSA NO GRUPO*
+┃  Status › ${isAssistenteOn ? 'Ligada' : 'Desligada'}
+┃  Ligar › ${prefix}assistente on
+┃  Desligar › ${prefix}assistente off
+┃
+┃  Mencione Shogun ou responda a uma mensagem dele.
+┃
+╰━━━─〔 SHOGUN 〕─━━━━`);
     const arg = q.toLowerCase().trim();
-
-      if  (arg === 'on' || arg === 'ligar' || arg === 'ativar') {
+    if (['on', 'ligar', 'ativar'].includes(arg)) {
       groupData.assistente = true;
-      fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
-      return reply(`✅ *Assistente ativada!* Personalidade atual: ${currentPersonalityLabel}.`);
+      writeJsonFile(groupFilePath, groupData);
+      return reply('Conversa com *Shogun* ligada neste grupo.');
     }
-
-      if  (arg === 'off' || arg === 'desligar' || arg === 'desativar') {
+    if (['off', 'desligar', 'desativar'].includes(arg)) {
       groupData.assistente = false;
-      fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
-      return reply(`❌ *Assistente desativada!*`);
+      writeJsonFile(groupFilePath, groupData);
+      return reply('Conversa com *Shogun* desligada neste grupo.');
     }
-
-    return reply(`❌ *Opção inválida!*\n\n` +
-    `Use ${prefix}assistente on ou ${prefix}assistente off.\n` +
-    `Pra trocar de personalidade, use ${prefix}changeperso <nome>.`);
-
-    } catch (e) {
-    console.error(e);
-    reply("Ocorreu um erro 💔");
-    }
-       break;
+    return reply(`Use ${prefix}assistente on ou ${prefix}assistente off.`);
+  } catch (e) {
+    console.error('[CONVERSA]', e.message);
+    reply('Não consegui configurar a conversa. Tente novamente.');
+  }
+  break;
 case 'antigore':
   try  {
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");

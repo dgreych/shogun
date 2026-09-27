@@ -196,7 +196,8 @@ export class LegacyMenuPresentationAdapter {
             const custom = modules.database.getGroupCustomization(chatId);
             if (custom && typeof custom === 'object') {
                 const record = custom;
-                if (typeof record.customName === 'string' && record.customName) {
+                const currentIdentity = !record.customPersona || record.customPersona === 'shogun';
+                if (currentIdentity && typeof record.customName === 'string' && record.customName) {
                     botName = record.customName;
                 }
                 if (typeof record.customPhoto === 'string'

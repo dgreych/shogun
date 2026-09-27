@@ -1,6 +1,12 @@
 import { MAX_FLOREIOS_POR_MENSAGEM } from './contract.js';
-const registro = new Map();
+export const SHOGUN = Object.freeze({
+    chave: 'shogun', nome: '𝖘𝖍𝖔𝖌𝖚𝖓', natureza: 'bot',
+    marcadores: Object.freeze([]), floreios: Object.freeze([]),
+});
+const registro = new Map([['shogun', SHOGUN]]);
 export function registrarPersona(persona) {
+    if (persona.chave !== 'shogun')
+        throw new Error('A conversa usa somente Shogun.');
     registro.set(persona.chave, persona);
 }
 export function obterPersona(chave) {
