@@ -42,7 +42,16 @@ export function setPromotionConnection(currentSocket, isConnected) {
     void drain();
     if (!polling) {
       polling = setInterval(() => {
-        if (connected) void consumePromotionRequest({ file: requestFile, start: id => startPromotion(socket, id) })
+        if (connected) void consumePromotionRequest({ file: requestFile, start: id => startPromotion(socket, id),
+          sendProfile: async recipient => {
+            const document = fs.readFileSync(new URL('../../../assets/brand/shogun-profile.png', import.meta.url));
+            const result = await socket.sendMessage(recipient + '@s.whatsapp.net', {
+              document, mimetype: 'image/png', fileName: 'shogun-perfil.png',
+              caption: 'Foto de perfil do Shogun, em qualidade original.'
+            });
+            if (!result?.key?.id) throw new Error('WhatsApp não confirmou o envio da foto.');
+            return { total: 1, sent: 1, messageId: result.key.id };
+          } })
           .catch(() => console.error('[PROMO] Pedido de envio recusado. Confira o registro local.'));
       }, 10_000);
       polling.unref?.();
@@ -50,18 +59,21 @@ export function setPromotionConnection(currentSocket, isConnected) {
   }
 }
 
-export async function consumePromotionRequest({ file, start, now = Date.now }) {
+export async function consumePromotionRequest({ file, start, sendProfile, now = Date.now }) {
   if (!fs.existsSync(file)) return false;
   const request = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (!Number.isSafeInteger(request.messageId) || request.messageId < 1 ||
+  const profile = request.type === 'profile';
+  const validTarget = profile ? /^\d{10,15}$/.test(request.recipient) && typeof sendProfile === 'function'
+    : !request.type && Number.isSafeInteger(request.messageId) && request.messageId > 0;
+  if (!validTarget ||
       !Number.isFinite(request.createdAt) || now() - request.createdAt < 0 || now() - request.createdAt > 3600_000)
     throw new Error('Pedido de promoção inválido ou vencido.');
   const consumed = file + '.consumed';
   fs.renameSync(file, consumed);
   try {
-    const progress = await start(request.messageId);
+    const progress = await (profile ? sendProfile(request.recipient) : start(request.messageId));
     fs.writeFileSync(consumed, JSON.stringify({ ...request, status: 'started', progress }), { mode: 0o600 });
-    console.log('[PROMO] Envio autorizado iniciado: mensagem ' + request.messageId + ', ' + progress.total + ' grupos.');
+    console.log(profile ? '[SHOGUN] Foto enviada em qualidade original.' : '[PROMO] Envio autorizado iniciado: mensagem ' + request.messageId + ', ' + progress.total + ' grupos.');
     return true;
   } catch (error) {
     fs.writeFileSync(consumed, JSON.stringify({ ...request, status: 'failed' }), { mode: 0o600 });
