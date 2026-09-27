@@ -45,7 +45,8 @@ export class PromotionQueue {
     if (['running', 'paused'].includes(this.state.campaign?.status)) throw new Error('Já existe um envio em andamento. Aguarde a fila terminar.');
     const message = this.state.messages.find(item => String(item.id) === String(id).trim());
     if (!message) throw new Error('Mensagem não encontrada. Use listmsgpromo para consultar os IDs.');
-    const targets = [...new Set(groupIds)].filter(value => /^\d+(?:-\d+)?@g\.us$/.test(String(value)));
+    const excluded = new Set(this.state.excludedGroups || []);
+    const targets = [...new Set(groupIds)].filter(value => /^\d+(?:-\d+)?@g\.us$/.test(String(value)) && !excluded.has(value));
     if (!targets.length) throw new Error('O Shogun não encontrou grupos para este envio.');
     this.state.campaign = { messageId: message.id, text: message.text, targets, results: {}, status: 'running', inFlight: null, nextSendAt: this.now() + 30_000, startedAt: this.now() };
     this.save(this.state);
@@ -70,7 +71,8 @@ export class PromotionQueue {
   restart(groupIds) {
     const campaign = this.state.campaign;
     if (campaign?.status !== 'paused' || this.busy) throw new Error('Pause a campanha antes de repetir.');
-    const targets = [...new Set(groupIds)].filter(id => /^\d+(?:-\d+)?@g\.us$/.test(id));
+    const excluded = new Set(this.state.excludedGroups || []);
+    const targets = [...new Set(groupIds)].filter(id => /^\d+(?:-\d+)?@g\.us$/.test(id) && !excluded.has(id));
     if (!targets.length) throw new Error('Nenhum grupo disponível.');
     campaign.previousAttempts = [...(campaign.previousAttempts || []), { at: this.now(), results: { ...campaign.results } }].slice(-5);
     campaign.results = {}; campaign.targets = targets; campaign.inFlight = null; campaign.nextSendAt = this.now() + 30_000;
@@ -87,7 +89,7 @@ export class PromotionQueue {
   progress() {
     const campaign = this.state.campaign;
     if (!campaign) return null;
-    const results = Object.values(campaign.results);
+    const results = campaign.targets.filter(id => Object.hasOwn(campaign.results, id)).map(id => campaign.results[id]);
     return { id: campaign.messageId, status: campaign.status, total: campaign.targets.length,
       sent: results.filter(value => value === 'sent').length,
       failed: results.filter(value => value === 'failed').length,

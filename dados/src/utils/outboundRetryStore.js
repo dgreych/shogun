@@ -4,9 +4,9 @@ import { proto } from 'baileys';
 
 // O WhatsApp pode pedir a mesma mensagem outra vez para acertar a sessão.
 export class OutboundRetryStore {
-  constructor({ file, now = Date.now, maxEntries = 256, ttlMs = 4 * 3600_000, save } = {}) {
+  constructor({ file, now = Date.now, maxEntries = 128, maxMessageBytes = 64 * 1024, ttlMs = 4 * 3600_000, save } = {}) {
     this.file = file; this.now = now; this.maxEntries = maxEntries; this.ttlMs = ttlMs;
-    this.records = new Map();
+    this.records = new Map(); this.maxMessageBytes = maxMessageBytes;
     this.save = save || (() => {
       if (!file) return;
       fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
@@ -15,7 +15,7 @@ export class OutboundRetryStore {
       fs.renameSync(temporary, file);
     });
     try {
-      if (file && fs.existsSync(file) && fs.statSync(file).size <= 4 * 1024 * 1024) {
+      if (file && fs.existsSync(file) && fs.statSync(file).size <= 16 * 1024 * 1024) {
         const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
         if (Array.isArray(saved)) for (const entry of saved) {
           if (Array.isArray(entry) && typeof entry[0] === 'string' && typeof entry[1]?.data === 'string' && Number.isFinite(entry[1].expiresAt)) this.records.set(entry[0], entry[1]);
@@ -34,7 +34,7 @@ export class OutboundRetryStore {
     if (message?.key?.fromMe !== true || !message.message) return false;
     const key = this.key(message.key); if (!key) return false;
     const bytes = proto.Message.encode(message.message).finish();
-    if (bytes.length > 12 * 1024) return false;
+    if (bytes.length > this.maxMessageBytes) return false;
     this.records.delete(key);
     this.records.set(key, { data: Buffer.from(bytes).toString('base64'), expiresAt: this.now() + this.ttlMs });
     this.prune();
