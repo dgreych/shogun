@@ -23,7 +23,7 @@ function count(source, needle) {
 }
 
 function compatibilityExecutorBody(bridged) {
-  const start = bridged.indexOf('const __gyomeiExecuteMacrotrancheLegacy = async');
+  const start = bridged.indexOf('const __shogunExecuteMacrotrancheLegacy = async');
   const end = bridged.indexOf('\n    switch (command) {', start);
   assert.ok(start >= 0 && end > start, 'executor de compatibilidade precisa existir durante a migração');
   return bridged.slice(start, end);
@@ -87,7 +87,7 @@ test('bridge remove fisicamente todas as famílias nativas do executor compatív
     assert.equal(
       hasCase(compatibility, token),
       false,
-      `${token} não pode sobreviver dentro de __gyomeiExecuteMacrotrancheLegacy`,
+      `${token} não pode sobreviver dentro de __shogunExecuteMacrotrancheLegacy`,
     );
   }
 
@@ -103,9 +103,9 @@ test('bridge é fail-closed e o switch original fica apenas atrás do seam', () 
 
   assert.equal(count(bridged, MACROTRANCHE_BRIDGE_MARKER), 1);
   assert.equal(count(bridged, '    switch (command) {'), 1);
-  assert.equal(count(bridged, 'switch (__gyomeiCommand) {'), 1);
-  assert.match(bridged, /const __gyomeiMacrotrancheOwnedCommands = new Set\(/);
-  assert.match(bridged, /const __gyomeiExecuteMacrotrancheLegacy = async/);
+  assert.equal(count(bridged, 'switch (__shogunCommand) {'), 1);
+  assert.match(bridged, /const __shogunMacrotrancheOwnedCommands = new Set\(/);
+  assert.match(bridged, /const __shogunExecuteMacrotrancheLegacy = async/);
   assert.equal(buildMacrotrancheLegacyBridge(bridged), bridged);
 });
 
@@ -143,10 +143,10 @@ test('runtime preparado com bridge e seam continua sintaticamente válido', () =
   const seamIndex = patched.indexOf('// ===== VNEXT OWNERSHIP SEAM: PRE-SWITCH =====');
   const fallbackIndex = patched.indexOf('    switch (command) {');
   assert.ok(markerIndex > 0 && markerIndex < seamIndex && seamIndex < fallbackIndex);
-  assert.match(patched.slice(seamIndex, fallbackIndex), /executeLegacyOwnedCommand:\s*__gyomeiExecuteMacrotrancheLegacy/);
+  assert.match(patched.slice(seamIndex, fallbackIndex), /executeLegacyOwnedCommand:\s*__shogunExecuteMacrotrancheLegacy/);
   assert.match(patched.slice(seamIndex, fallbackIndex), /isMacrotrancheOwnedCommand:/);
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-macrotranche-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-macrotranche-'));
   const tempFile = path.join(tempDir, 'runtime-index.mjs');
   try {
     fs.writeFileSync(tempFile, patched);

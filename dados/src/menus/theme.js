@@ -1,7 +1,7 @@
 export function createShogunMenuTheme() {
     return {
         header: [
-            '╭━━━─〔 ⛩ SHOGUN 〕─━━━',
+            '╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━',
             '┃',
             '┃  Usuário › #nome#',
             '┃  Prefixo › #prefix#',

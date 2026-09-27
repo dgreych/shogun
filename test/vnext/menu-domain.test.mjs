@@ -92,5 +92,5 @@ test('falha de apresentação não cai no legado e gera erro observável + respo
   assert.equal(await target.dispatch('menushogun', context()), true);
   assert.equal(calls.error.length, 1);
   assert.match(String(calls.error[0].error), /media quebrada/);
-  assert.deepEqual(calls.reply, ['❌ Ocorreu um erro ao carregar o menu do Shogun.']);
+  assert.deepEqual(calls.reply, ['Não consegui abrir o menu do Shogun. Tente novamente em instantes.']);
 });

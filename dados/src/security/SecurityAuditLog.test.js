@@ -7,7 +7,7 @@ import test from 'node:test';
 import { correlationHash, writeSecurityAudit } from './SecurityAuditLog.js';
 
 test('auditoria correlaciona identidades sem gravá-las em texto aberto', () => {
-  const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-security-'));
+  const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-security-'));
   const auditFile = path.join(temporaryDirectory, 'audit.log');
   const actorId = '5511999999999@s.whatsapp.net';
 

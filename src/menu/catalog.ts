@@ -46,7 +46,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menu', 'help', 'comandos', 'commands'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu principal.',
+    failureMessage: 'Não consegui abrir o menu principal. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'alteradores',
@@ -55,7 +55,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['alteradores', 'menualterador', 'menualteradores', 'changersmenu', 'changers'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de alteradores.',
+    failureMessage: 'Não consegui abrir o menu de alteradores. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'shogun',
@@ -64,7 +64,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menushogun'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu do Shogun.',
+    failureMessage: 'Não consegui abrir o menu do Shogun. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'logotipos',
@@ -73,7 +73,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menulogo', 'menulogos'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de Logos.',
+    failureMessage: 'Não consegui abrir o menu de logotipos. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'brincadeiras',
@@ -82,7 +82,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menubn', 'menubrincadeira', 'menubrincadeiras', 'gamemenu'],
     ownerOnly: false,
     liteModeAware: true,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de brincadeiras.',
+    failureMessage: 'Não consegui abrir o menu de brincadeiras. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'downloads',
@@ -91,7 +91,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menudown', 'menudownload', 'menudownloads', 'downmenu', 'downloadmenu'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de downloads.',
+    failureMessage: 'Não consegui abrir o menu de downloads. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'ferramentas',
@@ -100,7 +100,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['ferramentas', 'menuferramentas', 'menuferramenta', 'toolsmenu', 'tools'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de ferramentas.',
+    failureMessage: 'Não consegui abrir o menu de ferramentas. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'admin',
@@ -109,7 +109,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menuadm', 'menuadmin', 'menuadmins', 'admmenu'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de administração.',
+    failureMessage: 'Não consegui abrir o menu de administração. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'membros',
@@ -118,7 +118,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menumembros', 'menumemb', 'menugeral', 'membmenu', 'membermenu'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de membros.',
+    failureMessage: 'Não consegui abrir o menu de membros. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'dono',
@@ -127,7 +127,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menudono', 'ownermenu'],
     ownerOnly: true,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu do dono.',
+    failureMessage: 'Não consegui abrir o menu do dono. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'stickers',
@@ -136,7 +136,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['stickermenu', 'menusticker', 'menufig'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu de stickers.',
+    failureMessage: 'Não consegui abrir o menu de figurinhas. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'rpg',
@@ -145,7 +145,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menurpg', 'rpg'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu RPG.',
+    failureMessage: 'Não consegui abrir o menu RPG. Tente novamente em instantes.',
   }),
   descriptor({
     id: 'nexo',
@@ -154,7 +154,7 @@ export const MENU_COMMAND_DESCRIPTORS = Object.freeze([
     tokens: ['menunexo'],
     ownerOnly: false,
     liteModeAware: false,
-    failureMessage: '❌ Ocorreu um erro ao carregar o menu NEXO.',
+    failureMessage: 'Não consegui abrir o menu NEXO. Tente novamente em instantes.',
   }),
 ] satisfies readonly MenuCommandDescriptor[]);
 

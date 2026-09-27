@@ -29,7 +29,7 @@ test('configuração antiga não prevalece sobre o tema nem injeta linhas pelo n
         menuItemIcon: 'FLORES',
         audioMenuTitle: 'MÚSICAS',
     });
-    assert.match(design.header, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+    assert.match(design.header, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u);
     assert.equal(design.header.includes('\n!exec'), false);
     assert.equal(design.header.includes('*Fulano*'), false);
     assert.equal(design.menuItemIcon, '  ▸ ');
@@ -68,7 +68,7 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
                 fs.copyFileSync(path.join(sourceRoot, 'dados/src/.scripts', file), path.join(scripts, file));
             }
         }
-        for (const file of ['dados/src/index.js', 'dados/src/connect.js', 'dados/src/funcs/private/ia.js', 'dados/src/.scripts/start.js']) {
+        for (const file of ['dados/src/index.js', 'dados/src/connect.js', 'dados/src/funcs/private/assistant.js', 'dados/src/.scripts/start.js']) {
             const target = path.join(temp, file);
             fs.mkdirSync(path.dirname(target), { recursive: true });
             fs.writeFileSync(target, fs.readFileSync(path.join(sourceRoot, file), 'utf8').replace(/\r?\n/g, '\r\n'));
@@ -91,7 +91,7 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
                 assert.ok(runtimeIndex.includes('*Maurício Almeida*'), 'o preparo deve preservar o cartão atual do criador');
                 const { default: menu } = await import(${JSON.stringify(menuUrl)} + '?pass=' + attempt);
                 const output = await menu('!', 'SHOGUN', 'Maurício', true);
-                assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+                assert.match(output, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u);
                 assert.equal(output.includes('!nazista'), false);
                 assert.equal(output.includes('!sexo'), false);
             }

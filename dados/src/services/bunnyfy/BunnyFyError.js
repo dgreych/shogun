@@ -18,7 +18,8 @@ const STATUS_CODES = Object.freeze({
 const CONTATO_API = 'wa.me/5522997028553';
 
 const PUBLIC_MESSAGES = Object.freeze({
-  BUNNYFY_AUTH_FAILED: `🔑 *Este recurso usa a BunnyFy e precisa de chave.*\n\nSem chave configurada, ele fica indisponível.\n\nFale comigo para pegar a sua: ${CONTATO_API}`,
+  BUNNYFY_AUTH_FAILED: 'Não foi possível validar o acesso à BunnyFy. Peça ao dono do bot para conferir a configuração.',
+  BUNNYFY_TRIAL_DAILY_LIMIT: `🐰 *BUNNYFY · LIMITE DE HOJE*\n\nEsta instância já utilizou as 20 chamadas gratuitas do dia. A franquia renova à meia-noite, no horário de Brasília.\n\nA conversa com o Shogun continua disponível.\n\nQuer ampliar o uso dos outros serviços? Conheça as assinaturas da API:\nhttps://${CONTATO_API}`,
   BUNNYFY_BAD_REQUEST: 'A BunnyFy recusou os dados enviados.',
   BUNNYFY_BAD_RESPONSE: 'A BunnyFy retornou uma resposta inválida.',
   BUNNYFY_CONFIG_INVALID: 'A configuração da BunnyFy é inválida.',
@@ -27,7 +28,7 @@ const PUBLIC_MESSAGES = Object.freeze({
   BUNNYFY_FORBIDDEN: `🚫 *Sua chave não cobre este recurso.*\n\nFale comigo para liberar: ${CONTATO_API}`,
   BUNNYFY_NETWORK_ERROR: 'Não foi possível conectar à BunnyFy.',
   BUNNYFY_NOT_FOUND: 'O recurso solicitado não foi encontrado.',
-  BUNNYFY_RATE_LIMITED: `⏳ *Limite de requisições atingido.*\n\nO uso gratuito sem chave é limitado por instância. Com chave própria o limite é seu, não compartilhado.\n\nFale comigo para pegar a sua: ${CONTATO_API}`,
+  BUNNYFY_RATE_LIMITED: '⏳ Muitas solicitações ao mesmo tempo. Aguarde um momento e tente novamente.',
   BUNNYFY_REMOTE_ERROR: 'A BunnyFy encontrou um erro interno.',
   BUNNYFY_TIMEOUT: 'A BunnyFy demorou mais que o permitido para responder.',
   BUNNYFY_TOO_LARGE: 'A resposta da BunnyFy excedeu o tamanho permitido.',

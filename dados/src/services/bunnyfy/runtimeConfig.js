@@ -1,12 +1,13 @@
 import { getConfig } from '../../utils/shogunStore.js';
+import { BUNNYFY_SERVICE_ORIGIN } from './instanceAccess.js';
 
 const BUNNYFY_CONFIG_KEYS = Object.freeze([
   'BUNNYFY_ENABLED',
   'BUNNYFY_BASE_URL',
   'BUNNYFY_API_TOKEN',
   'BUNNYFY_ALLOW_INSECURE_HTTP',
-  'BUNNYFY_AI_MODE',
-  'BUNNYFY_AI_TIMEOUT_MS',
+  'BUNNYFY_CONVERSATION_MODE',
+  'BUNNYFY_CONVERSATION_TIMEOUT_MS',
   'BUNNYFY_ACCOUNT_URL',
   'BUNNYFY_YOUTUBE_MODE',
   'BUNNYFY_YOUTUBE_TIMEOUT_MS',
@@ -18,6 +19,7 @@ const BUNNYFY_CONFIG_KEYS = Object.freeze([
   'BUNNYFY_CANVAS_MODE',
   'BUNNYFY_LOGOS_MODE',
   'BUNNYFY_GAMES_MODE'
+  , 'BUNNYFY_TRANSCRIPTION_MODE', 'BUNNYFY_FACEBOOK_MODE', 'BUNNYFY_PINTEREST_MODE', 'BUNNYFY_TIKTOK_MODE', 'BUNNYFY_KWAI_MODE', 'BUNNYFY_IMAGE_GEN_MODE', 'BUNNYFY_TAVERN_RENDER_MODE', 'BUNNYFY_NEXO_RENDER_MODE'
 ]);
 
 const EXTRA_ALIASES = Object.freeze({
@@ -53,6 +55,11 @@ function resolveBunnyFyRuntimeEnv(env = process.env, config = getConfig()) {
     if (value !== undefined) resolved[key] = String(value);
   }
 
+  // Endereço oficial do serviço. Não altere: o acesso gratuito depende dele.
+  resolved.BUNNYFY_BASE_URL ||= BUNNYFY_SERVICE_ORIGIN;
+  if (resolved.BUNNYFY_BASE_URL === BUNNYFY_SERVICE_ORIGIN) resolved.BUNNYFY_ALLOW_INSECURE_HTTP ||= 'true';
+  resolved.BUNNYFY_ENABLED ||= 'true';
+  for (const key of BUNNYFY_CONFIG_KEYS.filter(key => key.endsWith('_MODE'))) resolved[key] ||= 'exclusive';
   return resolved;
 }
 

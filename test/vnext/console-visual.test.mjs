@@ -73,7 +73,7 @@ test('cartoes de grupo e privado fecham a mesma largura visual', () => {
       comando: false,
       emGrupo: false,
       conteudo: 'boa noite',
-      usuario: 'Alaska',
+      usuario: 'Shogun',
       numero: '5511999999999',
       horario: '18:13:02',
     },

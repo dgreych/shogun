@@ -9,7 +9,7 @@ import { SqliteStore } from '../persistence/SqliteStore.js';
 import { TavernRepository } from '../persistence/TavernRepository.js';
 
 test('SQLite cria schema idempotente, arquivo válido e persiste dados', async t => {
-  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-sqlite-'));
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-sqlite-'));
   const databasePath = path.join(tempDirectory, 'tavern.sqlite');
   t.after(() => fs.rm(tempDirectory, { recursive: true, force: true }));
 
@@ -36,7 +36,7 @@ test('SQLite cria schema idempotente, arquivo válido e persiste dados', async t
 });
 
 test('transação com erro faz rollback completo', async t => {
-  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-rollback-'));
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-rollback-'));
   t.after(() => fs.rm(tempDirectory, { recursive: true, force: true }));
   const store = await SqliteStore.open({ filename: path.join(tempDirectory, 'tavern.sqlite') });
 

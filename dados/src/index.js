@@ -29,6 +29,9 @@ import { parseHTML } from 'linkedom';
 import axios from 'axios';
 import pathz from 'path';
 import fs from 'fs';
+import { changeSelfGroupRole } from './utils/selfGroupRole.js';
+import { getPromotionQueue, startPromotion } from './utils/promotionRuntime.js';
+import { renderCommandCard, formatCommandResponse, installCommandPresentation } from './utils/commandPresentation.js';
 import os from 'os';
 import https from 'https';
 import crypto from 'crypto';
@@ -37,7 +40,7 @@ import { fileURLToPath } from 'url';
 
 import { PerformanceOptimizer, getPerformanceOptimizer } from './utils/performanceOptimizer.js';
 import { recalcEquipmentBonuses } from './utils/equipment.js';
-import * as ia from './funcs/private/ia.js';
+import * as assistant from './funcs/private/assistant.js';
 import { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';
 import { NVIDIA_MODEL_CATALOG, isKnownNvidiaModel, DEFAULT_NVIDIA_MODEL } from './utils/nvidiaApi.js';
 import { buildSafeMessagePreview } from './utils/safeCommandLog.js';
@@ -242,8 +245,6 @@ import {
   setGroupCustomPhoto,
   removeGroupCustomName,
   removeGroupCustomPhoto,
-  setGroupCustomPersona,
-  removeGroupCustomPersona,
   // Sistema de Áudio do Menu
   loadMenuAudio,
   isMenuAudioEnabled,
@@ -303,8 +304,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathz.dirname(__filename);
 const OWNER_ONLY_MESSAGE = '🚫 Este comando é apenas para o dono do bot!';
 
-// Função para formatar respostas de IA para WhatsApp (converte ** para *)
-const formatAIResponse = (text) => {
+// Função para formatar respostas de conversa para WhatsApp (converte ** para *)
+const formatConversationResponse = (text) => {
   if (!text || typeof text !== 'string') return text;
   return text
     .replace(/\*\*\*([^*]+)\*\*\*/g, '*$1*')  // ***text*** -> *text*
@@ -916,8 +917,8 @@ setInterval(() => {
 
 const messageReplayGuard = new MessageReplayGuard();
 
-async function shogunExec(nazu, info, store, messagesCache, rentalExpirationManager = null) {
-  if (!info?._fromPro && messageReplayGuard.checkAndRecord(createMessageReplayKey(nazu, info))) {
+async function shogunExec(socket, info, store, messagesCache, rentalExpirationManager = null) {
+  if (!info?._fromPro && messageReplayGuard.checkAndRecord(createMessageReplayKey(socket, info))) {
     return;
   }
   // Log de início de processamento para debug paralelo
@@ -935,7 +936,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     // Notifica o dono sobre a mudança automática
     const ownerJid = `${config.numerodono}@s.whatsapp.net`;
     try {
-      await nazu.sendMessage(ownerJid, {
+      await socket.sendMessage(ownerJid, {
     text: `⚠️ *PREFIXO AUTOMÁTICO CORRIGIDO*\n\n❌ O símbolo "$" é reservado e não pode ser usado como prefixo.\n\n✅ O prefixo foi alterado automaticamente para "/" ao iniciar o bot.\n\n💡 Use ${config.prefixo}prefix para alterar para outro símbolo válido.`
       });
     } catch (notifyError) {
@@ -989,11 +990,11 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
   };
 
   const deleteChatByLastMessage = async (jid) => {
-    if (!nazu?.chatModify) return false;
+    if (!socket?.chatModify) return false;
 
     const lastMsgInChat = getLastMessageInChat(jid);
     if (lastMsgInChat?.key && lastMsgInChat?.messageTimestamp) {
-      await nazu.chatModify({
+      await socket.chatModify({
     delete: true,
     lastMessages: [
     {
@@ -1005,14 +1006,14 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       return true;
     }
 
-    await nazu.chatModify({ delete: true }, jid);
+    await socket.chatModify({ delete: true }, jid);
     return true;
   };
 
   const clearChatHistorySafe = async (jid) => {
-    if (!nazu?.chatModify) return false;
+    if (!socket?.chatModify) return false;
     try {
-      await nazu.chatModify({ clear: 'all' }, jid);
+      await socket.chatModify({ clear: 'all' }, jid);
       return true;
     } catch (e) {
       if (typeof e?.message === 'string' && e.message.toLowerCase().includes('not supported')) {
@@ -1032,14 +1033,14 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     return cached;
     }
 
-    const freshData = await nazu.groupMetadata(groupId).catch(() => ({}));
+    const freshData = await socket.groupMetadata(groupId).catch(() => ({}));
     await optimizer.modules.cacheManager.setIndexGroupMeta(groupId, freshData);
     return freshData;
       }
 
-      return await nazu.groupMetadata(groupId).catch(() => ({}));
+      return await socket.groupMetadata(groupId).catch(() => ({}));
     } catch (error) {
-      return await nazu.groupMetadata(groupId).catch(() => ({}));
+      return await socket.groupMetadata(groupId).catch(() => ({}));
     }
   }
 
@@ -1207,7 +1208,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
   // ═══════════════════════════════════════════════════════════════════
 
 
-  async function handleAutoDownload(nazu, from, url, info) {
+  async function handleAutoDownload(socket, from, url, info) {
     try {
       
       // Detectar tipo de URL e usar o módulo específico
@@ -1267,7 +1268,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       if (platformName === 'YouTube') {
     result = await youtube.mp3(url, 128);
     if  (result && result.ok) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: result.buffer,
       mimetype: 'audio/mpeg',
       fileName: result.filename || 'audio.mp3'
@@ -1282,7 +1283,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (result && result.ok && result.urls && result.urls.length > 0) {
     const videoUrl = result.urls[0];
       if  (videoUrl) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: { url: videoUrl },
     caption: `📱 *TikTok*`,
     mimetype: 'video/mp4'
@@ -1298,13 +1299,13 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (result && result.ok && result.data && result.data.length > 0) {
     const media = result.data[0];
       if  (media.type === 'video') {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.buff,
     caption: '📸 *Instagram*',
     mimetype: 'video/mp4'
       }, { quoted: info });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.buff,
     caption: '📸 *Instagram*'
       }, { quoted: info });
@@ -1319,13 +1320,13 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (result && result.ok && result.data && result.data.length > 0) {
     const media = result.data[0];
       if  (media.type === 'video') {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.buff,
     caption: '📸 *Kwai*',
     mimetype: 'video/mp4'
       }, { quoted: info });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.buff,
     caption: '📸 *Kwai*'
       }, { quoted: info });
@@ -1338,7 +1339,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       else if (platformName === 'Facebook') {
     result = await facebook.downloadHD(url);
     if  (result && result.ok && result.buffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       video: result.buffer,
       caption: `📘 *Facebook* - ${result.resolution || 'HD'}`,
       mimetype: 'video/mp4'
@@ -1353,13 +1354,13 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (result && result.ok && result.urls && result.urls.length > 0) {
     const mediaUrl = result.urls[0];
       if  (result.type === 'video') {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: { url: mediaUrl },
     caption: '📌 *Pinterest*',
     mimetype: 'video/mp4'
       }, { quoted: info });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: { url: mediaUrl },
     caption: '📌 *Pinterest*'
       }, { quoted: info });
@@ -1372,7 +1373,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       else if (platformName === 'Spotify') {
     result = await spotify.download(url);
     if  (result && result.ok && result.buffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: result.buffer,
       mimetype: 'audio/mpeg',
       fileName: result.filename || `${result.title || 'audio'}.mp3`
@@ -1385,7 +1386,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       else if (platformName === 'SoundCloud') {
     result = await soundcloud.download(url);
     if  (result && result.ok && result.buffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: result.buffer,
       mimetype: 'audio/mpeg',
       fileName: result.filename || `${result.title || 'audio'}.mp3`
@@ -1410,7 +1411,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       if  (result && result.data) {
       const videoUrl = result.data.video || result.data.videoUrl || result.data.url;
     if  (videoUrl) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       video: { url: videoUrl },
       caption: `🎬 *${platformName}*`,
       mimetype: 'video/mp4'
@@ -1469,7 +1470,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     vabJson,
     Lyrics,
     commandStats,
-    ia,
+    assistant,
     VerifyUpdate,
     temuScammer,
     relationshipManager,
@@ -1488,7 +1489,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     calculator,
     audioEdit,
     antitoxic,
-    iaExpanded,
+    assistantTools,
     antipalavra,
     transmissao
   } = modules.default;
@@ -1571,7 +1572,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     sender = senderCandidates.find(value => typeof value === 'string'
       && /^\d+(?::\d+)?@(s\.whatsapp\.net|lid)$/.test(value));
     if (sender && isValidJid(sender)) {
-      sender = await getLidFromJidCached(nazu, sender);
+      sender = await getLidFromJidCached(socket, sender);
     }
     
     // Debug: log do sender identificado
@@ -1589,8 +1590,8 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     const subDonoList = loadSubdonos();
     const isSubOwner = isSubdono(sender) && !automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe);
     const ownerJid = `${numerodono}@s.whatsapp.net`;
-    const botId = getBotId(nazu);
-    const isBotSender = sender === botId || sender === nazu.user?.id?.split(':')[0] + '@s.whatsapp.net' || sender === nazu.user?.id?.split(':')[0] + '@lid';
+    const botId = getBotId(socket);
+    const isBotSender = sender === botId || sender === socket.user?.id?.split(':')[0] + '@s.whatsapp.net' || sender === socket.user?.id?.split(':')[0] + '@lid';
     
     const senderBase = sender.split('@')[0];
     const ownerBase = String(numerodono);
@@ -1662,7 +1663,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       if  (groupSettings.autoAcceptRequests) {
     if  (groupSettings.captchaEnabled) {
     // Pega o nome do grupo
-    const groupMetadata = await nazu.groupMetadata(from).catch(() => null);
+    const groupMetadata = await socket.groupMetadata(from).catch(() => null);
     const groupNameCaptcha = groupMetadata?.subject || 'Desconhecido';
     
     // Gera captcha e envia para o usuário
@@ -1704,7 +1705,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     }
     
     try  {
-      await nazu.sendMessage(participantJid, { text: captchaMessage });
+      await socket.sendMessage(participantJid, { text: captchaMessage });
       console.log(`[JOIN REQUEST] Captcha enviado para ${participantJid}`);
     } catch (err) {
       console.error(`[JOIN REQUEST] Erro ao enviar captcha para ${participantJid}:`, err);
@@ -1712,12 +1713,12 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       } else {
     // Auto-aceitar sem captcha
     try  {
-      await nazu.groupRequestParticipantsUpdate(from, [participantJid], 'approve');
+      await socket.groupRequestParticipantsUpdate(from, [participantJid], 'approve');
       console.log(`[JOIN REQUEST] ✅ Aprovado automaticamente: ${participantJid}`);
       
       // Notificação X9
       if  (groupSettings.x9) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: `✅ *X9 Report:* @${participantJid.split('@')[0]} foi aprovado automaticamente (auto-aceitar ativo).`,
     mentions: [participantJid],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -1730,7 +1731,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       // Auto-aceitar desativado - apenas notifica se X9 ativo
     if  (groupSettings.x9) {
     try  {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `📬 *X9 Report:* Nova solicitação de entrada detectada.\n👤 Usuário: @${participantJid.split('@')[0]}\n\nAprovação manual necessária.`,
     mentions: [participantJid],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -1755,7 +1756,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       if  (groupSettings.x9) {
       const statusText = action === 'revoked' ? 'cancelou a solicitação' : 'teve a solicitação recusada';
       try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `🔔 *X9 Report:* @${participantJid.split('@')[0]} ${statusText}.`,
       mentions: [participantJid],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -1918,7 +1919,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       try {
     if  (!roleData || !roleData.announcementKey || !roleData.announcementKey.id) return;
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: roleData.announcementKey.fromMe !== undefined ? roleData.announcementKey.fromMe : true,
@@ -1936,7 +1937,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     ...goingList.slice(0, MAX_MENTIONS_IN_ANNOUNCE),
     ...notGoingList.slice(0, MAX_MENTIONS_IN_ANNOUNCE)
     ];
-    const sentMessage = await nazu.sendMessage(from, { text: announcementText, mentions });
+    const sentMessage = await socket.sendMessage(from, { text: announcementText, mentions });
     if  (sentMessage?.key?.id) {
       if  (!groupData.roleMessages || typeof groupData.roleMessages !== 'object') {
       groupData.roleMessages = {};
@@ -2175,7 +2176,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (debug) {
     console.log('[DEBUG CAPTCHA] ✅ Resposta correta! Aprovando no grupo:', captchaData.groupId);
       }
-      await nazu.groupRequestParticipantsUpdate(captchaData.groupId, [sender], 'approve');
+      await socket.groupRequestParticipantsUpdate(captchaData.groupId, [sender], 'approve');
       await reply('✅ *Correto!* Você foi aprovado no grupo. Bem-vindo! 🎉');
       
       // Limpar captcha pendente do índice
@@ -2190,7 +2191,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     
     // Notificação X9
     if  (groupDataCaptcha.x9) {
-      await nazu.sendMessage(captchaData.groupId, {
+      await socket.sendMessage(captchaData.groupId, {
     text: `✅ *X9 Report:* @${sender.split('@')[0]} passou na verificação de captcha e foi aprovado automaticamente.`,
     mentions: [sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -2207,7 +2208,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if  (debug) {
     console.log('[DEBUG CAPTCHA] ❌ Resposta incorreta! Recusando no grupo:', captchaData.groupId);
       }
-      await nazu.groupRequestParticipantsUpdate(captchaData.groupId, [sender], 'reject');
+      await socket.groupRequestParticipantsUpdate(captchaData.groupId, [sender], 'reject');
       await reply('❌ *Resposta incorreta!* Sua solicitação foi recusada. Você pode tentar solicitar novamente.');
       
       // Limpar captcha pendente do índice
@@ -2245,7 +2246,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     return;
       };
       if (antipvData.mode === 'antipv3' && isCmd && !isOwner && !isPremium && !isTm2Command) {
-    await nazu.updateBlockStatus(sender, 'block');
+    await socket.updateBlockStatus(sender, 'block');
     await reply('🚫 Você foi bloqueado por usar comandos no privado!');
     return;
       };
@@ -2299,9 +2300,9 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
 
     // Converte todos os membros e admins para LID (usando cache)
     const [AllgroupMembers, groupAdmins, groupSuperAdmins] = await Promise.all([
-      convertIdsToLid(nazu, rawMembers),
-      convertIdsToLid(nazu, rawAdmins),
-      convertIdsToLid(nazu, rawSuperAdmins)
+      convertIdsToLid(socket, rawMembers),
+      convertIdsToLid(socket, rawAdmins),
+      convertIdsToLid(socket, rawSuperAdmins)
     ]);
     
     // Debug log
@@ -2312,28 +2313,28 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     });
 
     // Robust bot ID extraction with multiple fallback mechanisms
-    const getBotNumber = (nazu) => {
+    const getBotNumber = (socket) => {
       try {
     // Tenta pegar LID primeiro
-    if  (nazu.user?.lid) {
+    if  (socket.user?.lid) {
     // Remove o sufixo `:XX` se existir (ex: 267955023654984:13@lid -> 267955023654984@lid)
-    const lid = nazu.user.lid;
+    const lid = socket.user.lid;
     const cleanLid = lid.includes(':') ? lid.split(':')[0] + '@lid' : lid;
     return cleanLid;
     }
     
     // Fallback para ID padrão
-    if  (nazu.user?.id) {
-    const botId = nazu.user.id.split(':')[0];
+    if  (socket.user?.id) {
+    const botId = socket.user.id.split(':')[0];
     return `${botId}@s.whatsapp.net`;
     }
 
     // Usa helper se disponível
     if  (typeof getBotId === 'function') {
-    return getBotId(nazu);
+    return getBotId(socket);
     }
 
-    console.warn('Unable to determine bot number - user object:', nazu.user);
+    console.warn('Unable to determine bot number - user object:', socket.user);
     return null;
       } catch (error) {
     console.error('Error extracting bot number:', error);
@@ -2341,11 +2342,11 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       }
     };
 
-    const botNumber = getBotNumber(nazu);
+    const botNumber = getBotNumber(socket);
     
     // Converte o botNumber para LID se for JID
     const botNumberLid = botNumber && isValidJid(botNumber) 
-      ? await getLidFromJidCached(nazu, botNumber) 
+      ? await getLidFromJidCached(socket, botNumber) 
       : botNumber;
     
     const isBotAdmin = !isGroup || !botNumberLid ? false : idInArray(botNumberLid, groupAdmins);
@@ -2379,12 +2380,12 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     }
 
     const validateModerationTarget = async (action, target = menc_os2, { refresh = false } = {}) => {
-      const targetId = target ? await normalizeUserId(nazu, target) : null;
+      const targetId = target ? await normalizeUserId(socket, target) : null;
       let memberIds = AllgroupMembers;
       let adminIds = groupAdmins;
       let superAdminIds = groupSuperAdmins;
       if (refresh && isGroup) {
-        const latestMetadata = await nazu.groupMetadata(from);
+        const latestMetadata = await socket.groupMetadata(from);
         const latestMembers = latestMetadata.participants?.map(extractParticipantId).filter(Boolean) || [];
         const latestAdmins = latestMetadata.participants
           ?.filter(participant => participant.admin === 'admin' || participant.admin === 'superadmin')
@@ -2395,9 +2396,9 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
           .map(extractParticipantId)
           .filter(Boolean) || [];
         [memberIds, adminIds, superAdminIds] = await Promise.all([
-          convertIdsToLid(nazu, latestMembers),
-          convertIdsToLid(nazu, latestAdmins),
-          convertIdsToLid(nazu, latestSuperAdmins)
+          convertIdsToLid(socket, latestMembers),
+          convertIdsToLid(socket, latestAdmins),
+          convertIdsToLid(socket, latestSuperAdmins)
         ]);
       }
       return evaluateModerationTarget({
@@ -2408,7 +2409,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
         adminIds,
         superAdminIds,
         ownerIds: [nmrdn, ownerJid, lidowner, ...automacoesV9.getPrimaryOwners()].filter(Boolean),
-        botIds: [botNumber, botNumberLid, nazu.user?.id, nazu.user?.lid].filter(Boolean),
+        botIds: [botNumber, botNumberLid, socket.user?.id, socket.user?.lid].filter(Boolean),
         matcher: idsMatch
       });
     };
@@ -2454,10 +2455,10 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
   }
   if (caption.length < groupData.minMessage.minDigits) {
     try {
-      await nazu.sendMessage(from, { delete: info.key });
+      await socket.sendMessage(from, { delete: info.key });
       if (groupData.minMessage.action === 'ban') {
     if  (isBotAdmin) {
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     await reply(`🚫 Usuário removido por enviar mídia sem legenda suficiente (mínimo: ${groupData.minMessage.minDigits} caracteres).`);
     } else {
     await reply(`⚠️ Mídia sem legenda suficiente detectada, mas não sou admin para remover o usuário.`);
@@ -2474,7 +2475,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if (isGroup && isStatusMention && isAntiStatus && !isGroupAdmin) {
       if (!isUserWhitelisted(sender, 'antistatus')) {
     if  (isBotAdmin) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -2482,7 +2483,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     participant: sender
       }
     });
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     } else {
     await reply("⚠️ Não posso remover o usuário porque não sou administrador.");
     }
@@ -2491,7 +2492,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     if (isGroup && isButtonMessage && isAntiBtn && !isGroupAdmin) {
       if (!isUserWhitelisted(sender, 'antibtn')) {
     if  (isBotAdmin) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -2499,7 +2500,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     participant: sender
       }
     });
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     } else {
     await reply("⚠️ Não posso remover o usuário porque não sou administrador.");
     }
@@ -2552,7 +2553,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     userName = pushNameFromMsg;
       } else {
     try  {
-    const fetchedName = await nazu.getName(fromGroup, participant); 
+    const fetchedName = await socket.getName(fromGroup, participant); 
     const numeroLimpoFallback = participant.split('@')[0];
     
     if  (fetchedName && fetchedName !== numeroLimpoFallback) {
@@ -2566,7 +2567,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       }
       
       try {
-    profilePic = await nazu.profilePictureUrl(participant, 'image');
+    profilePic = await socket.profilePictureUrl(participant, 'image');
       } catch (e) {
       }
       
@@ -2584,7 +2585,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       };
       
       try {
-    await nazu.sendMessage(fromGroup, clone);
+    await socket.sendMessage(fromGroup, clone);
       } catch (err) {
     console.error('ERRO CRÍTICO AO REENVIAR MENSAGEM:', err);
       }
@@ -2646,13 +2647,13 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     }
     if (isGroup && isMuted && !isGroupAdmin && !isOwner) {
       try {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: `🤫 *Usuário mutado detectado*\n\n@${getUserName(sender)}, você está tentando falar enquanto está mutado neste grupo. Você será removido conforme as regras.`,
     mentions: [sender]
     }, {
     quoted: info
     });
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -2661,7 +2662,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     }
     });
     if  (isBotAdmin) {
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     } else {
     await reply("⚠️ Não posso remover o usuário porque não sou administrador.");
     }
@@ -2678,7 +2679,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     }
     if (isGroup && isMuted2 && !isGroupAdmin && !isOwner) {
       try {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -2772,13 +2773,15 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     userData.lastMessage = Date.now();
     
     // Verifica level up e salva
-    checkLevelUp(sender, userData, levelingData, nazu, from);
+    checkLevelUp(sender, userData, levelingData, socket, from);
     saveLevelingSafe(levelingData);
       } catch (levelingError) {
     console.error('❌ Erro no sistema de leveling:', levelingError.message);
       }
     }
+    if (isCmd) installCommandPresentation(socket, info, command);
     async function reply(text, options = {}) {
+      if (isCmd) text = formatCommandResponse(text, command);
     const {
     mentions = [],
     noForward = false,
@@ -2811,7 +2814,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     // persistente real (essa ainda vira null + log, como antes).
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         try {
-    const result = await nazu.sendMessage(from, messageContent, sendOptions);
+    const result = await socket.sendMessage(from, messageContent, sendOptions);
     return result;
         } catch (error) {
           // Log sanitizado: comando, tentativa e classe/mensagem do erro,
@@ -2829,7 +2832,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
           if (attempt === 2) {
     console.error('[FEEDBACK] Falha ao enviar resposta apos retentativa:', feedbackLogContext);
     try {
-      return await nazu.sendMessage(from, {
+      return await socket.sendMessage(from, {
         text: '⚠️ Não consegui enviar a resposta completa. Tente o comando novamente em instantes.'
       });
     } catch (fallbackError) {
@@ -2846,7 +2849,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
         }
       }
     }
-    void warmupTavernRuntime(nazu).catch(error => {
+    void warmupTavernRuntime(socket).catch(error => {
       console.error('[TAVERN] Falha ao iniciar o módulo:', error?.message || error);
     });
     void warmupNexoRuntime().catch(error => {
@@ -2865,7 +2868,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       console.warn("Emoji inválido para reação:", emj);
       return false;
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       react: {
     text: emj,
     key: messageKey
@@ -2878,7 +2881,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
     console.warn("Emoji inválido na sequência:", emoji);
     continue;
       }
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     react: {
       text: emoji,
       key: messageKey
@@ -2962,7 +2965,7 @@ async function shogunExec(nazu, info, store, messagesCache, rentalExpirationMana
       const confirmationText = isGoingEmoji(emoji)
     ? `🙋 Presença confirmada no rolê *${roleData.title || roleCode}*.`
     : `🤷 Você sinalizou que não vai mais no rolê *${roleData.title || roleCode}*.`;
-      await nazu.sendMessage(actorId, {
+      await socket.sendMessage(actorId, {
     text: `${confirmationText}
 Código: *${roleCode}*`,
     mentions: [actorId]
@@ -3244,7 +3247,7 @@ Código: *${roleCode}*`,
       } catch (e) {
       }
     };
-    startRemindersWorker(nazu);
+    startRemindersWorker(socket);
     // GP schedule using cron jobs (daily execution)
     let gpScheduleWorkerStarted = global.gpScheduleWorkerStarted || false;
     const gpCronJobs = {}; // key: `${groupId}:${type}` where type is 'open'|'close'
@@ -3354,7 +3357,7 @@ Código: *${roleCode}*`,
     console.error('[Cron] startGpScheduleWorker error:', e);
       }
     };
-    startGpScheduleWorker(nazu);
+    startGpScheduleWorker(socket);
 
     let autoHorariosWorkerStarted = global.autoHorariosWorkerStarted || false;
     const startAutoHorariosWorker = (nazuInstance) => {
@@ -3477,7 +3480,7 @@ Código: *${roleCode}*`,
     console.error('Erro ao iniciar auto horários worker:', e);
       }
     };
-    startAutoHorariosWorker(nazu);
+    startAutoHorariosWorker(socket);
 
     // Auto Mensagens Worker usando cron jobs (executa conforme horários programados)
     let autoMensagensWorkerStarted = global.autoMensagensWorkerStarted || false;
@@ -3639,7 +3642,7 @@ Código: *${roleCode}*`,
       }
     };
     
-    startAutoMensagensWorker(nazu);
+    startAutoMensagensWorker(socket);
 
     // ============== DIVULGAÇÃO DO DONO (NOVO SISTEMA) ==============
     let donoDivulgacaoWorkerStarted = global.donoDivulgacaoWorkerStarted || false;
@@ -3752,7 +3755,7 @@ Código: *${roleCode}*`,
       }
     };
 
-    startDonoDivulgacaoWorker(nazu);
+    startDonoDivulgacaoWorker(socket);
 
     const getFileBuffer = async (mediakey, mediaType, options = {}) => {
       try {
@@ -3925,10 +3928,10 @@ Código: *${roleCode}*`,
       await reply(`🚨 Conteúdo impróprio detectado! (${reason})`);
       if  (isBotAdmin) {
       try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: info.key
     });
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     await reply(`🔞 @${getUserName(sender)}, conteúdo impróprio detectado. Você foi removido do grupo.`, {
       mentions: [sender]
     });
@@ -3955,7 +3958,7 @@ Código: *${roleCode}*`,
     }
     if (isGroup && groupData.antiloc && !isGroupAdmin && type === 'locationMessage') {
       if (!isUserWhitelisted(sender, 'antiloc')) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -3963,7 +3966,7 @@ Código: *${roleCode}*`,
       participant: sender
     }
     });
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     await reply(`🗺️ @${getUserName(sender)}, localização não permitida. Você foi removido do grupo.`, {
     mentions: [sender]
     });
@@ -3985,7 +3988,7 @@ Código: *${roleCode}*`,
     }
     if (isGroup && groupData.antidoc && !isGroupAdmin && (type === 'documentMessage' || type === 'documentWithCaptionMessage')) {
       if (!isUserWhitelisted(sender, 'antidoc')) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -3993,7 +3996,7 @@ Código: *${roleCode}*`,
       participant: sender
     }
     });
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     await reply(`📄 @${getUserName(sender)}, documentos não são permitidos. Você foi removido do grupo.`, {
     mentions: [sender]
     });
@@ -4005,7 +4008,7 @@ Código: *${roleCode}*`,
       if (urlMatch && urlMatch.length > 0) {
     // Processa apenas o primeiro link encontrado
   try  {
-    handleAutoDownload(nazu, from, urlMatch[0], info)
+    handleAutoDownload(socket, from, urlMatch[0], info)
       .then(() => null)
       .catch((e) => {
     console.error('Erro no autodl:', e);
@@ -4033,7 +4036,7 @@ Código: *${roleCode}*`,
       legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
     });
     if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: processedSticker.buffer,
       author: `『${pushname}』\n『${nomebot}』\n『${nomedono}』\n『cognima.com.br』`,
       packname: '👤 Usuario(a)ᮀ۟❁’￫\n🤖 Botᮀ۟❁’￫\n👑 Donoᮀ۟❁’￫\n🌐 Siteᮀ۟❁’￫',
@@ -4128,14 +4131,14 @@ Código: *${roleCode}*`,
   try  {
       if  (budy2.includes('chat.whatsapp.com')) {
       foundGroupLink = true;
-      link_dgp = await nazu.groupInviteCode(from);
+      link_dgp = await socket.groupInviteCode(from);
     if  (budy2.includes(link_dgp)) foundGroupLink = false;
     }
       if  (!foundGroupLink && info.message?.requestPaymentMessage) {
       const paymentText = info.message.requestPaymentMessage?.noteMessage?.extendedTextMessage?.text || '';
     if  (paymentText.includes('chat.whatsapp.com')) {
     foundGroupLink = true;
-    link_dgp = link_dgp || await nazu.groupInviteCode(from);
+    link_dgp = link_dgp || await socket.groupInviteCode(from);
     if  (paymentText.includes(link_dgp)) foundGroupLink = false;
       }
     }
@@ -4143,8 +4146,8 @@ Código: *${roleCode}*`,
     if  (isOwner) return;
     if  (!AllgroupMembers.includes(sender)) return;
     if  (isBotAdmin) {
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
-    await nazu.sendMessage(from, {
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4156,7 +4159,7 @@ Código: *${roleCode}*`,
       mentions: [sender]
     });
       } else {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4192,8 +4195,8 @@ Código: *${roleCode}*`,
     if  (isOwner) return;
     if  (!AllgroupMembers.includes(sender)) return;
     if  (isBotAdmin) {
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
-    await nazu.sendMessage(from, {
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4205,7 +4208,7 @@ Código: *${roleCode}*`,
       mentions: [sender]
     });
       } else {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4227,7 +4230,7 @@ Código: *${roleCode}*`,
     if (isGroup && isAntiLinkSoft && !isGroupAdmin && !isParceiro && budy2.includes('http') && !isOwner) {
       if (!isUserWhitelisted(sender, 'antilinksoft')) {
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4249,8 +4252,8 @@ Código: *${roleCode}*`,
       if (hasLink && !isUserWhitelisted(sender, 'antilinkhard')) {
   try  {
       if  (isBotAdmin) {
-      await nazu.groupParticipantsUpdate(from, [sender], 'remove');
-      await nazu.sendMessage(from, {
+      await socket.groupParticipantsUpdate(from, [sender], 'remove');
+      await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -4262,7 +4265,7 @@ Código: *${roleCode}*`,
     mentions: [sender]
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     delete: {
       remoteJid: from,
       fromMe: false,
@@ -4283,11 +4286,11 @@ Código: *${roleCode}*`,
   const botStateFile = pathz.join(DATABASE_DIR, 'botState.json');
     if (botState.status === 'off' && !isOwner) return;
     if (pendingCommandReaction) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         react: { text: pendingCommandReaction, key: info.key }
       }).catch(error => console.warn('[FEEDBACK] Não foi possível reagir ao comando:', error?.message || error));
     }
-    if (botState.viewMessages) nazu.readMessages([info.key]);
+    if (botState.viewMessages) socket.readMessages([info.key]);
     try {
       if (budy2 && budy2.length > 1) {
     const timestamp = new Date().toLocaleTimeString('pt-BR', {
@@ -4323,7 +4326,7 @@ Código: *${roleCode}*`,
     if  (relResponse) {
       // Apenas envia mensagem se for sucesso, ignora respostas inválidas
       if  (relResponse.success && relResponse.message) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: relResponse.message,
     mentions: relResponse.mentions || []
     });
@@ -4338,7 +4341,7 @@ Código: *${roleCode}*`,
       if  (betrayalResponse) {
     // Apenas envia mensagem se for sucesso, ignora respostas inválidas
     if  (betrayalResponse.success && betrayalResponse.message) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: betrayalResponse.message,
       mentions: betrayalResponse.mentions || []
     });
@@ -4355,7 +4358,7 @@ Código: *${roleCode}*`,
     const normalizedResponse = budy2.toLowerCase().trim();
     const result = tictactoe.processInvitationResponse(from, sender, normalizedResponse);
       if  (result.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: result.message,
     mentions: result.mentions || []
       });
@@ -4375,7 +4378,7 @@ Código: *${roleCode}*`,
       if  (!isNaN(position)) {
       const result = tictactoe.makeMove(from, sender, position);
     if  (result.success) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: result.message,
       mentions: result.mentions || [sender]
     });
@@ -4391,7 +4394,7 @@ Código: *${roleCode}*`,
     const normalizedResponse = budy2.toLowerCase().trim();
     const result = connect4.processInvitationResponse(from, sender, normalizedResponse);
       if  (result.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: result.message,
     mentions: result.mentions || []
       });
@@ -4411,7 +4414,7 @@ Código: *${roleCode}*`,
       if  (!isNaN(column) && column >= 1 && column <= 7) {
       const result = connect4.makeMove(from, sender, column);
     if  (result.success) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: result.message,
       mentions: result.mentions || [sender]
     });
@@ -4423,10 +4426,10 @@ Código: *${roleCode}*`,
     }
 
     // Processamento do antitoxic
-    if  (antitoxic && antitoxic.isEnabled && antitoxic.isEnabled(from) && body && ia) {
-    // Função wrapper para a IA do antitoxic
+    if  (antitoxic && antitoxic.isEnabled && antitoxic.isEnabled(from) && body && assistant) {
+    // Função wrapper para a conversa do antitoxic
     const aiFunction = (prompt) => {
-      return ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
+      return assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
     .then(response => response?.data?.choices?.[0]?.message?.content || '');
     };
     
@@ -4434,15 +4437,15 @@ Código: *${roleCode}*`,
     if  (toxicResult.isToxic) {
     const action = antitoxic.getGroupAction ? antitoxic.getGroupAction(from) : 'avisar';
     if  (action === 'apagar') {
-      nazu.sendMessage(from, { delete: info.key }).then(() => {
-    nazu.sendMessage(from, {
-    text: `⚠️ @${sender.split('@')[0]}, sua mensagem foi removida por conteúdo tóxico.\n\n_Este sistema usa IA e pode cometer erros._`,
+      socket.sendMessage(from, { delete: info.key }).then(() => {
+    socket.sendMessage(from, {
+    text: `⚠️ @${sender.split('@')[0]}, sua mensagem foi removida por conteúdo tóxico.\n\n_Este sistema usa conversa e pode cometer erros._`,
     mentions: [sender]
     });
       });
     } else if (action === 'avisar') {
-      nazu.sendMessage(from, {
-    text: `⚠️ @${sender.split('@')[0]}, evite mensagens tóxicas!\n\n_Este sistema usa IA e pode cometer erros._`,
+      socket.sendMessage(from, {
+    text: `⚠️ @${sender.split('@')[0]}, evite mensagens tóxicas!\n\n_Este sistema usa conversa e pode cometer erros._`,
     mentions: [sender]
       });
     }
@@ -4468,7 +4471,7 @@ Código: *${roleCode}*`,
       
       // Verifica se o bot é admin antes de tentar remover
       if  (!isBotAdmin) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: `⚠️ *ANTIPALAVRA - DETECÇÃO*\n\n` +
       `👤 @${sender.split('@')[0]} usou uma palavra proibida!\n` +
       `⚠️ Palavra: "${detectionResult.palavra}"\n\n` +
@@ -4479,12 +4482,12 @@ Código: *${roleCode}*`,
       }
       
       // Deleta a mensagem
-      await nazu.sendMessage(from, { delete: info.key }).catch(err => 
+      await socket.sendMessage(from, { delete: info.key }).catch(err => 
     console.error('[ANTIPALAVRA] Erro ao deletar mensagem:', err.message)
       );
       
       // Remove o usuário do grupo
-      await nazu.groupParticipantsUpdate(from, [sender], 'remove').catch(err => 
+      await socket.groupParticipantsUpdate(from, [sender], 'remove').catch(err => 
     console.error('[ANTIPALAVRA] Erro ao remover usuário:', err.message)
       );
       
@@ -4492,7 +4495,7 @@ Código: *${roleCode}*`,
       antipalavra.registerBan(from, sender, detectionResult.palavra);
       
       // Envia notificação
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `🚫 *ANTIPALAVRA - BANIMENTO AUTOMÁTICO*\n\n` +
     `👤 Usuário: @${sender.split('@')[0]}\n` +
     `⚠️ Palavra detectada: "${detectionResult.palavra}"\n` +
@@ -4538,7 +4541,7 @@ Código: *${roleCode}*`,
     }
     if (budy2.match(/^(\d+)d(\d+)$/)) reply(+budy2.match(/^(\d+)d(\d+)$/)[1] > 50 || +budy2.match(/^(\d+)d(\d+)$/)[2] > 100 ? "❌ Limite: max 50 dados e 100 lados" : "🎲 Rolando " + budy2.match(/^(\d+)d(\d+)$/)[1] + "d" + budy2.match(/^(\d+)d(\d+)$/)[2] + "...\n🎯 Resultados: " + (r = [...Array(+budy2.match(/^(\d+)d(\d+)$/)[1])].map(_ => 1 + Math.floor(Math.random() * +budy2.match(/^(\d+)d(\d+)$/)[2]))).join(", ") + "\n📊 Total: " + r.reduce((a, b) => a + b, 0));
 
-    const _botShort = (nazu && nazu.user && (nazu.user.id || nazu.user.lid)) ? String((nazu.user.id || nazu.user.lid).split(':')[0]) : '';
+    const _botShort = (socket && socket.user && (socket.user.id || socket.user.lid)) ? String((socket.user.id || socket.user.lid).split(':')[0]) : '';
     // Não processar pela assistente se a mensagem veio do PRO (evita loop infinito)
     if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {
       if (budy2.replaceAll('@' + _botShort, '').length > 2) {
@@ -4562,8 +4565,8 @@ Código: *${roleCode}*`,
     const mencoesNaMensagem = info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
     
     // Obter todos os possíveis identificadores do bot para filtrar
-    const botLid = nazu.user?.lid ? nazu.user.lid.split(':')[0] : null;
-    const botJid = nazu.user?.id ? nazu.user.id.split(':')[0] : null;
+    const botLid = socket.user?.lid ? socket.user.lid.split(':')[0] : null;
+    const botJid = socket.user?.id ? socket.user.id.split(':')[0] : null;
     const botIdentifiers = [_botShort, botLid, botJid, botNumber].filter(Boolean);
     
     
@@ -4616,7 +4619,7 @@ Código: *${roleCode}*`,
     jSoNzIn.marcou_mensagem = true;
     jSoNzIn.mensagem_marcada = jsonO.texto;
     jSoNzIn.id_enviou_marcada = jsonO.participant;
-    jSoNzIn.marcou_sua_mensagem = jsonO.participant == getBotId(nazu);
+    jSoNzIn.marcou_sua_mensagem = jsonO.participant == getBotId(socket);
     }
     // Se marcou mensagem com mídia mas sem texto, ainda assim é marcou_mensagem
     if  (jsonO && jsonO.participant && tipoMidiaMarcada && !jSoNzIn.marcou_mensagem) {
@@ -4624,20 +4627,20 @@ Código: *${roleCode}*`,
     jSoNzIn.id_enviou_marcada = jsonO.participant;
     }
     
-    // Verifica se o objeto ia existe antes de usar
-    if  (!ia || typeof ia.makeAssistentRequest !== 'function') {
-    console.warn('[IA] makeAssistentRequest not available');
+    // Verifica se o objeto assistant existe antes de usar
+    if  (!assistant || typeof assistant.makeAssistentRequest !== 'function') {
+    console.warn('[conversa] makeAssistentRequest not available');
     reply('A conversa com Shogun está indisponível agora. Tente novamente em alguns minutos.');
     return;
     }
     
     const personality = 'shogun';
 
-    ia.makeAssistentRequest({
+    assistant.makeAssistentRequest({
     mensagens: [jSoNzIn],
-    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined
-    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {
-      if  (respAssist.erro === 'Sistema de IA temporariamente desativado') {
+    model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined
+    }, socket, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {
+      if  (respAssist.erro === 'Sistema de conversa temporariamente desativado') {
       return;
     }
     
@@ -4684,10 +4687,10 @@ Código: *${roleCode}*`,
       };
       processResponses(0);
     } else if (respAssist?.message) {
-      console.warn(`⚠️ [${personality}] A IA falhou sem respostas válidas:`, respAssist.erro || 'erro desconhecido');
+      console.warn(`⚠️ [${personality}] A conversa falhou sem respostas válidas:`, respAssist.erro || 'erro desconhecido');
       reply(respAssist.message);
     } else {
-      console.warn(`⚠️ [${personality}] Nenhuma resposta válida retornada pela IA`, {
+      console.warn(`⚠️ [${personality}] Nenhuma resposta válida retornada pela conversa`, {
         responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,
         responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0
       });
@@ -4716,7 +4719,7 @@ Código: *${roleCode}*`,
     groupData.messageLimit.users[sender] = userData;
     if  (userData.count > groupData.messageLimit.limit) {
       if  (groupData.messageLimit.action === 'ban' && isBotAdmin) {
-      await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+      await socket.groupParticipantsUpdate(from, [sender], 'remove');
       await reply(`🚨 @${getUserName(sender)} foi banido por exceder o limite de ${groupData.messageLimit.limit} mensagens em ${groupData.messageLimit.interval}s!`, {
     mentions: [sender]
       });
@@ -4725,7 +4728,7 @@ Código: *${roleCode}*`,
       groupData.messageLimit.warnings[sender] = (groupData.messageLimit.warnings[sender] || 0) + 1;
       const warnings = groupData.messageLimit.warnings[sender];
     if  (warnings >= 3 && isBotAdmin) {
-    await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+    await socket.groupParticipantsUpdate(from, [sender], 'remove');
     await reply(`🚨 @${getUserName(sender)} foi banido por exceder o limite de mensagens (${groupData.messageLimit.limit} em ${groupData.messageLimit.interval}s) 3 vezes!`, {
       mentions: [sender]
     });
@@ -4755,7 +4758,7 @@ Código: *${roleCode}*`,
     partnerData.count++;
     saveParceriasData(from, parceriasData);
     } else {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: info.key
     });
     await reply(`@${getUserName(sender)}, você atingiu o limite de ${partnerData.limit} links de grupos.`, {
@@ -4763,7 +4766,7 @@ Código: *${roleCode}*`,
     });
     }
       } else {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     delete: info.key
     });
     await reply(`@${getUserName(sender)}, você não é um parceiro e não pode enviar links de grupos.`, {
@@ -4775,7 +4778,7 @@ Código: *${roleCode}*`,
     if (isGroup && groupData.antifig && groupData.antifig.enabled && type === "stickerMessage" && !isGroupAdmin && !info.key.fromMe) {
       if (!isUserWhitelisted(sender, 'antifig')) {
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: false,
@@ -4795,10 +4798,10 @@ Código: *${roleCode}*`,
     let warnMessage = `🚫 @${getUserName(sender)}, figurinhas não são permitidas neste grupo! Advertência ${warnCount}/${warnLimit}.`;
       if  (warnCount >= warnLimit && isBotAdmin) {
       warnMessage += `\n⚠️ Você atingiu o limite de advertências e será removido.`;
-      await nazu.groupParticipantsUpdate(from, [sender], 'remove');
+      await socket.groupParticipantsUpdate(from, [sender], 'remove');
       delete groupData.warnings[sender];
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: warnMessage,
       mentions: [sender]
     });
@@ -5135,7 +5138,7 @@ Código: *${roleCode}*`,
     if  (!mentionsToIncludeExec.length && typeof menc_os2 !== 'undefined' && menc_os2) {
       mentionsToIncludeExec = [menc_os2];
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: imageBuffer,
       caption: processedResponse.caption || '',
       mentions: mentionsToIncludeExec
@@ -5149,7 +5152,7 @@ Código: *${roleCode}*`,
     if  (!mentionsToIncludeExec.length && typeof menc_os2 !== 'undefined' && menc_os2) {
       mentionsToIncludeExec = [menc_os2];
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       video: videoBuffer,
       caption: processedResponse.caption || '',
       mentions: mentionsToIncludeExec
@@ -5158,7 +5161,7 @@ Código: *${roleCode}*`,
     } else if (processedResponse.type === 'audio') {
       const audioBuffer = processedResponse.buffer ? Buffer.from(processedResponse.buffer, 'base64') : null;
     if  (audioBuffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: audioBuffer,
       mimetype: 'audio/mp4',
       ptt: processedResponse.ptt || false
@@ -5167,7 +5170,7 @@ Código: *${roleCode}*`,
     } else if (processedResponse.type === 'sticker') {
       const stickerBuffer = processedResponse.buffer ? Buffer.from(processedResponse.buffer, 'base64') : null;
     if  (stickerBuffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       sticker: stickerBuffer
     }, { quoted: info });
       }
@@ -5199,10 +5202,10 @@ Código: *${roleCode}*`,
     })) {
       let tavernMentions = Array.isArray(menc_jid2) ? menc_jid2 : [];
       try {
-        tavernMentions = await convertIdsToLid(nazu, tavernMentions);
+        tavernMentions = await convertIdsToLid(socket, tavernMentions);
       } catch {}
       await handleTavernCommand({
-        socket: nazu,
+        socket: socket,
         info,
         command,
         args,
@@ -5228,13 +5231,13 @@ Código: *${roleCode}*`,
       let nexoIsGroupAdmin = isGroupAdmin || isOwner;
       if (isGroup && nexoMutatingActions.has(nexoAction)) {
         nexoIsGroupAdmin = isOwner || await checkFreshGroupAdmin({
-          socket: nazu,
+          socket: socket,
           groupChatId: from,
           senderId: sender
         });
       }
       await handleNexoCommand({
-        socket: nazu,
+        socket: socket,
         raw: {
           messageId: info.key?.id || `${sender}:${Date.now()}`,
           chatId: from,
@@ -5255,7 +5258,7 @@ Código: *${roleCode}*`,
       await shouldHandleNexoNumericReply({ command, chatId: from, senderAddress: sender })
     ) {
       await handleNexoPlayerCommand({
-        socket: nazu,
+        socket: socket,
         raw: {
           messageId: info.key?.id || `${sender}:${Date.now()}`,
           chatId: from,
@@ -5307,7 +5310,7 @@ case 'listaroles': {
     const listText = `🪩 *Rolês ativos*\n\n${listLines.join('\n\n')}\n\n🙋 Reaja com ${ROLE_GOING_BASE} ou use ${groupPrefix}role.vou CODIGO\n🤷 Reaja com ${ROLE_NOT_GOING_BASE} ou use ${groupPrefix}role.nvou CODIGO`;
 
     try  {
-      await nazu.sendMessage(sendTarget, { text: listText });
+      await socket.sendMessage(sendTarget, { text: listText });
     if  (sendInPv && sendTarget !== from) {
     await reply('📬 Enviei a lista de rolês no seu privado!', { mentions: [sender] });
       }
@@ -5410,9 +5413,9 @@ case 'role.criar': {
     payload.gifPlayback = true;
       }
     }
-    sentMessage = await nazu.sendMessage(from, payload);
+    sentMessage = await socket.sendMessage(from, payload);
       } else {
-    sentMessage = await nazu.sendMessage(from, { text: announcementText });
+    sentMessage = await socket.sendMessage(from, { text: announcementText });
       }
     } catch (sendError) {
       console.error('Erro ao divulgar rolê:', sendError);
@@ -5494,7 +5497,7 @@ case 'role.alterar': {
       if  (roleData.announcementKey?.id) {
       delete groupData.roleMessages[roleData.announcementKey.id];
       try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: roleData.announcementKey.fromMe !== undefined ? roleData.announcementKey.fromMe : true,
@@ -5537,9 +5540,9 @@ case 'role.alterar': {
     payload.gifPlayback = true;
       }
     }
-    sentMessage = await nazu.sendMessage(from, payload);
+    sentMessage = await socket.sendMessage(from, payload);
       } else {
-    sentMessage = await nazu.sendMessage(from, { text: announcementText });
+    sentMessage = await socket.sendMessage(from, { text: announcementText });
       }
     } catch (updateErr) {
       console.error('Erro ao reenviar divulgação do rolê:', updateErr);
@@ -5592,7 +5595,7 @@ case 'role.excluir': {
       if  (roleData.announcementKey?.id) {
       delete groupData.roleMessages[roleData.announcementKey.id];
       try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       delete: {
     remoteJid: from,
     fromMe: roleData.announcementKey.fromMe !== undefined ? roleData.announcementKey.fromMe : true,
@@ -5753,15 +5756,15 @@ case 'role.info': {
       }
     }
     
-    await nazu.sendMessage(from, payload, { quoted: info });
+    await socket.sendMessage(from, payload, { quoted: info });
       } catch (mediaError) {
     console.log('Erro ao enviar mídia do rolê:', mediaError.message);
     // Se falhar, envia apenas texto
-    await nazu.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
+    await socket.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
       }
     } else {
       // Se não tiver mídia, envia apenas texto
-      await nazu.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
+      await socket.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
     }
     } catch (e) {
     console.error('Erro em role.info:', e);
@@ -12845,7 +12848,7 @@ case 'lowpass':
       runFfmpeg(['-y', '-i', gem, '-filter:a', effect, ran]).then(async () => {
     fs.unlinkSync(gem);
     const hah = fs.readFileSync(ran);
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: hah,
       mimetype: 'audio/mpeg'
     }, {
@@ -12935,7 +12938,7 @@ case 'rotate':
       video: buffer453,
       mimetype: 'video/mp4'
     };
-    await nazu.sendMessage(from, messageType, {
+    await socket.sendMessage(from, messageType, {
       quoted: info
     });
     fs.unlinkSync(ran);
@@ -12956,13 +12959,13 @@ case 'rotate':
 case 'gemma':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Gemma? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Gemma... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Gemma:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Gemma! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -12973,13 +12976,13 @@ case 'phi':
 case 'phi3':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Phi? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Phi... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Phi:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Phi! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -12989,13 +12992,13 @@ case 'phi3':
 case 'qwen2':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Qwen2? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Qwen2... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Qwen2:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Qwen2! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13006,13 +13009,13 @@ case 'qwen':
 case 'qwen3':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Qwen? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Qwen... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Qwen:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Qwen! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13023,12 +13026,12 @@ case 'llama':
 case 'llama3':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Llama? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Llama... ✨`).then(() => {
-    ia.makeCognimaRequest('meta/llama-3.1-8b-instruct', q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest('meta/llama-3.1-8b-instruct', q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Llama:', e);
     if  (e.message && e.message.includes('API key inválida')) {
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Llama! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13039,12 +13042,12 @@ case 'baichuan':
 case 'baichuan2':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Baichuan? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     reply(`⏳ Só um segundinho, estou consultando o Baichuan... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Baichuan:', e);
     if  (e.message && e.message.includes('API key inválida')) {
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Baichuan! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13055,12 +13058,12 @@ case 'marin':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Marin? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Marin... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Marin:', e);
     if  (e.message && e.message.includes('API key inválida')) {
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Marin! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13072,13 +13075,13 @@ case 'kimik2':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Kimi? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Kimi... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Kimi:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Kimi! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13089,19 +13092,19 @@ case 'mistral':
     if  (!q) return reply(`🤔 Qual sua dúvida para a assistente? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
 
     reply(`⏳ Só um segundinho, estou consultando a assistente... ✨`).then(() => {
-    ia.makeCognimaRequest(
-      isKnownNvidiaModel(groupData.aiModel)
-        ? groupData.aiModel
+    assistant.makeCognimaRequest(
+      isKnownNvidiaModel(groupData.conversationModel)
+        ? groupData.conversationModel
         : (isKnownNvidiaModel(config.nvidia_model) ? config.nvidia_model : DEFAULT_NVIDIA_MODEL),
       q,
       null
     ).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
-      console.error('Erro na assistente de IA:', e);
+      console.error('Erro na assistente de conversa:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com a assistente! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13112,19 +13115,19 @@ case 'magistral':
     if  (!q) return reply(`🤔 Qual sua dúvida para a assistente? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
 
     reply(`⏳ Só um segundinho, estou consultando a assistente... ✨`).then(() => {
-    ia.makeCognimaRequest(
-      isKnownNvidiaModel(groupData.aiModel)
-        ? groupData.aiModel
+    assistant.makeCognimaRequest(
+      isKnownNvidiaModel(groupData.conversationModel)
+        ? groupData.conversationModel
         : (isKnownNvidiaModel(config.nvidia_model) ? config.nvidia_model : DEFAULT_NVIDIA_MODEL),
       q,
       null
     ).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
-      console.error('Erro na assistente de IA:', e);
+      console.error('Erro na assistente de conversa:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com a assistente! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13136,13 +13139,13 @@ case 'rocket':
     if  (!q) return reply(`🤔 Qual sua dúvida para o RakutenAI? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o RakutenAI... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API RakutenAI:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o RakutenAI! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13153,13 +13156,13 @@ case 'yi':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Yi? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Yi... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Yi:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Yi! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13170,13 +13173,13 @@ case 'gemma2':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Gemma2? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Gemma2... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Gemma2:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Gemma2! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13187,13 +13190,13 @@ case 'swallow':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Swallow? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Swallow... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Swallow:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Swallow! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13204,13 +13207,13 @@ case 'falcon':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Falcon? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Falcon... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Falcon:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Falcon! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13221,13 +13224,13 @@ case 'qwencoder':
     if  (!q) return reply(`🤔 Qual sua dúvida para o Qwencoder? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o Qwencoder... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API Qwencoder:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o Qwencoder! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13238,13 +13241,13 @@ case 'codegemma':
     if  (!q) return reply(`🤔 Qual sua dúvida para o CodeGemma? Informe a pergunta após o comando! Exemplo: ${prefix}${command} quem descobriu o Brasil? 🌍`);
     
     reply(`⏳ Só um segundinho, estou consultando o CodeGemma... ✨`).then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API CodeGemma:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply(`😓 Poxa, algo deu errado com o CodeGemma! Tente novamente em alguns instantes, tá? 🌈`);
       }
@@ -13256,13 +13259,13 @@ case 'resumir':
     
     reply('⏳ Aguarde enquanto preparo um resumo bem caprichado... ✨').then(() => {
     const prompt = `Resuma o seguinte texto em poucos parágrafos, de forma clara e objetiva, destacando as informações mais importantes:\n\n${q}`;
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro ao resumir texto:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply('😓 Ops, não consegui resumir agora! Que tal tentar de novo? 🌟');
       }
@@ -13290,13 +13293,13 @@ case 'resumirurl':
     return;
       }
       const prompt = `Resuma o seguinte conteúdo extraído de uma página web em poucos parágrafos, de forma clara e objetiva, destacando os pontos principais:\n\n${cleanText.substring(0, 5000)}`;
-      ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((iaResponse) => {
-    reply(formatAIResponse(iaResponse.data.choices[0].message.content));
+      assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((iaResponse) => {
+    reply(formatConversationResponse(iaResponse.data.choices[0].message.content));
       }).catch((e) => {
-    console.error('Erro ao resumir URL (IA):', e.message);
+    console.error('Erro ao resumir URL (conversa):', e.message);
     if  (e.message && e.message.includes('API key inválida')) {
       
-      reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+      reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
     } else {
       reply('😓 Vixe, algo deu errado ao resumir a página! Tente novamente em breve, combinado? 🌈');
     }
@@ -13320,13 +13323,13 @@ case 'ideia':
     
     reply('⏳ Um segundinho, estou pensando em ideias incríveis... ✨').then(() => {
     const prompt = `Gere 15 ideias criativas e detalhadas para o seguinte tema: ${q}`;
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro ao gerar ideias:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply('😓 Poxa, não consegui gerar ideias agora! Tente de novo em breve, tá? 🌈');
       }
@@ -13340,13 +13343,13 @@ case 'explique':
     
     reply('⏳ Um momentinho, estou preparando uma explicação bem clara... ✨').then(() => {
     const prompt = `Explique o seguinte conceito de forma simples e clara, como se fosse para alguém sem conhecimento prévio: ${q}`;
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro ao explicar conceito:', e);
     if  (e.message && e.message.includes('API key inválida')) {
     
-    reply('🤖 *Sistema de IA temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
+    reply('🤖 *Sistema de conversa temporariamente indisponível*\n\n😅 Estou com problemas técnicos no momento. O administrador já foi notificado!\n\n⏰ Tente novamente em alguns minutos.');
       } else {
     reply('😓 Vixe, não consegui explicar agora! Tente de novo em alguns instantes, tá? 🌈');
       }
@@ -13359,8 +13362,8 @@ case 'correcao':
     
     reply('⏳ Aguarde enquanto dou um polimento no seu texto... ✨').then(() => {
     const prompt = `Corrija os erros gramaticais, ortográficos e de estilo no seguinte texto, mantendo o significado original: ${q}`;
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro ao corrigir texto:', e);
       reply('😓 Ops, não consegui corrigir o texto agora! Tente novamente, tá? 🌟');
@@ -13449,14 +13452,14 @@ ${conversaTexto.substring(0, 8000)}
 
 Faça um resumo conciso mas completo, destacando o que é mais relevante.`;
 
-    return ia.makeCognimaRequest('meta/llama-3.1-8b-instruct', prompt, null);
+    return assistant.makeCognimaRequest('meta/llama-3.1-8b-instruct', prompt, null);
     }).then(response => {
-    return reply(`💬 *Resumo da Conversa* (últimas mensagens)\n\n${formatAIResponse(response.data.choices[0].message.content)}`);
+    return reply(`💬 *Resumo da Conversa* (últimas mensagens)\n\n${formatConversationResponse(response.data.choices[0].message.content)}`);
     }).catch(e => {
     console.error('Erro ao resumir conversa:', e);
       if  (e.message?.includes('API key inválida')) {
       
-      return reply('🤖 *Sistema de IA temporariamente indisponível*\n\nO administrador já foi notificado!');
+      return reply('🤖 *Sistema de conversa temporariamente indisponível*\n\nO administrador já foi notificado!');
     } else {
       return reply('😓 Não consegui resumir a conversa agora! Tente novamente em breve. 🌈');
     }
@@ -13465,7 +13468,7 @@ Faça um resumo conciso mas completo, destacando o que é mais relevante.`;
       }
 
       // ═══════════════════════════════════════════════════════════════
-      // 📖 GERADOR DE HISTÓRIAS COM IA
+      // 📖 GERADOR DE HISTÓRIAS COM conversa
       // ═══════════════════════════════════════════════════════════════
 case 'historia':
 case 'story':
@@ -13513,13 +13516,13 @@ case 'gerarhistoria': {
 
 Seja criativo e original. Não use clichês. A história deve ser envolvente do início ao fim.`;
 
-    const response = await ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
-    await reply(`📖✨ *Sua História*\n\n${formatAIResponse(response.data.choices[0].message.content)}`);
+    const response = await assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
+    await reply(`📖✨ *Sua História*\n\n${formatConversationResponse(response.data.choices[0].message.content)}`);
     } catch (e) {
     console.error('Erro ao gerar história:', e);
       if  (e.message?.includes('API key inválida')) {
       
-      await reply('🤖 *Sistema de IA temporariamente indisponível*\n\nO administrador já foi notificado!');
+      await reply('🤖 *Sistema de conversa temporariamente indisponível*\n\nO administrador já foi notificado!');
     } else {
       await reply('😓 Não consegui escrever a história agora! Tente novamente em breve. 🌈');
     }
@@ -13528,7 +13531,7 @@ Seja criativo e original. Não use clichês. A história deve ser envolvente do 
       }
 
       // ═══════════════════════════════════════════════════════════════
-      // 🎬 RECOMENDADOR DE MÍDIA COM IA
+      // 🎬 RECOMENDADOR DE MÍDIA COM conversa
       // ═══════════════════════════════════════════════════════════════
 case 'recomendar':
 case 'recomendacao':
@@ -13570,13 +13573,13 @@ Para cada recomendação, forneça:
 
 Seja específico e recomende opções variadas (populares e menos conhecidas). Formate de forma clara e organizada.`;
 
-    const response = await ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
-    await reply(`${tipoInfo.emoji} *Recomendações de ${tipoInfo.nome.charAt(0).toUpperCase() + tipoInfo.nome.slice(1)}*\n\n${formatAIResponse(response.data.choices[0].message.content)}`);
+    const response = await assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
+    await reply(`${tipoInfo.emoji} *Recomendações de ${tipoInfo.nome.charAt(0).toUpperCase() + tipoInfo.nome.slice(1)}*\n\n${formatConversationResponse(response.data.choices[0].message.content)}`);
     } catch (e) {
     console.error('Erro ao gerar recomendações:', e);
       if  (e.message?.includes('API key inválida')) {
       
-      await reply('🤖 *Sistema de IA temporariamente indisponível*\n\nO administrador já foi notificado!');
+      await reply('🤖 *Sistema de conversa temporariamente indisponível*\n\nO administrador já foi notificado!');
     } else {
       await reply('😓 Não consegui buscar recomendações agora! Tente novamente em breve. 🌈');
     }
@@ -15626,8 +15629,8 @@ case 'cog':
     if  (!q) return reply(`📢 Ei, falta a pergunta! Me diga o que quer saber após o comando ${prefix}cog! 😴`);
     
     reply('⏳ Um momentinho, estou pensando na melhor resposta... 🌟').then(() => {
-    ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
-      reply(formatAIResponse(response.data.choices[0].message.content));
+    assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, q, null).then((response) => {
+      reply(formatConversationResponse(response.data.choices[0].message.content));
     }).catch((e) => {
       console.error('Erro na API CognimAI:', e);
       reply('😓 Vixe, algo deu errado por aqui! Tente novamente em breve, combinado? 🌈');
@@ -15649,8 +15652,8 @@ Exemplo: ${prefix}tradutor espanhol | Olá mundo! ✨`);
     const texto = partes.slice(1).join('|').trim();
     reply(pickLoadingMessage(command, q)).then(() => {
       const prompt = `Traduza o seguinte texto para ${idioma}:\n\n${texto}\n\nForneça apenas a tradução, sem explicações adicionais.`;
-      ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((bahz) => {
-    reply(`🌐✨ *Prontinho! Sua tradução para ${idioma.toUpperCase()} está aqui:*\n\n${formatAIResponse(bahz.data.choices[0].message.content)}`);
+      assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null).then((bahz) => {
+    reply(`🌐✨ *Prontinho! Sua tradução para ${idioma.toUpperCase()} está aqui:*\n\n${formatConversationResponse(bahz.data.choices[0].message.content)}`);
       }).catch((e) => {
     console.error("Erro ao traduzir texto:", e);
     reply("❌ Não foi possível realizar a tradução no momento. Tente novamente mais tarde.");
@@ -15662,7 +15665,7 @@ case 'qrcode':
     if  (!q) return reply(`📲 *Gerador de QR Code*\n\n💡 *Como usar:*\n• Envie o texto ou link após o comando\n• Ex: ${prefix}qrcode https://exemplo.com\n• Ex: ${prefix}qrcode Seu texto aqui\n\n✨ O QR Code será gerado instantaneamente!`);
     reply(pickLoadingMessage(command, q)).then(() => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(q)}`;
-    return nazu.sendMessage(from, {
+    return socket.sendMessage(from, {
       image: { url: qrUrl },
       caption: `📱✨ *Seu QR Code super fofo está pronto!*\n\nConteúdo: ${q.substring(0, 100)}${q.length > 100 ? '...' : ''}`
     }, { quoted: info });
@@ -15693,7 +15696,7 @@ case 'wikipedia':
       mensagem += `🔗 *Saiba mais:* ${link}\n`;
     }
     if  (thumbUrl) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: {
     url: thumbUrl
     },
@@ -15728,7 +15731,7 @@ case 'wikipedia':
     mensagem += `🔗 *Saiba mais:* ${link}\n`;
       }
       if  (thumbUrl) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     image: {
       url: thumbUrl
     },
@@ -15812,12 +15815,12 @@ case 'dictionary':
                 throw new Error('Sem resultados');
             }
         } catch (error) {
-            console.log("API do dicionário falhou, tentando IA...");
+            console.log("API do dicionário falhou, tentando conversa...");
             const prompt = `Defina a palavra "${palavra}" em português de forma completa e fofa. Inclua a classe gramatical, os principais significados e um exemplo de uso em uma frase curta e bonitinha.`;
             
             try {
-                const bahz = await ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
-                reply(formatAIResponse(bahz.data.choices[0].message.content));
+                const bahz = await assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null);
+                reply(formatConversationResponse(bahz.data.choices[0].message.content));
             } catch (e) {
                 console.error("Erro geral ao buscar no dicionário:", e);
                 reply("❌ Palavra não encontrada. Verifique a ortografia e tente novamente.");
@@ -15869,7 +15872,7 @@ case 'addsubdono':
       } else {
     // Se não for grupo, usar onWhatsApp para pegar LID
     try  {
-      const [result] = await nazu.onWhatsApp(targetUserId.replace(/@s\.whatsapp\.net|@lid/g, ''));
+      const [result] = await socket.onWhatsApp(targetUserId.replace(/@s\.whatsapp\.net|@lid/g, ''));
       if  (result && result.lid) {
     targetUserId = result.lid;
       } else if (result && result.jid) {
@@ -15895,7 +15898,7 @@ case 'addsubdono':
     } else {
       // Se não for grupo, usar onWhatsApp para pegar LID
     try  {
-    const [result] = await nazu.onWhatsApp(cleanNumber);
+    const [result] = await socket.onWhatsApp(cleanNumber);
     if  (result && result.lid) {
     targetUserId = result.lid;
     } else if (result && result.jid) {
@@ -15912,7 +15915,7 @@ case 'addsubdono':
       return reply(`📝 *Como usar:*\n\n1️⃣ Marque o usuário: ${prefix}addsubdono @usuario\n2️⃣ Ou digite o número: ${prefix}addsubdono 5511999998888`);
     }
     
-    const result = await addSubdono(targetUserId, numerodono, nazu);
+    const result = await addSubdono(targetUserId, numerodono, socket);
     await reply(result.message);
     } catch (e) {
     console.error("Erro ao adicionar subdono:", e);
@@ -15941,7 +15944,7 @@ case 'delsubdono':
       } else {
     // Se não for grupo, usar onWhatsApp para pegar LID
     try  {
-      const [result] = await nazu.onWhatsApp(targetUserId.replace(/@s\.whatsapp\.net|@lid/g, ''));
+      const [result] = await socket.onWhatsApp(targetUserId.replace(/@s\.whatsapp\.net|@lid/g, ''));
       if  (result && result.lid) {
     targetUserId = result.lid;
       } else if (result && result.jid) {
@@ -15967,7 +15970,7 @@ case 'delsubdono':
     } else {
       // Se não for grupo, usar onWhatsApp para pegar LID
     try  {
-    const [result] = await nazu.onWhatsApp(cleanNumber);
+    const [result] = await socket.onWhatsApp(cleanNumber);
     if  (result && result.lid) {
     targetUserId = result.lid;
     } else if (result && result.jid) {
@@ -15990,7 +15993,7 @@ case 'delsubdono':
       return reply(`📝 *Como usar:*\n\n1️⃣ Marque o usuário: ${prefix}remsubdono @usuario\n2️⃣ Digite o número: ${prefix}remsubdono 5511999998888\n3️⃣ Use o índice da lista: ${prefix}remsubdono 1`);
     }
     
-    const result = await removeSubdono(targetUserId, nazu);
+    const result = await removeSubdono(targetUserId, socket);
     await reply(result.message);
     } catch (e) {
     console.error("Erro ao remover subdono:", e);
@@ -16046,7 +16049,7 @@ case 'addsubbot':
     
     // Verifica se o número existe no WhatsApp e pega o LID
     try  {
-      const [result] = await nazu.onWhatsApp(phoneNumber);
+      const [result] = await socket.onWhatsApp(phoneNumber);
       
     if  (!result || !result.exists) {
     return reply(`❌ O número ${phoneNumber} não está registrado no WhatsApp!`);
@@ -16056,7 +16059,7 @@ case 'addsubbot':
 
       // Normalize owner to LID if possible before passing to subBotManager
       const ownerCandidate = buildUserId(numerodono, config);
-      const ownerLid = await getLidFromJidCached(nazu, ownerCandidate);
+      const ownerLid = await getLidFromJidCached(socket, ownerCandidate);
 
       const addResult = await subBotManager.addSubBot(phoneNumber, ownerLid, subBotLid);
       
@@ -16211,7 +16214,7 @@ case 'cmdlimit':
 case 'limitarcmd':
   try  {
     const { cmdLimitAdd } = await import('./funcs/utils/cmdlimit.js');
-    await cmdLimitAdd(nazu, from, q, reply, prefix, isOwnerOrSub);
+    await cmdLimitAdd(socket, from, q, reply, prefix, isOwnerOrSub);
     } catch (error) {
     console.error('Error in cmdlimitar:', error);
     await reply('❌ Erro interno!');
@@ -16223,7 +16226,7 @@ case 'cmdremovelimit':
 case 'rmcmdlimit':
   try  {
     const { cmdLimitRemove } = await import('./funcs/utils/cmdlimit.js');
-    await cmdLimitRemove(nazu, from, q, reply, prefix, isOwnerOrSub);
+    await cmdLimitRemove(socket, from, q, reply, prefix, isOwnerOrSub);
     } catch (error) {
     console.error('Error in cmddeslimitar:', error);
     await reply('❌ Erro interno!');
@@ -16235,7 +16238,7 @@ case 'cmdlimits':
 case 'listcmdlimites':
   try  {
     const { cmdLimitList } = await import('./funcs/utils/cmdlimit.js');
-    await cmdLimitList(nazu, from, q, reply, prefix, isOwnerOrSub);
+    await cmdLimitList(socket, from, q, reply, prefix, isOwnerOrSub);
     } catch (error) {
     console.error('Error in cmdlimites:', error);
     await reply('❌ Erro interno!');
@@ -16557,7 +16560,7 @@ case 'addxp':
     const levelingDataAdd = loadLevelingSafe();
     const userDataAdd = getLevelingUser(levelingDataAdd, menc_os2);
     userDataAdd.xp = (userDataAdd.xp || 0) + xpToAdd;
-    checkLevelUp(menc_os2, userDataAdd, levelingDataAdd, nazu, from);
+    checkLevelUp(menc_os2, userDataAdd, levelingDataAdd, socket, from);
     saveLevelingSafe(levelingDataAdd);
     await reply(`✅ Adicionado ${xpToAdd} XP para @${getUserName(menc_os2)}`, {
     mentions: [menc_os2]
@@ -16600,7 +16603,7 @@ case 'dayfree':
     try  {
       const groupMeta = await getCachedGroupMetadata(groupId);
       const msg = `🎉 Atenção, ${groupMeta.subject}! Adicionados ${extraDays} dias extras de aluguel.\nNova expiração: ${new Date(rentalData.groups[groupId].expiresAt).toLocaleDateString('pt-BR')}.\nMotivo: ${motivo}`;
-      await nazu.sendMessage(groupId, {
+      await socket.sendMessage(groupId, {
     text: msg
       });
     } catch (e) {
@@ -17755,7 +17758,7 @@ case 'testarcmd':
     if  (groupDescMediaTest) caption = caption.replace(/\{(?:groupdesc|descricao|desc)\}/gi, groupDescMediaTest);
     if  (latencyMediaTest !== null) caption = caption.replace(/\{(?:velocidade|speed|latency)\}/gi, `${latencyMediaTest}s`);
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: imageBuffer,
       caption: caption
     }, { quoted: info, mentions: mentionsToIncludeTest });
@@ -17796,7 +17799,7 @@ case 'testarcmd':
       const quotedTextTest = (quotedMessageContent && (quotedMessageContent.conversation || quotedMessageContent.extendedTextMessage?.text)) || '';
       caption = caption.replace(/\{quoted\}/gi, quotedTextTest);
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       video: videoBuffer,
       caption: caption
     }, { quoted: info, mentions: mentionsToIncludeTest });
@@ -17804,7 +17807,7 @@ case 'testarcmd':
     } else if (processedResponse.type === 'audio') {
       const audioBuffer = processedResponse.buffer ? Buffer.from(processedResponse.buffer, 'base64') : null;
     if  (audioBuffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: audioBuffer,
       mimetype: 'audio/mp4',
       ptt: processedResponse.ptt || false
@@ -17813,7 +17816,7 @@ case 'testarcmd':
     } else if (processedResponse.type === 'sticker') {
       const stickerBuffer = processedResponse.buffer ? Buffer.from(processedResponse.buffer, 'base64') : null;
     if  (stickerBuffer) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       sticker: stickerBuffer
     }, { quoted: info });
       }
@@ -17847,7 +17850,7 @@ case 'addblackglobal':
     if  (!targetUser) {
       // Tenta usar cache/onWhatsApp, mas permite JID como fallback
     try  {
-    const lid = await getLidFromJidCached(nazu, candidateJid);
+    const lid = await getLidFromJidCached(socket, candidateJid);
     if  (lid && lid.includes('@lid')) {
     targetUser = lid;
     } else {
@@ -17862,7 +17865,7 @@ case 'addblackglobal':
     return reply('❌ Número inválido! Use um número completo (ex: 5511999998888)');
       }
     }
-    const result = await addGlobalBlacklist(targetUser, reason, pushname, nazu);
+    const result = await addGlobalBlacklist(targetUser, reason, pushname, socket);
     await reply(result.message, {
       mentions: [targetUser]
     });
@@ -17888,7 +17891,7 @@ case 'rmblackglobal':
     }
     if  (!targetUser) {
     try  {
-    const lid = await getLidFromJidCached(nazu, candidateJid);
+    const lid = await getLidFromJidCached(socket, candidateJid);
     if  (lid && lid.includes('@lid')) {
     targetUser = lid;
     } else {
@@ -17903,7 +17906,7 @@ case 'rmblackglobal':
     return reply('❌ Número inválido! Use um número completo (ex: 5511999998888)');
       }
     }
-    const result = await removeGlobalBlacklist(targetUser, nazu);
+    const result = await removeGlobalBlacklist(targetUser, socket);
     await reply(result.message, {
       mentions: [targetUser]
     });
@@ -17940,7 +17943,7 @@ case 'tinyurl':
     await reply(pickLoadingMessage(command, q));
     const shortResponse = await axios.post("https://spoo.me/api/v1/shorten", {
       long_url: q, 
-      alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
+      alias: `shogun_${Math.floor(10000 + Math.random() * 90000)}` 
     });
     reply(`✅ *Link encurtado com sucesso!*\n\n🔗 *Link curto:* ${shortResponse.data.short_url}\n📎 *Link original:* ${shortResponse.data.long_url}`);
     } catch (e) {
@@ -17952,7 +17955,7 @@ case 'nick':
 case 'gerarnick':
 case 'nickgenerator':
   try  {
-      if  (!q) return reply(`🎮 *GERADOR DE NICK*\n\n📝 *Como usar:*\n• Digite o nick após o comando\n• Ex: ${prefix}nick nazuna`);
+      if  (!q) return reply(`🎮 *GERADOR DE NICK*\n\n📝 *Como usar:*\n• Digite o nick após o comando\n• Ex: ${prefix}nick shogun`);
     var datzn;
     datzn = await styleText(q);
     await reply(datzn.join('\n'));
@@ -17965,7 +17968,7 @@ case 'printsite':
 case 'ssweb':
   try  {
       if  (!q) return reply(`Cade o link?`);
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: {
     url: `https://image.thum.io/get/fullpage/${q}`
       }
@@ -18258,9 +18261,9 @@ case 'mcplugins':
       if  (!datz.ok) return reply(datz.msg);
     return axios.post("https://spoo.me/api/v1/shorten", { 
       long_url: datz.url, 
-      alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
+      alias: `shogun_${Math.floor(10000 + Math.random() * 90000)}` 
     }).then((shortLinkPlugin) => {
-      return nazu.sendMessage(from, {
+      return socket.sendMessage(from, {
     image: { url: datz.image },
     caption: `🔍 Encontrei esse plugin aqui:\n\n*Nome*: _${datz.name}_\n*Publicado por*: _${datz.creator}_\n*Descrição*: _${datz.desc}_\n*Link para download*: _${shortLinkPlugin.data.short_url}_\n\n> 💖 `
       }, { quoted: info });
@@ -18306,7 +18309,7 @@ case 'ytmp3': {
           return;
         }
         try {
-          await nazu.sendMessage(from, {
+          await socket.sendMessage(from, {
             image: { url: preview.thumbnail },
             caption
           }, { quoted: info });
@@ -18324,7 +18327,7 @@ case 'ytmp3': {
     }
 
     try {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         audio: dlRes.buffer,
         mimetype: dlRes.mime || 'audio/mpeg',
         fileName: dlRes.filename,
@@ -18334,7 +18337,7 @@ case 'ytmp3': {
       const sendError = String(audioError || '').toLowerCase();
       if (sendError.includes('enospc') || sendError.includes('size') || sendError.includes('too large')) {
         await reply('📦 Arquivo muito grande para enviar como áudio, enviando como documento...');
-        await nazu.sendMessage(from, {
+        await socket.sendMessage(from, {
           document: dlRes.buffer,
           fileName: dlRes.filename,
           mimetype: dlRes.mime || 'audio/mpeg'
@@ -18399,7 +18402,7 @@ case 'spotify':
     }
 
     try {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: downloadResult.buffer,
     mimetype: 'audio/mpeg',
     fileName: downloadResult.filename
@@ -18407,7 +18410,7 @@ case 'spotify':
     } catch (audioError) {
       if (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
     await reply('📦 Arquivo muito grande, enviando como documento...');
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     document: downloadResult.buffer,
     fileName: downloadResult.filename,
     mimetype: 'audio/mpeg'
@@ -18459,7 +18462,7 @@ case 'playspotify':
     }
 
     try {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: downloadResult.buffer,
     mimetype: 'audio/mpeg',
     fileName: downloadResult.filename
@@ -18467,7 +18470,7 @@ case 'playspotify':
     } catch (audioError) {
       if (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
     await reply('📦 Arquivo muito grande, enviando como documento...');
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     document: downloadResult.buffer,
     fileName: downloadResult.filename,
     mimetype: 'audio/mpeg'
@@ -18517,7 +18520,7 @@ case 'soundcloud':
     `🎧 *Enviando áudio...*`;
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: result.thumbnail },
       caption
     }, { quoted: info });
@@ -18526,7 +18529,7 @@ case 'soundcloud':
     }
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: result.buffer,
       mimetype: 'audio/mpeg',
       fileName: result.filename
@@ -18534,7 +18537,7 @@ case 'soundcloud':
     } catch (audioError) {
       if  (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
       await reply('📦 Arquivo muito grande, enviando como documento...');
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     document: result.buffer,
     fileName: result.filename,
     mimetype: 'audio/mpeg'
@@ -18608,7 +18611,7 @@ case 'playsoundcloud':
     `🎧 *Baixando e processando...*`;
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: result.thumbnail },
       caption
     }, { quoted: info });
@@ -18617,7 +18620,7 @@ case 'playsoundcloud':
     }
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: result.buffer,
       mimetype: 'audio/mpeg',
       fileName: result.filename
@@ -18625,7 +18628,7 @@ case 'playsoundcloud':
     } catch (audioError) {
       if  (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
       await reply('📦 Arquivo muito grande, enviando como documento...');
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     document: result.buffer,
     fileName: result.filename,
     mimetype: 'audio/mpeg'
@@ -18668,7 +18671,7 @@ case 'ytmp4': {
     if (!dlRes?.ok) return reply(`⚠️ ${dlRes?.msg || 'Não foi possível baixar esse vídeo.'}`);
 
     try {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         video: dlRes.buffer,
         fileName: dlRes.filename,
         mimetype: dlRes.mime || 'video/mp4'
@@ -18677,7 +18680,7 @@ case 'ytmp4': {
       const sendError = String(videoError || '').toLowerCase();
       if (sendError.includes('enospc') || sendError.includes('size') || sendError.includes('too large')) {
         await reply('📦 Arquivo muito grande para enviar como vídeo, enviando como documento...');
-        await nazu.sendMessage(from, {
+        await socket.sendMessage(from, {
           document: dlRes.buffer,
           fileName: dlRes.filename,
           mimetype: dlRes.mime || 'video/mp4'
@@ -18732,7 +18735,7 @@ case 'tkk':
     if  (!datinha.ok) return reply(datinha.msg);
 
     for (const urlz of datinha.urls) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     [datinha.type]: {
     url: urlz
     }
@@ -18741,7 +18744,7 @@ case 'tkk':
       });
     }
 
-    if  (datinha.audio) await nazu.sendMessage(from, {
+    if  (datinha.audio) await socket.sendMessage(from, {
       audio: {
     url: datinha.audio
       },
@@ -18801,7 +18804,7 @@ case 'facebookdl':
     `\n📥 *Enviando vídeo...*`;
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: result.thumbnail },
       caption
     }, { quoted: info });
@@ -18810,7 +18813,7 @@ case 'facebookdl':
     }
 
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       video: result.buffer,
       mimetype: 'video/mp4',
       fileName: result.filename
@@ -18818,7 +18821,7 @@ case 'facebookdl':
     } catch (videoError) {
       if  (String(videoError).includes("ENOSPC") || String(videoError).includes("size")) {
       await reply('📦 Vídeo muito grande, enviando como documento...');
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     document: result.buffer,
     fileName: result.filename,
     mimetype: 'video/mp4'
@@ -18855,7 +18858,7 @@ case 'igstory':
     if  (!datinha.ok) return reply(datinha.msg);
 
     for (const item of datinha.data) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     [item.type]: item.buff
       }, {
     quoted: info
@@ -18883,7 +18886,7 @@ case 'kwai':
     if  (!datinha.ok) return reply(datinha.msg);
 
     for (const item of datinha.data) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     [item.type]: item.buff
       }, {
     quoted: info
@@ -18929,7 +18932,7 @@ case 'gd':
       if  (fileSizeBytes > maxSize) {
       const shortLinkGdrive = await axios.post("https://spoo.me/api/v1/shorten", { 
     long_url: downloadUrl, 
-    alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
+    alias: `shogun_${Math.floor(10000 + Math.random() * 90000)}` 
       });
       return reply(`📁 *Arquivo encontrado!*\n\n📄 *Nome:* ${fileName}\n📊 *Tamanho:* ${fileSize}\n📋 *Tipo:* ${mimetype}\n\n⚠️ *Arquivo muito grande para enviar!*\nO limite do WhatsApp é 100MB.\n\n🔗 *Link direto:*\n${shortLinkGdrive.data.short_url}`);
     }
@@ -18950,26 +18953,26 @@ case 'gd':
     
     // Determinar o tipo de mídia e enviar
       if  (mimetype.startsWith('image/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: fileBuffer,
     caption: `📁 *${fileName}*\n📊 Tamanho: ${fileSize}`,
     mimetype: mimetype
       }, { quoted: info });
     } else if (mimetype.startsWith('video/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: fileBuffer,
     caption: `📁 *${fileName}*\n📊 Tamanho: ${fileSize}`,
     mimetype: mimetype
       }, { quoted: info });
     } else if (mimetype.startsWith('audio/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: fileBuffer,
     mimetype: mimetype,
     ptt: false
       }, { quoted: info });
     } else {
       // Enviar como documento para outros tipos
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     document: fileBuffer,
     fileName: fileName,
     mimetype: mimetype,
@@ -19026,7 +19029,7 @@ case 'mf':
       if  (fileSizeBytes > maxSize) {
       const shortLinkMf = await axios.post("https://spoo.me/api/v1/shorten", { 
     long_url: downloadUrl, 
-    alias: `nazuna_${Math.floor(10000 + Math.random() * 90000)}` 
+    alias: `shogun_${Math.floor(10000 + Math.random() * 90000)}` 
       });
       return reply(`📁 *Arquivo encontrado!*\n\n📄 *Nome:* ${fileName}\n📊 *Tamanho:* ${fileSize}\n📅 *Upload:* ${uploadDate || 'N/A'}\n📋 *Tipo:* ${extension || mimetype}\n\n⚠️ *Arquivo muito grande para enviar!*\nO limite do WhatsApp é 100MB.\n\n🔗 *Link direto:*\n${shortLinkMf.data.short_url}`);
     }
@@ -19048,26 +19051,26 @@ case 'mf':
     
     // Determinar o tipo de mídia e enviar
       if  (mimeType.startsWith('image/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: fileBuffer,
     caption: `📁 *${fileName}*\n📊 Tamanho: ${fileSize}`,
     mimetype: mimeType
       }, { quoted: info });
     } else if (mimeType.startsWith('video/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: fileBuffer,
     caption: `📁 *${fileName}*\n📊 Tamanho: ${fileSize}`,
     mimetype: mimeType
       }, { quoted: info });
     } else if (mimeType.startsWith('audio/')) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: fileBuffer,
     mimetype: mimeType,
     ptt: false
       }, { quoted: info });
     } else {
       // Enviar como documento para outros tipos
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     document: fileBuffer,
     fileName: fileName,
     mimetype: mimeType,
@@ -19125,20 +19128,20 @@ case 'xdl':
       // Usar a melhor qualidade disponível
       const videoUrl = item.bestQuality?.url || item.url;
       
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: { url: videoUrl },
     caption: caption,
     mimetype: 'video/mp4'
       }, { quoted: info });
       
     } else if (item.type === 'photo' || item.type === 'image') {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: { url: item.url },
     caption: caption
       }, { quoted: info });
       
     } else if (item.type === 'gif' || item.type === 'animated_gif') {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: { url: item.url },
     caption: caption,
     gifPlayback: true
@@ -19287,7 +19290,7 @@ case 'pin':
       } else {
     message = { image: { url }, caption: legenda };
       }
-      await nazu.sendMessage(from, message, { quoted: info });
+      await socket.sendMessage(from, message, { quoted: info });
     }
       })
       .catch((e) => {
@@ -19321,7 +19324,7 @@ case 'download-bot':
       throw new Error('Resposta vazia do servidor GitHub');
     }
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       document: Buffer.from(zipResponse.data),
       fileName: 'shogun.zip',
       mimetype: 'application/zip',
@@ -19412,14 +19415,14 @@ case 'source-code':
 │ 🔄 *Atualizado:* ${updatedAt}
 │ 📤 *Último push:* ${pushedAt}
 │
-│ ⏱️ *Nazuna vem sendo ativamente*
+│ ⏱️ *Shogun vem sendo ativamente*
 │ *mantida há:* ${tempoAtivo}
 │
 │ 🔗 *Links:*
 │ • Repo: ${repo.html_url}
 │ • Clone: ${repo.clone_url}
 │
-│ 📞 *Suporte:* wa.me/559681361714
+│ 📞 *Suporte:* wa.me/5522997028553
 │
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
@@ -19428,7 +19431,7 @@ case 'source-code':
     reply(gitInfo);
       }).catch((e) => {
     console.error('Erro ao buscar info do GitHub:', e);
-    reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/dgreych/shogun\n📞 Suporte: wa.me/559681361714`);
+    reply(`❌ Erro ao buscar informações. Acesse diretamente:\n🔗 https://github.com/dgreych/shogun\n📞 Suporte: wa.me/5522997028553`);
       });
     });
     } catch (e) {
@@ -19453,12 +19456,7 @@ case 'commands':
     if  (groupCustom.customName) {
       customBotName = groupCustom.customName;
     }
-    if  (groupCustom.customPhoto && fs.existsSync(groupCustom.customPhoto)) {
-      customMediaPath = groupCustom.customPhoto;
-    }
-    if  (groupCustom.customPersona) {
-      customPersonaDesign = automacoesV9.PERSONA_MENU_DESIGNS[groupCustom.customPersona] || null;
-    }
+
       }
     }
     
@@ -19505,7 +19503,7 @@ case 'commands':
       const audioPath = getMenuAudioPath();
     if  (audioPath && fs.existsSync(audioPath)) {
     const audioBuffer = fs.readFileSync(audioPath);
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       audio: audioBuffer,
       mimetype: 'audio/mpeg',
       ptt: false
@@ -19513,7 +19511,7 @@ case 'commands':
       quoted: info
     }).then(async () => {
       // Depois envia o menu
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     [useVideo ? 'video' : 'image']: mediaBuffer,
     caption: lerMaisPrefix + menuText,
     gifPlayback: useVideo,
@@ -19524,7 +19522,7 @@ case 'commands':
     });
       } else {
     // Se não tem áudio válido, envia só o menu
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       [useVideo ? 'video' : 'image']: mediaBuffer,
       caption: lerMaisPrefix + menuText,
       gifPlayback: useVideo,
@@ -19535,7 +19533,7 @@ case 'commands':
       }
     } else {
       // Se áudio não está ativo, envia só o menu
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     [useVideo ? 'video' : 'image']: mediaBuffer,
     caption: lerMaisPrefix + menuText,
     gifPlayback: useVideo,
@@ -19817,7 +19815,7 @@ Exemplo: ${prefix}msgprefix Use #prefixo# antes do comando!
 
 🔹 *Nome do Bot*
 Use: ${prefix}nomebot <nome>
-Exemplo: ${prefix}nomebot Nazuna
+Exemplo: ${prefix}nomebot Shogun
 • Altera o nome exibido nos menus
 • Use nomes curtos e memoráveis
 
@@ -20225,19 +20223,19 @@ Protege o bot de banimento ao usar comandos de marcação em massa (hidetag, mar
   ${prefix}viewmsg on/off
   Ativa/desativa o status de visualização do bot
 
-🤖 *Monitoramento de IA*
+🤖 *Monitoramento de conversa*
 
-• Status da IA:
+• Status da conversa:
   ${prefix}iastatus
-  Estatísticas de uso da IA
+  Estatísticas de uso da conversa
 
-• Limpar cache de IA:
+• Limpar cache de conversa:
   ${prefix}iaclear
-  Limpa histórico de conversas da IA
+  Limpa histórico de conversas da conversa
 
-• Recuperar IA:
+• Recuperar conversa:
   ${prefix}iarecovery
-  Recupera IA de erros
+  Recupera conversa de erros
 
 💻 *Desenvolvimento*
 
@@ -20322,7 +20320,7 @@ ${prefix}statustm
 ✅ Teste comandos antes de divulgar
 ✅ Mantenha backups das configurações
 ✅ Acompanhe os logs do bot
-✅ Configure API keys para IA
+✅ Configure API keys para conversa
 ✅ Ative proteção anti-ban em grupos grandes
 ✅ Use o sistema de aluguel para monetizar
 
@@ -20411,12 +20409,7 @@ case 'menufig':
     if  (groupCustom.customName) {
       customBotName = groupCustom.customName;
     }
-    if  (groupCustom.customPhoto && fs.existsSync(groupCustom.customPhoto)) {
-      customMediaPath = groupCustom.customPhoto;
-    }
-    if  (groupCustom.customPersona) {
-      customPersonaDesign = automacoesV9.PERSONA_MENU_DESIGNS[groupCustom.customPersona] || null;
-    }
+
       }
     }
     
@@ -20471,7 +20464,7 @@ case 'menufig':
     // audiomenu é universal (não depende de persona/grupo) e agora toca
     // junto de qualquer submenu, não só do !menu principal — mesmo padrão
     // de envio (áudio primeiro, depois a mídia do menu) usado lá.
-    const submenuSendMedia = () => nazu.sendMessage(from, {
+    const submenuSendMedia = () => socket.sendMessage(from, {
       [useVideo ? 'video' : 'image']: mediaBuffer,
       caption: lerMaisPrefix + menuText,
       gifPlayback: useVideo,
@@ -20484,7 +20477,7 @@ case 'menufig':
       const audioPath = getMenuAudioPath();
       if (audioPath && fs.existsSync(audioPath)) {
         const audioBuffer = fs.readFileSync(audioPath);
-        await nazu.sendMessage(from, {
+        await socket.sendMessage(from, {
           audio: audioBuffer,
           mimetype: 'audio/mpeg',
           ptt: false
@@ -20565,7 +20558,7 @@ case 'entrar':
       if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
       if  (!q || !q.includes('chat.whatsapp.com')) return reply('Digite um link de convite válido! Exemplo: ' + prefix + 'entrar https://chat.whatsapp.com/...');
     const code = q.split('https://chat.whatsapp.com/')[1];
-    await nazu.groupAcceptInvite(code).then(res => {
+    await socket.groupAcceptInvite(code).then(res => {
       reply(`✅ Entrei no grupo com sucesso!`);
     }).catch(err => {
       reply('❌ Erro ao entrar no grupo. Link inválido ou permissão negada.');
@@ -20601,7 +20594,7 @@ case 'sairgp':
     
     // Tenta obter informações do grupo para confirmar
     try  {
-      const groupMetadata = await nazu.groupMetadata(groupId).catch(() => null);
+      const groupMetadata = await socket.groupMetadata(groupId).catch(() => null);
     if  (!groupMetadata) {
     return reply('❌ Grupo não encontrado ou não tenho acesso a ele.');
       }
@@ -20609,11 +20602,11 @@ case 'sairgp':
       const groupName = groupMetadata.subject || 'Grupo desconhecido';
       
       // Sai do grupo
-      await nazu.groupLeave(groupId);
+      await socket.groupLeave(groupId);
       await reply(`✅ Sai do grupo "${groupName}" com sucesso!`);
     } catch (error) {
       // Tenta sair mesmo assim
-      await nazu.groupLeave(groupId).catch(() => {});
+      await socket.groupLeave(groupId).catch(() => {});
       await reply(`✅ Comando de saída executado para o grupo ${groupId}`);
     }
     } catch (e) {
@@ -20678,7 +20671,7 @@ case 'tm':
       };
     }
     
-    const groups = await nazu.groupFetchAllParticipating();
+    const groups = await socket.groupFetchAllParticipating();
     const totalGroups = Object.keys(groups).length;
     let enviados = 0;
     
@@ -20694,7 +20687,7 @@ case 'tm':
       message.text = `${message.text}\n\n> ID: ${suffix}`;
     }
     
-    await nazu.sendMessage(group.id, message);
+    await socket.sendMessage(group.id, message);
     enviados++;
     
     if  (enviados < totalGroups) {
@@ -20837,7 +20830,7 @@ case 'tm2':
       message.text = `${message.text}\n\n> ID: ${suffix}`;
     }
     
-    await nazu.sendMessage(subscriber.id, message);
+    await socket.sendMessage(subscriber.id, message);
     enviados++;
     
     // Incrementa contador de mensagens recebidas pelo usuário
@@ -20972,7 +20965,7 @@ case 'getcase':
       if  (!q) return reply('❌ Digite o nome do comando. Exemplo: ' + prefix + 'getcase menu');
     var caseCode;
     caseCode = (fs.readFileSync(__dirname + "/index.js", "utf-8").match(new RegExp(`case\\s*["'\`]${q}["'\`]\\s*:[\\s\\S]*?break\\s*;?`, "i")) || [])[0];
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       document: Buffer.from(caseCode, 'utf-8'),
       mimetype: 'text/plain',
       fileName: `${q}.txt`
@@ -21105,23 +21098,40 @@ case 'listblocks':
     }
        break;
 case 'seradm':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-    await nazu.groupParticipantsUpdate(from, [sender], "promote");
-    } catch (e) {
-    console.error(e);
-    await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
-    }
-       break;
-case 'sermembro':
-  try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-    await nazu.groupParticipantsUpdate(from, [sender], "demote");
-    } catch (e) {
-    console.error(e);
-    await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
-    }
-       break;
+case 'sermembro': {
+  if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
+  try {
+    const result = await changeSelfGroupRole({ socket, groupId: from, aliases: [sender, info.key.participant, info.key.participantAlt], action: command === 'seradm' ? 'promote' : 'demote', isOwner, match: idsMatch });
+    await reply(result.message);
+  } catch (error) {
+    console.error('[GRUPO] Não foi possível alterar sua função:', error.message);
+    await reply('Não consegui alterar sua função neste grupo. Confira as permissões do Shogun e tente novamente.');
+  }
+  break;
+}
+case 'defmsgpromo': {
+  if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
+  try {
+    const message = getPromotionQueue().define(q);
+    await reply(renderCommandCard({ title: 'PROMOÇÃO SALVA', fields: [{ label: 'ID', value: message.id }], lines: ['Para enviar aos grupos: ' + prefix + 'sendmsgpromo ' + message.id] }));
+  } catch (error) { await reply(error.message); }
+  break;
+}
+case 'sendmsgpromo': {
+  if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
+  try {
+    const progress = await startPromotion(socket, q);
+    await reply(renderCommandCard({ title: 'ENVIO AGENDADO', fields: [{ label: 'Mensagem', value: progress.id }, { label: 'Grupos', value: progress.total }], lines: ['A fila envia um grupo por vez, com intervalos e pausas entre lotes.', 'Acompanhe com ' + prefix + 'listmsgpromo.'] }));
+  } catch (error) { await reply(error.message); }
+  break;
+}
+case 'listmsgpromo': {
+  if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
+  const messages = getPromotionQueue().list();
+  const progress = getPromotionQueue().progress();
+  await reply(renderCommandCard({ title: 'PROMOÇÕES', fields: progress ? [{ label: 'Último envio', value: progress.id }, { label: 'Estado', value: progress.status === 'running' ? 'Em andamento' : 'Concluído' }, { label: 'Enviados', value: progress.sent + '/' + progress.total }, { label: 'Pendentes', value: progress.pending }, { label: 'Falhas', value: progress.failed }, { label: 'Sem confirmação', value: progress.uncertain }] : [], lines: messages.length ? messages.map(message => 'ID ' + message.id + ' · ' + message.text.replace(/\s+/g, ' ').slice(0,100)) : ['Nenhuma mensagem salva. Use ' + prefix + 'defmsgpromo <mensagem>.'] }));
+  break;
+}
 case 'prefixo':
 case 'prefix':
   try  {
@@ -21153,7 +21163,7 @@ case 'numerodono':
 case 'numero-dono':
   try  {
       if  (!isOwner) return reply("Este comando é exclusivo para o meu dono!");
-      if  (!q) return reply(`Por favor, digite o novo número do dono.\nExemplo: ${prefix}${command} +559681361714`);
+      if  (!q) return reply(`Por favor, digite o novo número do dono.\nExemplo: ${prefix}${command} +5522997028553`);
     let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
     config.numerodono = q;
     writeJsonFile(CONFIG_FILE, config);
@@ -21183,7 +21193,7 @@ case 'botname':
 case 'nome-bot':
   try  {
       if  (!isOwner) return reply("Este comando é exclusivo para o meu dono!");
-      if  (!q) return reply(`Por favor, digite o novo nome do bot.\nExemplo: ${prefix}${command} Nazuna`);
+      if  (!q) return reply(`Por favor, digite o novo nome do bot.\nExemplo: ${prefix}${command} Shogun`);
     let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
     config.nomebot = q;
     writeJsonFile(CONFIG_FILE, config);
@@ -21209,7 +21219,7 @@ case 'modeloshogun':
   try  {
       if  (!isOwner && (!isGroup || !isRealGroupAdmin)) return reply("Este comando é restrito ao dono ou a administradores reais do grupo!");
     let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
-    const groupModelId = isGroup && isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : null;
+    const groupModelId = isGroup && isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : null;
     const currentModelId = groupModelId || (isKnownNvidiaModel(config.nvidia_model) ? config.nvidia_model : DEFAULT_NVIDIA_MODEL);
       if  (!q) {
       const currentEntry = NVIDIA_MODEL_CATALOG.find(entry => entry.id === currentModelId);
@@ -21223,7 +21233,7 @@ case 'modeloshogun':
     const chosenEntry = byIndex || NVIDIA_MODEL_CATALOG.find(entry => entry.id === trimmedChoice);
       if  (!chosenEntry) return reply(`❌ Modelo não reconhecido. Use ${prefix}${command} sem argumentos para ver as opções disponíveis.`);
       if  (isGroup) {
-      groupData.aiModel = chosenEntry.id;
+      groupData.conversationModel = chosenEntry.id;
       writeJsonFile(groupFile, groupData);
     } else {
       config.nvidia_model = chosenEntry.id;
@@ -21353,7 +21363,7 @@ case 'avatarbot':
     try  {
       // Processa a imagem com ffmpeg antes de atualizar
       const processedBuffer = await processImageForProfile(imageBuffer);
-      await nazu.updateProfilePicture(nazu.user.id, processedBuffer);
+      await socket.updateProfilePicture(socket.user.id, processedBuffer);
       reply('✅ Foto de perfil do bot alterada com sucesso!');
     } catch (updateError) {
       console.error('Erro ao alterar foto de perfil:', updateError);
@@ -21766,7 +21776,7 @@ case 'listagp':
 case 'listgp':
   try  {
       if  (!isOwner) return reply('⛔ Desculpe, este comando é exclusivo para o meu dono!');
-    const getGroups = await nazu.groupFetchAllParticipating();
+    const getGroups = await socket.groupFetchAllParticipating();
     const groups = Object.entries(getGroups).slice(0).map(entry => entry[1]);
     const sortedGroups = groups.sort((a, b) => a.subject.localeCompare(b.subject));
     let teks = `🌟 *Lista de Grupos e Comunidades* 🌟\n📊 *Total de Grupos:* ${sortedGroups.length}\n\n`;
@@ -21836,7 +21846,7 @@ case 'gruposbot':
   try {
     if (!isOwner) return reply('⛔ Apenas o meu dono pode usar este comando!');
     if (isGroup) return reply('⛔ Esse comando só funciona no privado.');
-    const _gpAll = await nazu.groupFetchAllParticipating();
+    const _gpAll = await socket.groupFetchAllParticipating();
     const _gpList = Object.values(_gpAll).sort((a, b) => a.subject.localeCompare(b.subject));
     const _gpIndexPath = __dirname + '/../database/dono/gp-index.json';
     let _gpIndex = {};
@@ -21875,8 +21885,8 @@ case 'sairgp':
     const _sgJid = _sgIndex[q.trim()];
     if (!_sgJid) return reply(`❌ #${q.trim()} não encontrado. Atualize a lista com !gruposbot`);
     let _sgName = _sgJid;
-    try { const _m = await nazu.groupMetadata(_sgJid).catch(() => null); _sgName = _m?.subject || _sgJid; } catch {}
-    await nazu.groupLeave(_sgJid).catch(() => {});
+    try { const _m = await socket.groupMetadata(_sgJid).catch(() => null); _sgName = _m?.subject || _sgJid; } catch {}
+    await socket.groupLeave(_sgJid).catch(() => {});
     delete _sgIndex[q.trim()];
     fs.writeFileSync(_sgIndexPath, JSON.stringify(_sgIndex), { mode: 0o600 });
     await reply(`✅ Saí do grupo *${_sgName}* (#${q.trim()}).`);
@@ -21899,7 +21909,7 @@ case 'desbloquearbotgp':
     const _bgJid = _bgIndex[q.trim()];
     if (!_bgJid) return reply(`❌ #${q.trim()} não encontrado. Atualize a lista com !gruposbot`);
     let _bgName = _bgJid;
-    try { const _m = await nazu.groupMetadata(_bgJid).catch(() => null); _bgName = _m?.subject || _bgJid; } catch {}
+    try { const _m = await socket.groupMetadata(_bgJid).catch(() => null); _bgName = _m?.subject || _bgJid; } catch {}
     const _blocking = command === 'blockbotgp';
     banGpIds[_bgJid] = _blocking;
     fs.writeFileSync(__dirname + '/../database/dono/bangp.json', JSON.stringify(banGpIds));
@@ -21928,7 +21938,7 @@ case 'resetgold':
     targetData.bank = 0;
     saveEconomy(econ);
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `🧹 @${getUserName(menc_os2)} teve o gold resetado (carteira e banco).`,
       mentions: [menc_os2]
     }, {
@@ -21984,7 +21994,7 @@ case 'addindica':
     
     writeJsonFile(indicacoesFile, indicacoesData);
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `✅ *Indicação adicionada com sucesso!*\n\n👤 @${getUserName(menc_os2)} agora tem *${indicacoesData.users[menc_os2].count}* indicação(ões)! 🎉`,
       mentions: [menc_os2]
     }, { quoted: info });
@@ -22030,7 +22040,7 @@ case 'rankindicacoes':
     
     const mentions = usersArray.slice(0, maxShow).map(u => u.userId);
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: mensagem,
       mentions: mentions
     }, { quoted: info });
@@ -22071,7 +22081,7 @@ case 'removerindicacao':
       ? `✅ Removidas *${Math.min(parseInt(q), countBefore)}* indicação(ões) de @${getUserName(menc_os2)}!\n\n📊 Total restante: *${indicacoesData.users[menc_os2]?.count || 0}*`
       : `✅ Todas as indicações de @${getUserName(menc_os2)} foram removidas! (Total: *${countBefore}*)`;
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: finalMsg,
       mentions: [menc_os2]
     }, { quoted: info });
@@ -22110,7 +22120,7 @@ case 'removerindicacao':
     if  (resultado.source === 'bunnyfy') {
        const nomeModelo = modelo === 'americanflag' ? 'American Flag' :
        modelo.charAt(0).toUpperCase() + modelo.slice(1);
-       await nazu.sendMessage(from, {
+       await socket.sendMessage(from, {
       sticker: resultado.buffer
      }, { quoted: info });
       } else if  (resultado.success) {
@@ -22118,7 +22128,7 @@ case 'removerindicacao':
        const nomeModelo = modelo === 'americanflag' ? 'American Flag' : 
        modelo.charAt(0).toUpperCase() + modelo.slice(1);
       
-       await nazu.sendMessage(from, { 
+       await socket.sendMessage(from, { 
       image: { url: resultado.imageUrl }, 
        caption: `✅ *Logotipo ${nomeModelo} gerado com sucesso!*` 
      }, { quoted: info });
@@ -22144,7 +22154,7 @@ case 'removerindicacao':
  case 'blackpink':
   try  {
     const [texto1, texto2] = q.split('/').map(i => i.trim());
-      if  (!texto1 || !texto2) return reply(`❌ Cadê os textos?\nExemplo: ${prefix + command} Nazuna/Bot`);
+      if  (!texto1 || !texto2) return reply(`❌ Cadê os textos?\nExemplo: ${prefix + command} Shogun/Bot`);
 
       const modelo = command; // O próprio comando é o modelo
 
@@ -22159,7 +22169,7 @@ case 'removerindicacao':
 
     if  (resultado.source === 'bunnyfy') {
        const nomeModelo = modelo.charAt(0).toUpperCase() + modelo.slice(1);
-       await nazu.sendMessage(from, {
+       await socket.sendMessage(from, {
       sticker: resultado.buffer
      }, { quoted: info });
       } else if  (resultado.success) {
@@ -22167,7 +22177,7 @@ case 'removerindicacao':
        const nomeModelo = modelo === 'deadpool' ? 'deadpool' : 
        modelo.charAt(0).toUpperCase() + modelo.slice(1);
       
-       await nazu.sendMessage(from, { 
+       await socket.sendMessage(from, { 
       image: { url: resultado.imageUrl }, 
        caption: `✅ *Logotipo ${nomeModelo} gerado com sucesso!*` 
      }, { quoted: info });
@@ -22196,7 +22206,7 @@ case 'revelar':
       px.video = {
     url: px.url
       };
-      await nazu.sendMessage(from, px, {
+      await socket.sendMessage(from, px, {
     quoted: info
       });
     } else if (boij22) {
@@ -22205,7 +22215,7 @@ case 'revelar':
       px.image = {
     url: px.url
       };
-      await nazu.sendMessage(from, px, {
+      await socket.sendMessage(from, px, {
     quoted: info
       });
     } else if (boij33) {
@@ -22214,7 +22224,7 @@ case 'revelar':
       px.audio = {
     url: px.url
       };
-      await nazu.sendMessage(from, px, {
+      await socket.sendMessage(from, px, {
     quoted: info
       });
     } else {
@@ -22228,7 +22238,7 @@ case 'revelar':
 case 'limpardb':
   try  {
       if  (!isOwner) return reply("Apenas o dono pode limpar o banco de dados.");
-    const allGroups = await nazu.groupFetchAllParticipating();
+    const allGroups = await socket.groupFetchAllParticipating();
     const currentGroupIds = Object.keys(allGroups);
     const groupFiles = fs.readdirSync(GRUPOS_DIR).filter(file => file.endsWith('.json'));
     let removedCount = 0;
@@ -22541,9 +22551,9 @@ case 'rankativo':
         .catch(() => { clearTimeout(timeout); resolve(''); });
     });
     const lookupRankName = async (identity) => {
-      const directName = await getRankNameWithin(() => nazu.getName(identity));
+      const directName = await getRankNameWithin(() => socket.getName(identity));
       if (isRankDisplayName(directName)) return directName;
-      return getRankNameWithin(() => nazu.getName(from, identity));
+      return getRankNameWithin(() => socket.getName(from, identity));
     };
     const rankDisplayName = async (user) => {
       const storedPushName = typeof user?.pushname === 'string' ? user.pushname.replace(/\s+/g, ' ').trim() : '';
@@ -22610,12 +22620,12 @@ case 'rankativo':
         entries: rankingEntries.length
       });
     }
-    await nazu.sendMessage(from, rankingCard?.ok ? {
+    await socket.sendMessage(from, rankingCard?.ok ? {
       image: rankingCard.buffer,
       mimetype: rankingCard.mime,
       caption: blad,
       mentions: menc,
-      __gyomeiPreserveDynamicMedia: true
+      __shogunPreserveDynamicMedia: true
     } : {
       text: blad,
       mentions: menc
@@ -22685,7 +22695,7 @@ case 'rankinativo':
     menc.push(blue67[i6].id);
       }
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: blad,
       mentions: menc
     }, {
@@ -22801,7 +22811,7 @@ case 'atividade':
       }
     });
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: activityMessage,
       mentions: mentions
     }, {
@@ -22818,7 +22828,7 @@ case 'totalcomando':
     fs.readFile(__dirname + '/index.js', 'utf8', async (err, data) => {
     if  (err) throw err;
       const comandos = [...data.matchAll(/case [`'"](\w+)[`'"]/g)].map(m => m[1]);
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
       text: `╭〔 🤖 *Meus Comandos* 〕╮\n` + `┣ 📌 Total: *${comandos.length}* comandos\n` + `╰━━━━━━━━━━━━━━━╯`
     }, {
       quoted: info
@@ -22865,11 +22875,11 @@ case 'meustatus':
     const userStatus = isOwner ? 'Dono' : isPremium ? 'Premium' : isGroupAdmin ? 'Admin' : 'Membro';
     let profilePic = null;
     try  {
-      profilePic = await nazu.profilePictureUrl(sender, 'image');
+      profilePic = await socket.profilePictureUrl(sender, 'image');
     } catch (e) {}
     const statusMessage = `📊 *Meu Status - ${userName}* 📊\n\n👤 *Nome*: ${userName}\n📱 *Número*: @${getUserName(sender)}\n⭐ *Status*: ${userStatus}\n\n${isGroup ? `\n📌 *No Grupo: ${groupName}*\n💬 Mensagens: ${groupMessages}\n⚒️ Comandos: ${groupCommands}\n🎨 Figurinhas: ${groupStickers}\n` : ''}\n\n🌐 *Geral (Todos os Grupos)*\n💬 Mensagens: ${totalMessages}\n⚒️ Comandos: ${totalCommands}\n🎨 Figurinhas: ${totalStickers}\n\n✨ *Bot*: ${nomebot} by ${nomedono} ✨`;
       if  (profilePic) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: {
       url: profilePic
     },
@@ -22879,7 +22889,7 @@ case 'meustatus':
     quoted: info
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: statusMessage,
     mentions: [sender]
       }, {
@@ -23088,7 +23098,7 @@ case 'botinfo':
     const botMemUsage = process.memoryUsage();
     const memUsed = (botMemUsage.heapUsed / 1024 / 1024).toFixed(2);
     const memTotal = (botMemUsage.heapTotal / 1024 / 1024).toFixed(2);
-    const allGroups = await nazu.groupFetchAllParticipating();
+    const allGroups = await socket.groupFetchAllParticipating();
     const totalGroups = Object.keys(allGroups).length;
     let totalUsers = 0;
     Object.values(allGroups).forEach(group => {
@@ -23124,7 +23134,7 @@ case 'iaclear':
 case 'limparhist':
     if  (!isOwnerOrSub) return reply("🚫 Apenas donos e subdonos podem limpar o histórico!");
   try  {
-    ia.clearOldHistorico(0);
+    assistant.clearOldHistorico(0);
     reply("✅ *Histórico do assistente limpo!*\n\n🗑️ Todas as conversas antigas foram removidas da memória.");
     } catch (e) {
     console.error("Erro em iaclear:", e);
@@ -23147,7 +23157,7 @@ case 'comandosmaisusados':
     const mediaPath = useVideo ? menuVideoPath : menuImagePath;
     const mediaBuffer = fs.readFileSync(mediaPath);
     const menuText = await menuTopCmd(prefix, nomebot, pushname, topCommands, { accessFor: __commandAccessFor });
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       [useVideo ? 'video' : 'image']: mediaBuffer,
       caption: menuText,
       gifPlayback: useVideo,
@@ -23179,7 +23189,7 @@ case 'comandoinfo':
     }).join('\n') : 'Nenhum usuário registrado';
     const lastUsed = new Date(stats.lastUsed).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const infoMessage = `📊 *Estatísticas do Comando: ${prefix}${stats.name}* 📊\n\n` + `📈 *Total de Usos*: ${stats.count}\n` + `👥 *Usuários Únicos*: ${stats.uniqueUsers}\n` + `🕒 *Último Uso*: ${lastUsed}\n\n` + `🏆 *Top Usuários*:\n${topUsersText}\n\n` + `✨ *Bot*: ${nomebot} by ${nomedono} ✨`;
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: infoMessage,
       mentions: stats.topUsers.map(u => u.userId)
     }, {
@@ -23429,7 +23439,7 @@ case 'ping':
       statusCor = '🟥';
     }
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `╭⊱ ⚡ *STATUS DA CONEXÃO* ⚡ ⊱╮
 │
 │ 📡 *Informações de Latência*
@@ -23462,7 +23472,7 @@ case 'toimg':
   try  {
     var buff;
     buff = await getFileBuffer(info.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage, 'sticker');
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: buff
     }, {
       quoted: info
@@ -23502,7 +23512,7 @@ case 'togif': {
     reply('⏳ Convertendo para gif, aguarde...');
     const togifBuffer = await getFileBuffer(togifMedia, togifIsSticker ? 'sticker' : 'video');
     const togifGifBuffer = await convertToGifPlayback(togifBuffer, togifIsSticker);
-    return nazu.sendMessage(from, {
+    return socket.sendMessage(from, {
       video: togifGifBuffer,
       mimetype: 'video/mp4',
       gifPlayback: true
@@ -23555,7 +23565,7 @@ case 'sfundo':
     if (!processed?.ok || !Buffer.isBuffer(processed.buffer)) throw new Error('IMAGE_REMOVEBG_FAILED');
 
       if  (command === 'sbg' || command === 'sfundo') {
-      return sendSticker(nazu, from, {
+      return sendSticker(socket, from, {
     sticker: processed.buffer,
       author: `${pushname}`,
       packname: `${nomebot}`,
@@ -23567,7 +23577,7 @@ case 'sfundo':
 
     const { buffer: rmbgBuffer, mime: rmbgMime } = await ensureNonWebpImage(processed.buffer, processed.mime || '');
 
-    return nazu.sendMessage(from, { image: rmbgBuffer, mimetype: rmbgMime }, { quoted: info });
+    return socket.sendMessage(from, { image: rmbgBuffer, mimetype: rmbgMime }, { quoted: info });
     } catch (e) {
     console.error(e);
     return reply('❌ Ocorreu um erro interno. Tente novamente em alguns minutos.');
@@ -23591,7 +23601,7 @@ case 'imagem':
     // segue com o texto original em vez de travar o comando inteiro.
     let imagePrompt = q;
     try {
-      const translation = (await ia.makeNvidiaRequest(
+      const translation = (await assistant.makeNvidiaRequest(
         null,
         q,
         'Traduza a descrição do usuário para um prompt em inglês pronto para um gerador de imagens. Responda só com o prompt traduzido, sem aspas, sem explicação, sem comentário.'
@@ -23621,7 +23631,7 @@ case 'imagem':
       return reply('❌ Geração de imagem indisponível no momento. Tente novamente mais tarde.');
     }
 
-    return nazu.sendMessage(from, {
+    return socket.sendMessage(from, {
       image: generated.buffer,
       mimetype: generated.mime || 'image/png',
       caption: `🖼️ ${q}`
@@ -23673,7 +23683,7 @@ case 'upscale':
     if (!processed?.ok || !Buffer.isBuffer(processed.buffer)) throw new Error('IMAGE_UPSCALE_FAILED');
     const { buffer: upscaleBuffer, mime: upscaleMime } = await ensureNonWebpImage(processed.buffer, processed.mime || '');
 
-    return nazu.sendMessage(from, { image: upscaleBuffer, mimetype: upscaleMime }, { quoted: info });
+    return socket.sendMessage(from, { image: upscaleBuffer, mimetype: upscaleMime }, { quoted: info });
     } catch (e) {
     console.error(e);
     return reply('❌ Ocorreu um erro interno. Tente novamente em alguns minutos.');
@@ -23686,7 +23696,7 @@ case 'qc':
     reply(pickLoadingMessage(command, q));
     let ppimg = "";
     try  {
-      ppimg = await nazu.profilePictureUrl(sender, 'image');
+      ppimg = await socket.profilePictureUrl(sender, 'image');
     } catch {
       ppimg = 'https://telegra.ph/file/b5427ea4b8701bc47e751.jpg';
     }
@@ -23717,7 +23727,7 @@ case 'qc':
     'Content-Type': 'application/json'
       }
     });
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: Buffer.from(res.data.result.image, 'base64'),
       author: `${pushname}`,
       packname: `${nomebot}`, 
@@ -23743,7 +23753,7 @@ case 'emojimix':
       if  (!q || !emoji1 || !emoji2) return reply(`Formato errado, utilize:\n${prefix}${command} emoji1/emoji2\nEx: ${prefix}${command} 🤓/🙄`);
     var datzc;
     datzc = await emojiMix(emoji1, emoji2);
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: {
     url: datzc
       },
@@ -23796,7 +23806,7 @@ case 'ttp':
     // Aplicar quebra de linha para textos longos
     let processedText = q.length > 20 ? breakText(q, 20) : q;
     
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: {
     url: `https://huratera.sirv.com/PicsArt_08-01-10.00.42.png?profile=Example-Text&text.0.text=${encodeURIComponent(processedText)}&text.0.outline.color=000000&text.0.outline.blur=0&text.0.outline.opacity=55&text.0.color=${cores}&text.0.font.family=${fontes}&text.0.font.weight=bold&text.0.background.color=ff0000`
       },
@@ -23821,7 +23831,7 @@ case 'brat':
     const delay = 500;
     const apiUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}&isAnimated=${isAnimated}&delay=${delay}`;
     
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: {
         url: apiUrl
       },
@@ -23847,7 +23857,7 @@ case 'bratvid':
     const delay = 500;
     const apiUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}&isAnimated=${isAnimated}&delay=${delay}`;
     
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: {
         url: apiUrl
       },
@@ -23948,7 +23958,7 @@ case 'attp':
     await execAsync(webpCmd);
     
     // Enviar sticker
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: fs.readFileSync(outputWebp),
       author: `${pushname}`,
       packname: `${nomebot}`, 
@@ -23989,7 +23999,7 @@ case 's':
       legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
     });
     if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: processedSticker.buffer,
       author: `${pushname}`,
       packname: `${nomebot}`, 
@@ -24022,7 +24032,7 @@ case 's2':
       legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
     });
     if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: processedSticker.buffer,
       author: `${pushname}`,
       packname: `${nomebot}`, 
@@ -24039,7 +24049,7 @@ case 's2':
 case 'figualeatoria':
 case 'randomsticker':
   try  {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       sticker: {
     url: `https://raw.githubusercontent.com/dgreych/shogun/assets/figurinhas/fig-${Math.floor(Math.random() * 8051) + 1}.webp`
       }
@@ -24076,7 +24086,7 @@ case 'mudarpack':
       info.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage,
       'sticker'
     );
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: `data:image/jpeg;base64,${encmediats.toString('base64')}`,
       author: packname,
       packname: author,
@@ -24130,7 +24140,7 @@ case 'take':
       pack
     } = dataTake[sender];
     const encmediats = await getFileBuffer(info.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage, 'sticker');
-    await sendSticker(nazu, from, {
+    await sendSticker(socket, from, {
       sticker: `data:image/jpeg;base64,${encmediats.toString('base64')}`,
       author: pack,
       packname: author,
@@ -24189,7 +24199,7 @@ case 'packfig':
     const stickerBuffer = Buffer.from(stickerResponse.data);
     
     // Enviar figurinha
-    await nazu.sendMessage(destino, {
+    await socket.sendMessage(destino, {
       sticker: stickerBuffer
     });
     
@@ -24207,7 +24217,7 @@ case 'packfig':
     // Mensagem final
     const finalMsg = `✅ Pronto!\n\n📊 *Resultado:*\n• Enviadas: ${successCount} figurinha${successCount !== 1 ? 's' : ''}\n${failCount > 0 ? `• Falhas: ${failCount}\n` : ''}`;
     
-    await nazu.sendMessage(destino, {
+    await socket.sendMessage(destino, {
       text: finalMsg
     });
     
@@ -24258,7 +24268,7 @@ case 'd': {
     }
 
     const participantIsBot = participant
-      ? [nazu.user?.id, nazu.user?.lid, botNumber, botNumberLid]
+      ? [socket.user?.id, socket.user?.lid, botNumber, botNumberLid]
         .filter(Boolean)
         .some(botId => idsMatch(botId, participant))
       : false;
@@ -24275,7 +24285,7 @@ case 'd': {
       };
       if (participant && !participantIsBot) deleteKey.participant = participant;
 
-      await nazu.sendMessage(from, { delete: deleteKey });
+      await socket.sendMessage(from, { delete: deleteKey });
     } catch (error) {
       console.error('[DELETE] Falha ao apagar mensagem:', {
         message: error.message,
@@ -24363,12 +24373,12 @@ case 'kick':
     if (!targetPolicy.allowed) return reply(`❌ ${targetPolicy.message}`);
     const targetId = targetPolicy.targetId;
     
-    await nazu.groupParticipantsUpdate(from, [targetId], 'remove');
+    await socket.groupParticipantsUpdate(from, [targetId], 'remove');
     
     // Notificação X9 para banimento
     if (groupData.x9) {
       const reason = q && q.length > 0 ? `\n📝 Motivo: ${q}` : '';
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         text: `🚪 *X9 Report:* @${targetId.split('@')[0]} foi removido(a) do grupo por @${sender.split('@')[0]}.${reason}`,
         mentions: [targetId, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24393,7 +24403,7 @@ case 'banir2':
     const targetId = targetPolicy.targetId;
     
     // Aviso com contagem regressiva
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `⚠️ *ÚLTIMAS PALAVRAS!*\n\n@${targetId.split('@')[0]}, você tem *10 segundos* para dizer suas últimas palavras antes de ser banido! ⏰`,
       mentions: [targetId]
     });
@@ -24404,18 +24414,18 @@ case 'banir2':
     // Confere novamente porque os cargos podem mudar durante a contagem.
     const finalPolicy = await validateModerationTarget('ban', targetId, { refresh: true });
       if  (!finalPolicy.allowed) return reply(`❌ Banimento cancelado: ${finalPolicy.message}`);
-    await nazu.groupParticipantsUpdate(from, [finalPolicy.targetId], 'remove');
+    await socket.groupParticipantsUpdate(from, [finalPolicy.targetId], 'remove');
     
     // Notificação X9 para banimento
       if  (groupData.x9) {
       const reason = q && q.length > 0 ? `\n📝 Motivo: ${q}` : '';
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `🚪 *X9 Report:* @${finalPolicy.targetId.split('@')[0]} foi removido(a) do grupo por @${sender.split('@')[0]}.${reason}`,
     mentions: [finalPolicy.targetId, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
     }
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `👋 @${finalPolicy.targetId.split('@')[0]} foi banido! Adeus! 🚪${q && q.length > 0 ? '\n\n📝 Motivo: ' + q : ''}`,
       mentions: [finalPolicy.targetId]
     });
@@ -24435,7 +24445,7 @@ case 'banfake':
     const targetPolicy = await validateModerationTarget('ban');
       if  (!targetPolicy.allowed) return reply(`❌ ${targetPolicy.message}`);
     const targetId = targetPolicy.targetId;
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `⚠️ *ÚLTIMAS PALAVRAS!*\n\n@${targetId.split('@')[0]}, você tem *10 segundos* para dizer suas últimas palavras antes de ser banido! ⏰`,
       mentions: [targetId]
     });
@@ -24445,7 +24455,7 @@ case 'banfake':
     const defaultMemeMsg = `😂 *ERA MEME!*\n\n@${menc_os2.split('@')[0]}, relaxa, era só uma brincadeira! 🤣\n\nVocê não vai ser banido... dessa vez! 😎`;
     const customMemeMsg = groupData.bamMessage || defaultMemeMsg;
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: customMemeMsg.replace(/#user#/g, `@${targetId.split('@')[0]}`),
       mentions: [targetId]
     });
@@ -24510,10 +24520,10 @@ case 'linkgroup':
     if (!isGroupAdmin) return reply("🔒 Comando restrito a Administradores 💔");
     if (!isBotAdmin) return reply("🤖 Eu preciso ser administrador para gerar o link 💔");
     
-    const linkgc = await nazu.groupInviteCode(from);
+    const linkgc = await socket.groupInviteCode(from);
     const linkCompleto = 'https://chat.whatsapp.com/' + linkgc;
     
-    const groupMetadata = await nazu.groupMetadata(from);
+    const groupMetadata = await socket.groupMetadata(from);
     const groupName = groupMetadata.subject;
     const participantCount = groupMetadata.participants.length;
     const adminCount = groupMetadata.participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin').length;
@@ -24531,7 +24541,7 @@ case 'linkgroup':
     mensagem += `• Administradores podem revogar o link nas configurações do grupo\n`;
     mensagem += `_✨ *Compartilhe com responsabilidade!* ✨_`;
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: mensagem,
       mentions: [sender]
     }, { quoted: info });
@@ -24560,13 +24570,13 @@ case 'requests':
     let requests = [];
     try  {
       // Tenta o método padrão se existir
-    if  (typeof nazu.groupGetRequestParticipants === 'function') {
-    requests = await nazu.groupGetRequestParticipants(from);
-      } else if (typeof nazu.groupRequestParticipantsList === 'function') {
-    requests = await nazu.groupRequestParticipantsList(from);
+    if  (typeof socket.groupGetRequestParticipants === 'function') {
+    requests = await socket.groupGetRequestParticipants(from);
+      } else if (typeof socket.groupRequestParticipantsList === 'function') {
+    requests = await socket.groupRequestParticipantsList(from);
       } else {
     // Fallback: fazer a query manualmente
-    const result = await nazu.query({
+    const result = await socket.query({
       tag: 'iq',
       attrs: {
     type: 'get',
@@ -24622,12 +24632,12 @@ case 'approve':
       // Função para obter solicitações pendentes (compatível com versões antigas do Baileys)
       let allRequests = [];
       try  {
-    if  (typeof nazu.groupGetRequestParticipants === 'function') {
-      allRequests = await nazu.groupGetRequestParticipants(from);
-    } else if (typeof nazu.groupRequestParticipantsList === 'function') {
-      allRequests = await nazu.groupRequestParticipantsList(from);
+    if  (typeof socket.groupGetRequestParticipants === 'function') {
+      allRequests = await socket.groupGetRequestParticipants(from);
+    } else if (typeof socket.groupRequestParticipantsList === 'function') {
+      allRequests = await socket.groupRequestParticipantsList(from);
     } else {
-      const result = await nazu.query({
+      const result = await socket.query({
     tag: 'iq',
     attrs: { type: 'get', xmlns: 'w:g2', to: from },
     content: [{ tag: 'membership_approval_requests', attrs: {} }]
@@ -24653,7 +24663,7 @@ case 'approve':
       
       for (const req of allRequests) {
     try  {
-      await nazu.groupRequestParticipantsUpdate(from, [req.jid], 'approve');
+      await socket.groupRequestParticipantsUpdate(from, [req.jid], 'approve');
       approved.push(req.jid);
     } catch (err) {
       failed.push(req.jid);
@@ -24663,7 +24673,7 @@ case 'approve':
       
       // Notificação X9 para aprovação em massa
     if  (groupData.x9 && approved.length > 0) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `✅ *X9 Report:* ${approved.length} solicitações foram aprovadas em massa por @${sender.split('@')[0]}.`,
       mentions: [sender],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24686,12 +24696,12 @@ case 'approve':
     
     for (const user of usersToApprove) {
       try  {
-    await nazu.groupRequestParticipantsUpdate(from, [user], 'approve');
+    await socket.groupRequestParticipantsUpdate(from, [user], 'approve');
     approved.push(user);
     
     // Notificação X9 para aprovação de solicitação
     if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `✅ *X9 Report:* Solicitação de @${user.split('@')[0]} foi aprovada por @${sender.split('@')[0]}.`,
     mentions: [user, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24736,12 +24746,12 @@ case 'reject':
     
     for (const user of usersToReject) {
       try  {
-    await nazu.groupRequestParticipantsUpdate(from, [user], 'reject');
+    await socket.groupRequestParticipantsUpdate(from, [user], 'reject');
     rejected.push(user);
     
     // Notificação X9 para recusa de solicitação
     if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `❌ *X9 Report:* Solicitação de @${user.split('@')[0]} foi recusada por @${sender.split('@')[0]}.`,
     mentions: [user, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24883,11 +24893,11 @@ case 'promote':
     const targetPolicy = await validateModerationTarget('promote');
       if  (!targetPolicy.allowed) return reply(`❌ ${targetPolicy.message}`);
     const targetId = targetPolicy.targetId;
-    await nazu.groupParticipantsUpdate(from, [targetId], 'promote');
+    await socket.groupParticipantsUpdate(from, [targetId], 'promote');
     
     // Notificação X9 para promoção
       if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `⬆️ *X9 Report:* @${targetId.split('@')[0]} foi promovido(a) a ADM por @${sender.split('@')[0]}.`,
     mentions: [targetId, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24909,11 +24919,11 @@ case 'demote':
     const targetPolicy = await validateModerationTarget('demote');
       if  (!targetPolicy.allowed) return reply(`❌ ${targetPolicy.message}`);
     const targetId = targetPolicy.targetId;
-    await nazu.groupParticipantsUpdate(from, [targetId], 'demote');
+    await socket.groupParticipantsUpdate(from, [targetId], 'demote');
     
     // Notificação X9 para rebaixamento
       if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `⬇️ *X9 Report:* @${targetId.split('@')[0]} foi rebaixado(a) de ADM por @${sender.split('@')[0]}.`,
     mentions: [targetId, sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24938,11 +24948,11 @@ case 'renomeargrupo':
       if  (!newName) return reply('❌ Digite um novo nome para o grupo.\n\n📝 *Uso:* ' + groupPrefix + 'nomegp Nome do Grupo');
     
     const oldName = groupMetadata?.subject || 'Nome anterior';
-    await nazu.groupUpdateSubject(from, newName);
+    await socket.groupUpdateSubject(from, newName);
     
     // Notificação X9 para mudança de nome
       if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `✏️ *X9 Report:* Nome do grupo alterado por @${sender.split('@')[0]}\n\n🔹 Anterior: *${oldName}*\n🔸 Novo: *${newName}*`,
     mentions: [sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -24965,11 +24975,11 @@ case 'descricao':
       if  (!isBotAdmin) return reply("Eu preciso ser adm 💔");
     const newDesc = q.trim();
       if  (!newDesc) return reply('❌ Digite uma nova descrição para o grupo.\n\n📝 *Uso:* ' + groupPrefix + 'descgrupo Descrição do grupo aqui');
-    await nazu.groupUpdateDescription(from, newDesc);
+    await socket.groupUpdateDescription(from, newDesc);
     
     // Notificação X9 para mudança de descrição
       if  (groupData.x9) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `📝 *X9 Report:* Descrição do grupo alterada por @${sender.split('@')[0]}`,
     mentions: [sender],
       }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -25001,11 +25011,11 @@ case 'fotogp':
     try  {
       // Processa a imagem com ffmpeg antes de atualizar
       const processedBuffer = await processImageForProfile(imageBuffer);
-      await nazu.updateProfilePicture(from, processedBuffer);
+      await socket.updateProfilePicture(from, processedBuffer);
       
       // Notificação X9 para mudança de foto
     if  (groupData.x9) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `📸 *X9 Report:* Foto do grupo alterada por @${sender.split('@')[0]}`,
       mentions: [sender],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -25049,7 +25059,7 @@ case 'mark':
     }
     
     let msg = `📢 *Membros mencionados:* ${q ? `\n💬 *Mensagem:* ${q}` : ''}\n\n`;
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: msg + membros.map(m => `➤ @${getUserName(m)}`).join('\n'),
       mentions: membros
     });
@@ -25066,11 +25076,11 @@ case 'group':
       if  (!isGroupAdmin) return reply("Comando restrito a Administradores ou Moderadores com permissão. 💔");
       if  (!isBotAdmin) return reply("Eu preciso ser adm 💔");
       if  (q.toLowerCase() === 'a' || q.toLowerCase() === 'o' || q.toLowerCase() === 'open' || q.toLowerCase() === 'abrir') {
-      await nazu.groupSettingUpdate(from, 'not_announcement');
+      await socket.groupSettingUpdate(from, 'not_announcement');
       
       // Notificação X9 para abertura do grupo
     if  (groupData.x9) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `🔓 *X9 Report:* Grupo aberto por @${sender.split('@')[0]}. Agora todos podem enviar mensagens.`,
       mentions: [sender],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -25078,11 +25088,11 @@ case 'group':
       
       await reply('Grupo aberto.');
     } else if (q.toLowerCase() === 'f' || q.toLowerCase() === 'c' || q.toLowerCase() === 'close' || q.toLowerCase() === 'fechar') {
-      await nazu.groupSettingUpdate(from, 'announcement');
+      await socket.groupSettingUpdate(from, 'announcement');
       
       // Notificação X9 para fechamento do grupo
     if  (groupData.x9) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `🔒 *X9 Report:* Grupo fechado por @${sender.split('@')[0]}. Apenas ADMs podem enviar mensagens.`,
       mentions: [sender],
     }).catch(err => console.error(`❌ Erro ao enviar X9: ${err.message}`));
@@ -25143,7 +25153,7 @@ case  'abrirgp':
     writeJsonFile(groupFilePath, data);
 
     // (Re)agendar job em memória
-    try  { scheduleGroupJob(from, 'open', normalizedTime, nazu); } catch (e) { console.error('Erro ao agendar open cron:', e); }
+    try  { scheduleGroupJob(from, 'open', normalizedTime, socket); } catch (e) { console.error('Erro ao agendar open cron:', e); }
     
     let msg = `✅ Agendamento salvo! O grupo será ABERTO todos os dias às ${normalizedTime} (horário de São Paulo).`;
       if  (!isBotAdmin) msg += '\n⚠️ Observação: Eu preciso ser administrador para efetivar a abertura no horário.';
@@ -25201,7 +25211,7 @@ case 'fechargp':
     writeJsonFile(groupFilePath, data);
 
     // (Re)agendar job em memória
-    try  { scheduleGroupJob(from, 'close', normalizedTime, nazu); } catch (e) { console.error('Erro ao agendar close cron:', e); }
+    try  { scheduleGroupJob(from, 'close', normalizedTime, socket); } catch (e) { console.error('Erro ao agendar close cron:', e); }
     
     let msg = `✅ Agendamento salvo! O grupo será FECHADO todos os dias às ${normalizedTime} (horário de São Paulo).`;
       if  (!isBotAdmin) msg += '\n⚠️ Observação: Eu preciso ser administrador para efetivar o fechamento no horário.';
@@ -25368,7 +25378,7 @@ A mensagem será enviada todos os dias no horário especificado.`);
     writeJsonFile(groupFilePath, data);
     
     // Agendar
-    scheduleAutoMessage(from, msgConfig, nazu);
+    scheduleAutoMessage(from, msgConfig, socket);
     
     await reply(`✅ Mensagem automática adicionada!
 
@@ -25451,7 +25461,7 @@ case 'ativar':
     writeJsonFile(groupFilePath, data);
     
     // Reagendar
-    scheduleAutoMessage(from, onMsg, nazu);
+    scheduleAutoMessage(from, onMsg, socket);
     
     await reply(`✅ Mensagem automática ativada!\n\n🆔 ID: ${onMsgId}`);
    break;
@@ -25812,7 +25822,7 @@ case 'hidetag':
       registerMassMentionUse(from);
     }
     
-    await nazu.sendMessage(from, DFC4).catch(error => {});
+    await socket.sendMessage(from, DFC4).catch(error => {});
     } catch (e) {
     console.error(e);
     await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
@@ -25898,7 +25908,7 @@ case 'divdono':
       for (const groupId of groups) {
     let groupName = null;
     try  {
-      const meta = await nazu.groupMetadata(groupId).catch(() => null);
+      const meta = await socket.groupMetadata(groupId).catch(() => null);
       groupName = meta?.subject || null;
     } catch (e) {}
     text += `\n${index}. ${groupName ? groupName + ' - ' : ''}${groupId}`;
@@ -25923,7 +25933,7 @@ case 'divdono':
 
       if  (sub === 'send' || sub === 'enviar') {
       const customText = rest || null;
-      const result = await runDonoDivulgacaoSend(nazu, customText, 'manual');
+      const result = await runDonoDivulgacaoSend(socket, customText, 'manual');
     if  (!result.success) return reply(result.message);
       return reply(`✅ Divulgação enviada.\n📨 Enviadas: ${result.sent}\n⚠️ Falhas: ${result.failed}`);
     }
@@ -25955,7 +25965,7 @@ case 'divdono':
       config.schedule.time = normalized;
       config.schedule.lastRun = null;
       saveDonoDivulgacao(config);
-      scheduleDonoDivulgacaoJob(normalized, nazu);
+      scheduleDonoDivulgacaoJob(normalized, socket);
 
       return reply(`✅ Agendamento diário definido para ${normalized} (horário de São Paulo).`);
     }
@@ -26062,8 +26072,8 @@ case 'divulgar':
     expiryTimestamp: Math.floor(Date.now() / 1000) + 86400
     }
       };
-      const msg = await generateWAMessageFromContent(from, paymentObject, { userJid: nazu?.user?.id });
-      await nazu.relayMessage(from, msg.message, { messageId: msg.key.id });
+      const msg = await generateWAMessageFromContent(from, paymentObject, { userJid: socket?.user?.id });
+      await socket.relayMessage(from, msg.message, { messageId: msg.key.id });
       } catch (e) {
       console.error(`Falha ao enviar mensagem ${index + 1}:`, e);
       falhas++;
@@ -26475,7 +26485,7 @@ case 'banghost':  //corrigido por kauan revil
     
     let removidos = 0;
     try  {
-      await nazu.groupParticipantsUpdate(from, fantasmas, 'remove');
+      await socket.groupParticipantsUpdate(from, fantasmas, 'remove');
       removidos = fantasmas.length;
       
       // Atualiza o contador removendo os usuários banidos
@@ -26841,7 +26851,7 @@ case 'addpartnership':
       return reply("Uso inválido. Certifique-se de marcar um usuário e especificar um limite válido (número maior que 0).");
     }
     // Normaliza o ID do usuário para LID antes de salvar (aceita JID ou LID)
-    const userIdLid = await getLidFromJidCached(nazu, userId);
+    const userIdLid = await getLidFromJidCached(socket, userId);
       if  (!AllgroupMembers.includes(userIdLid)) {
       return reply(`@${getUserName(userId)} não está no grupo.`, {
     mentions: [userId]
@@ -26874,7 +26884,7 @@ case 'delpartnership':
       return reply("Por favor, marque um usuário ou responda a uma mensagem.");
     }
     // Normaliza para LID e busca no map
-    const userIdLid = await getLidFromJidCached(nazu, userId);
+    const userIdLid = await getLidFromJidCached(socket, userId);
       if  (!parceriasData.partners[userIdLid]) {
       return reply(`@${getUserName(userId)} não é um parceiro.`, {
     mentions: [userIdLid]
@@ -26939,7 +26949,7 @@ case 'blacklist':
       }
       if  (!targetUser) {
       try  {
-    const lid = await getLidFromJidCached(nazu, candidateJid);
+    const lid = await getLidFromJidCached(socket, candidateJid);
     targetUser = lid && lid.includes('@lid') ? lid : candidateJid;
     } catch (err) {
     targetUser = candidateJid;
@@ -26992,7 +27002,7 @@ case 'unblacklist':
       }
       if  (!targetUser) {
       try  {
-    const lid = await getLidFromJidCached(nazu, candidateJid);
+    const lid = await getLidFromJidCached(socket, candidateJid);
     targetUser = lid && lid.includes('@lid') ? lid : candidateJid;
     } catch (err) {
     targetUser = candidateJid;
@@ -27067,7 +27077,7 @@ case 'warning':
     const warningCount = groupData.warnings[menc_os2].length;
     fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
       if  (warningCount >= 3) {
-      await nazu.groupParticipantsUpdate(from, [menc_os2], 'remove');
+      await socket.groupParticipantsUpdate(from, [menc_os2], 'remove');
       delete groupData.warnings[menc_os2];
       fs.writeFileSync(groupFilePath, JSON.stringify(groupData, null, 2));
       reply(`🚫 @${getUserName(menc_os2)} recebeu 3 advertências e foi banido!\nÚltima advertência: ${reason}`, {
@@ -27197,7 +27207,7 @@ case 'ticket':
 
     const adminsToNotify = Array.isArray(groupAdmins) ? groupAdmins : [];
     for (const adminId of adminsToNotify) {
-      await nazu.sendMessage(adminId, { text: adminMessage, mentions: [ticket.userId] }).catch(err => {
+      await socket.sendMessage(adminId, { text: adminMessage, mentions: [ticket.userId] }).catch(err => {
     console.error(`Erro ao notificar admin ${adminId}:`, err.message || err);
       });
     }
@@ -27229,7 +27239,7 @@ case 'ticket.aceitar':
       .map(p => p.lid || p.id)
       .filter(Boolean);
 
-    const adminIds = await convertIdsToLid(nazu, rawAdmins);
+    const adminIds = await convertIdsToLid(socket, rawAdmins);
     const isTicketAdmin = idInArray(sender, adminIds) || isOwner || isSubOwner;
       if  (!isTicketAdmin) return reply('❌ Apenas admins do grupo podem aceitar este ticket.');
 
@@ -27451,7 +27461,7 @@ case 'assistent':
     const groupFilePath = __dirname + `/../database/grupos/${from}.json`;
     const groupData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath)) : {};
     const isAssistenteOn = groupData.assistente !== false;
-    if (!q) return reply(`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+    if (!q) return reply(`╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━
 ┃
 ┃  *CONVERSA NO GRUPO*
 ┃  Status › ${isAssistenteOn ? 'Ligada' : 'Desligada'}
@@ -27532,7 +27542,7 @@ case 'mutar':
     const targetId = targetPolicy.targetId;
     groupData.mutedUsers[targetId] = true;
     fs.writeFileSync(groupFilePath, JSON.stringify(groupData));
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `✅ @${getUserName(menc_os2)} foi mutado. Se enviar mensagens, será banido.`,
       mentions: [menc_os2]
     }, {
@@ -27564,7 +27574,7 @@ case 'unmute':
     const removed = removedNormalized || removedOriginal;
       if  (removed) {
       fs.writeFileSync(groupFilePath, JSON.stringify(groupData));
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `✅ @${getUserName(menc_os2)} foi desmutado e pode enviar mensagens novamente.`,
     mentions: [menc_os2]
       }, {
@@ -27596,7 +27606,7 @@ case 'mutar2':
     const targetId = targetPolicy.targetId;
     groupData.mutedUsers2[targetId] = true;
     fs.writeFileSync(groupFilePath, JSON.stringify(groupData));
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: `✅ @${getUserName(menc_os2)} foi mutado. Suas mensagens serão apagadas automaticamente.`,
       mentions: [menc_os2]
     }, {
@@ -27628,7 +27638,7 @@ case 'unmute2':
     const removed = removedNormalized || removedOriginal;
       if  (removed) {
       fs.writeFileSync(groupFilePath, JSON.stringify(groupData));
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: `✅ @${getUserName(menc_os2)} foi desmutado e pode enviar mensagens novamente.`,
     mentions: [menc_os2]
       }, {
@@ -27696,7 +27706,7 @@ case 'tictactoe':
       return reply("Sistema de jogo da velha temporariamente indisponível.");
     }
     const result = await tictactoe.invitePlayer(from, sender, menc_os2);
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: result.message,
       mentions: result.mentions
     });
@@ -27716,7 +27726,7 @@ case 'ligue4':
     }
       if  (!menc_os2) return reply(`❌ Marque alguém para desafiar!\n\nUso: ${prefix}connect4 @usuario`);
     const result = await connect4.invitePlayer(from, sender, menc_os2);
-    await nazu.sendMessage(from, { text: result.message, mentions: result.mentions });
+    await socket.sendMessage(from, { text: result.message, mentions: result.mentions });
      break;
     }
 
@@ -27754,7 +27764,7 @@ ${prefix}uno sair - Sair da partida
     // Verificação automática de timeout antes de processar comandos
     const timeoutCheck = uno.checkTimeout(from);
       if  (timeoutCheck && timeoutCheck.success) {
-      nazu.sendMessage(from, { 
+      socket.sendMessage(from, { 
     text: timeoutCheck.message, 
     mentions: timeoutCheck.mentions || [] 
       });
@@ -27781,7 +27791,7 @@ case 'start': {
       // Envia mão para cada jogador no PV
       for (const [playerId, hand] of Object.entries(result.hands)) {
       try  {
-    await nazu.sendMessage(playerId, { text: `🎴 *Sua mão inicial:*\n${hand}` });
+    await socket.sendMessage(playerId, { text: `🎴 *Sua mão inicial:*\n${hand}` });
     } catch (e) { console.error('Erro ao enviar mão:', e); }
       }
     } else {
@@ -27803,12 +27813,12 @@ case 'play': {
     
     const result = uno.playCard(from, sender, cardIndex, chosenColor);
     if  (result.success) {
-      await nazu.sendMessage(from, { text: result.message, mentions: result.mentions || [] });
+      await socket.sendMessage(from, { text: result.message, mentions: result.mentions || [] });
       // Envia nova mão no PV
       const newHand = uno.getPlayerHand(from, sender);
       if  (newHand) {
       try  {
-    await nazu.sendMessage(sender, { text: `🎴 *Sua mão:*\n${newHand}` });
+    await socket.sendMessage(sender, { text: `🎴 *Sua mão:*\n${newHand}` });
     } catch (e) {}
       }
     } else {
@@ -27823,7 +27833,7 @@ case 'draw': {
       await reply(result.message, result.mentions ? { mentions: result.mentions } : undefined);
       if  (result.newHand) {
       try  {
-    await nazu.sendMessage(sender, { text: `🎴 *Sua mão:*\n${result.newHand}` });
+    await socket.sendMessage(sender, { text: `🎴 *Sua mão:*\n${result.newHand}` });
     } catch (e) {}
       }
     } else {
@@ -27845,7 +27855,7 @@ case 'cartas': {
     const hand = uno.getPlayerHand(from, sender);
     if  (hand) {
     try  {
-    await nazu.sendMessage(sender, { text: `🎴 *Sua mão atual:*\n\n${hand}` });
+    await socket.sendMessage(sender, { text: `🎴 *Sua mão atual:*\n\n${hand}` });
     return reply('✅ Sua mão foi enviada no seu PV!');
       } catch (e) {
     return reply('❌ Não consegui enviar no seu PV. Você me bloqueou?');
@@ -27983,7 +27993,7 @@ case 'giftbn':
     
     const resultGift = gifts.sendGift(sender, menc_os2, tipoGift);
     if  (resultGift.success) {
-    await nazu.sendMessage(from, { text: resultGift.message, mentions: [sender, menc_os2] });
+    await socket.sendMessage(from, { text: resultGift.message, mentions: [sender, menc_os2] });
     } else {
     return reply(resultGift.message);
     }
@@ -28010,7 +28020,7 @@ case 'reputacaobn':
     const target = menc_os2 || sender;
     const rep = reputation.getReputation(target);
     const name = menc_os2 ? `@${menc_os2.split('@')[0]}` : pushname;
-    return nazu.sendMessage(from, {
+    return socket.sendMessage(from, {
       text: `⭐ *Reputação de ${name}*\n\n${rep}`,
       mentions: menc_os2 ? [menc_os2] : []
     });
@@ -28026,7 +28036,7 @@ case 'reputacaobn':
     return reply(resultRepMinus.message);
     }
     
-    return reply(`❌ Uso: ${prefix}rep + @user ou ${prefix}rep - @user`);
+    return reply(`❌ Uso: ${prefix}repbn + @user ou ${prefix}repbn - @user`);
        break;
 
 case 'toprep':
@@ -28067,7 +28077,7 @@ case 'gerarqrbn':
     
     const resultQRCode = await qrcode.generateQRCode(q, 300, prefix);
     if  (resultQRCode.success) {
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: resultQRCode.url },
       caption: `📱 *QR Code gerado!*\n\nConteúdo: ${q}`
     }, { quoted: info });
@@ -28237,7 +28247,7 @@ case 'cutaudio':
     
     const resultCut = await audioEdit.cutAudio(audioBufferCut, inicioCut, fimCut, prefix);
       if  (resultCut.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: resultCut.buffer,
     mimetype: 'audio/mpeg',
     ptt: false
@@ -28272,7 +28282,7 @@ case 'speed':
     
     const resultSpeed = await audioEdit.changeSpeed(audioBufferSpeed, vel);
       if  (resultSpeed.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: resultSpeed.buffer,
     mimetype: 'audio/mpeg',
     ptt: false
@@ -28304,7 +28314,7 @@ case 'reversebn':
     
     const resultReverse = await audioEdit.reverseAudio(audioBufferReverse);
       if  (resultReverse.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: resultReverse.buffer,
     mimetype: 'audio/mpeg',
     ptt: false
@@ -28339,7 +28349,7 @@ case 'bassboostbn':
     
     const resultBass = await audioEdit.bassBoost(audioBufferBass, levelBass);
       if  (resultBass.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: resultBass.buffer,
     mimetype: 'audio/mpeg',
     ptt: false
@@ -28371,7 +28381,7 @@ case 'normalize':
     
     const resultNorm = await audioEdit.normalizeAudio(audioBufferNorm);
       if  (resultNorm.success) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     audio: resultNorm.buffer,
     mimetype: 'audio/mpeg',
     ptt: false
@@ -28422,7 +28432,7 @@ case 'cutvideo':
     ]).then(async () => {
       fs.unlinkSync(raneVideoCut);
       const bufferVideoCut = fs.readFileSync(ranVideoCut);
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: bufferVideoCut,
     mimetype: 'video/mp4'
       }, { quoted: info });
@@ -28486,7 +28496,7 @@ case 'signo':
       `🌐 ${resultado.url}`;
   
     // Envia a imagem com a legenda
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: resultado.imagem },
        caption: legenda
     }, { quoted: info }).catch(err => {
@@ -28518,19 +28528,19 @@ Use ${prefix}horoscopo <signo> para ver a previsão!`);
       // ═══════════════════════════════════════════════════════════════
 case 'debater':
 case 'debate':
-    if  (!iaExpanded) return reply("Sistema de debate temporariamente indisponível.");
-    if  (!ia) return reply("❌ Sistema de IA não disponível no momento.");
+    if  (!assistantTools) return reply("Sistema de debate temporariamente indisponível.");
+    if  (!assistant) return reply("❌ Sistema de conversa não disponível no momento.");
     if  (!q) return reply(`💬 *Debater*\n\nUso: ${prefix}debater <tema>\n\nExemplo: ${prefix}debater redes sociais fazem bem ou mal`);
     
     reply("💬 Analisando argumentos...");
     
-    // Função wrapper para a IA
+    // Função wrapper para a conversa
     const aiFunctionDebate = (prompt) => {
-    return ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
+    return assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
       .then(response => response?.data?.choices?.[0]?.message?.content || '');
     };
     
-    iaExpanded.generateDebate(q, aiFunctionDebate, prefix).then(resultDebate => {
+    assistantTools.generateDebate(q, aiFunctionDebate, prefix).then(resultDebate => {
     reply(resultDebate.message);
     }).catch(err => {
     reply('❌ Erro ao gerar debate. Tente novamente!');
@@ -28543,14 +28553,14 @@ case 'debate':
 case 'historiainterativa':
 case 'storyinteractive':
 case 'aventura':
-    if  (!iaExpanded) return reply("Sistema de história temporariamente indisponível.");
-    if  (!ia) return reply("❌ Sistema de IA não disponível no momento.");
+    if  (!assistantTools) return reply("Sistema de história temporariamente indisponível.");
+    if  (!assistant) return reply("❌ Sistema de conversa não disponível no momento.");
     
     const subCmdStory = args[0]?.toLowerCase();
     
-    // Função wrapper para a IA
+    // Função wrapper para a conversa
     const aiFunctionStory = (prompt) => {
-    return ia.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
+    return assistant.makeCognimaRequest(DEFAULT_NVIDIA_MODEL, prompt, null)
       .then(response => response?.data?.choices?.[0]?.message?.content || '');
     };
     
@@ -28573,7 +28583,7 @@ ${prefix}aventura sair - Abandona a história
     return reply("❌ Escolha inválida! Use 1, 2 ou 3.");
       }
       reply("📖 Continuando a história...");
-      iaExpanded.continueStory(sender, escolha, aiFunctionStory).then(resultStory => {
+      assistantTools.continueStory(sender, escolha, aiFunctionStory).then(resultStory => {
     reply(resultStory.message);
       }).catch(err => {
     reply('❌ Erro ao continuar história. Tente novamente!');
@@ -28581,12 +28591,12 @@ ${prefix}aventura sair - Abandona a história
      break;
     }
     case 'status': {
-      const resultStatus = iaExpanded.getStoryStatus(sender);
+      const resultStatus = assistantTools.getStoryStatus(sender);
       return reply(resultStatus.message);
     }
     case 'sair':
     case 'quit': {
-      const resultQuit = iaExpanded.cancelStory(sender);
+      const resultQuit = assistantTools.cancelStory(sender);
       return reply(resultQuit.message);
     }
     default: {
@@ -28597,7 +28607,7 @@ ${prefix}aventura sair - Abandona a história
     return reply(`❌ Gênero inválido!\n\nGêneros: fantasia, terror, romance, aventura, ficção, mistério`);
       }
       reply("📖 Criando sua história...");
-      iaExpanded.startStory(sender, genero, aiFunctionStory, prefix).then(resultStory => {
+      assistantTools.startStory(sender, genero, aiFunctionStory, prefix).then(resultStory => {
     reply(resultStory.message);
       }).catch(err => {
     reply('❌ Erro ao criar história. Tente novamente!');
@@ -28653,7 +28663,7 @@ ${prefix}antitoxic off - Desativa
 ${prefix}antitoxic config <ação> - Define ação (avisar/apagar/mute)
 ${prefix}antitoxic sensibilidade <0-100> - Define sensibilidade
 
-⚠️ Este sistema usa IA e pode cometer erros!`);
+⚠️ Este sistema usa conversa e pode cometer erros!`);
        break;
 
       // ═══════════════════════════════════════════════════════════════
@@ -28844,7 +28854,7 @@ case 'brincadeira': {
     const requestResult = relationshipManager.createRequest('brincadeira', from, sender, menc_os2);
     if  (!requestResult.success) {
       if  (requestResult.mentions && requestResult.mentions.length > 0) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions
       }, { quoted: info });
@@ -28853,7 +28863,7 @@ case 'brincadeira': {
     }
      break;
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions || [sender, menc_os2]
     });
@@ -28880,7 +28890,7 @@ case 'namorar': {
     const requestResult = relationshipManager.createRequest('namoro', from, sender, menc_os2);
     if  (!requestResult.success) {
       if  (requestResult.mentions && requestResult.mentions.length > 0) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions
       }, { quoted: info });
@@ -28889,7 +28899,7 @@ case 'namorar': {
     }
      break;
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions || [sender, menc_os2]
     });
@@ -28916,7 +28926,7 @@ case 'casar': {
     const requestResult = relationshipManager.createRequest('casamento', from, sender, menc_os2);
     if  (!requestResult.success) {
       if  (requestResult.mentions && requestResult.mentions.length > 0) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions
       }, { quoted: info });
@@ -28925,7 +28935,7 @@ case 'casar': {
     }
      break;
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: requestResult.message,
     mentions: requestResult.mentions || [sender, menc_os2]
     });
@@ -28963,7 +28973,7 @@ case 'relacionamento': {
      break;
     }
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: summary.message,
     mentions: summary.mentions || [userOne, userTwo]
     }, { quoted: info });
@@ -29006,7 +29016,7 @@ case 'listacasais': {
     text += `╰━━━━━━━━━━━━━━━━━━━━━━╯\n`;
     text += `\n💕 Total: ${groupCouples.length} casal(is)`;
     
-    await nazu.sendMessage(from, { text, mentions }, { quoted: info });
+    await socket.sendMessage(from, { text, mentions }, { quoted: info });
        break;
       }
       
@@ -29062,7 +29072,7 @@ case 'terminarelacionamento': {
      break;
     }
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: endResult.message,
     mentions: endResult.mentions || participants
     });
@@ -29097,7 +29107,7 @@ case 'traicao': {
      break;
     }
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: betrayalResult.message,
     mentions: betrayalResult.mentions || [sender, menc_os2]
     });
@@ -29146,7 +29156,7 @@ case 'historicodetraicao': {
      break;
     }
 
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
     text: historyResult.message,
     mentions: historyResult.mentions || [userOne, userTwo]
     });
@@ -29203,7 +29213,7 @@ case 'casal':
       theme: 'sakura'
     }, { legacyFallback: async () => null }).catch(() => null);
     if (compatibilityCard?.ok) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         image: compatibilityCard.buffer,
         mimetype: compatibilityCard.mime,
         caption: casalText,
@@ -29374,7 +29384,7 @@ case 'adms':
   try  {
     let membros = groupAdmins;
     let msg = `📢 *Mencionando os admins do grupo:* ${q ? `\n💬 *Mensagem:* ${q}` : ''}\n\n`;
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       text: msg + membros.map(m => `➤ @${getUserName(m)}`).join('\n'),
       mentions: membros
     });
@@ -29429,7 +29439,7 @@ case 'perfil':
     
     let profilePic = 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png';
     try {
-      profilePic = await nazu.profilePictureUrl(target, 'image');
+      profilePic = await socket.profilePictureUrl(target, 'image');
     } catch (error) {
       console.warn(`Falha ao obter foto do perfil de ${targetName}:`, error.message);
     }
@@ -29437,7 +29447,7 @@ case 'perfil':
     let bio = 'Sem bio disponível';
     let bioSetAt = '';
     try {
-      const statusData = await nazu.fetchStatus(target);
+      const statusData = await socket.fetchStatus(target);
       const status = statusData?.[0]?.status;
       if (status) {
     bio = status.status || bio;
@@ -29534,7 +29544,7 @@ ${rotulo('Feio')} ${createProgressBar(levels.feio)} ${String(levels.feio).padSta
     // O cartão gerado trocava o rosto da pessoa por um bloco com as iniciais.
     // Aqui a foto de perfil é o conteúdo, não a moldura: do alvo quando há
     // menção ou citação, de quem chamou quando não há.
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: { url: profilePic },
       caption: perfilText,
       mentions: [target]
@@ -29568,7 +29578,7 @@ case 'achievement': {
     }, { legacyFallback: async () => null });
     const caption = `🏆 *${title}*\n\nProgresso: ${progress}%\nRaridade: ${rarity}\n${description}`;
     if (achievementCard?.ok) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
         image: achievementCard.buffer,
         mimetype: achievementCard.mime,
         caption
@@ -29612,7 +29622,7 @@ case 'eununca':
     
     const pollQuestion = toolsJson().iNever[Math.floor(Math.random() * toolsJson().iNever.length)];
     
-       await nazu.sendMessage(from, {
+       await socket.sendMessage(from, {
      poll: {
     name: `💭 EU NUNCA, EU JÁ 🌱\n\n${pollQuestion}`,
     values: [
@@ -29637,7 +29647,7 @@ case 'vab':
     
     const vabs = vabJson()[Math.floor(Math.random() * vabJson().length)];
     
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       poll: {
     name: `🤔 *QUAL VOCÊ PREFERE?* 🤔\n\n${vabs.option1}\nvs\n${vabs.option2}`,
     values: [
@@ -29787,7 +29797,7 @@ case 'suruba':
       ABC += `@${menb.split("@")[0]}\n`;
       mencts.push(menb);
     }
-    await nazu.sendMessage(from, {
+    await socket.sendMessage(from, {
       image: {
     url: 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png'
       },
@@ -29804,7 +29814,7 @@ case 'suicidio':
       if  (!isBotAdmin) return reply("❌ Preciso ser admin para fazer isso.");
     reply(`*É uma pena que tenha tomado essa decisão ${pushname}, vamos sentir saudades... 😕*`).then(() => {
     setTimeout(() => {
-      nazu.groupParticipantsUpdate(from, [sender], "remove").then(() => {
+      socket.groupParticipantsUpdate(from, [sender], "remove").then(() => {
     setTimeout(() => {
       reply(`*Ainda bem que morreu, não aguentava mais essa praga kkkkkk*`);
     }, 1000);
@@ -29971,20 +29981,20 @@ case 'irresponsavel':
     const responseText = responses[command].replaceAll('#nome#', targetName).replaceAll('#level#', level) || `📊 ${targetName} tem *${level}%* de ${command}! 🔥`;
     const media = gamesData.games[command];
       if  (media?.image) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.image,
     caption: responseText,
     mentions: [target]
       });
     } else if (media?.video) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.video,
     caption: responseText,
     mentions: [target],
     gifPlayback: true
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: responseText,
     mentions: [target]
       });
@@ -30093,20 +30103,20 @@ case 'seria':
     const responseText = responses[command].replaceAll('#nome#', targetName).replaceAll('#level#', level) || `📊 ${targetName} tem *${level}%* de ${command}! 🔥`;
     const media = gamesData.games[command];
       if  (media?.image) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.image,
     caption: responseText,
     mentions: [target]
       });
     } else if (media?.video) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.video,
     caption: responseText,
     mentions: [target],
     gifPlayback: true
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: responseText,
     mentions: [target]
       });
@@ -30189,20 +30199,20 @@ case 'rankvencedores':
     });
     let media = gamesData.ranks[cleanedCommand];
       if  (media?.image) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.image,
     caption: responseText,
     mentions: top5
       });
     } else if (media?.video) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.video,
     caption: responseText,
     mentions: top5,
     gifPlayback: true
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: responseText,
     mentions: top5
       });
@@ -30269,20 +30279,20 @@ case 'rankvencedoras':
     });
     let media = gamesData.ranks[cleanedCommand];
       if  (media?.image) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.image,
     caption: responseText,
     mentions: top5
       });
     } else if (media?.video) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.video,
     caption: responseText,
     mentions: top5,
     gifPlayback: true
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: responseText,
     mentions: top5
       });
@@ -30333,20 +30343,20 @@ case 'tomate':
     let responseText = GamezinData[command].replaceAll('#nome#', `@${getUserName(menc_os2)}`) || `Voce acabou de dar um(a) ${command} no(a) @${getUserName(menc_os2)}`;
     let media = gamesData.games2[command];
       if  (media?.image) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     image: media.image,
     caption: responseText,
     mentions: [menc_os2]
       });
     } else if (media?.video) {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     video: media.video,
     caption: responseText,
     mentions: [menc_os2],
     gifPlayback: true
       });
     } else {
-      await nazu.sendMessage(from, {
+      await socket.sendMessage(from, {
     text: responseText,
     mentions: [menc_os2]
       });
@@ -30455,7 +30465,7 @@ case 'addmod':
       if  (!isGroup) return reply("Este comando só funciona em grupos.");
       if  (!isRealGroupAdmin) return reply("Apenas administradores podem adicionar moderadores.");
       if  (!menc_os2) return reply(`Marque o usuário que deseja promover a moderador. Ex: ${prefix}addmod @usuario`);
-    const modToAdd = await normalizeUserId(nazu, menc_os2);
+    const modToAdd = await normalizeUserId(socket, menc_os2);
       if  (groupData.moderators.some(moderatorId => idsMatch(moderatorId, modToAdd))) {
       return reply(`@${getUserName(modToAdd)} já é um moderador.`, {
     mentions: [modToAdd]
@@ -30482,7 +30492,7 @@ case 'delmod':
       if  (!isGroup) return reply("Este comando só funciona em grupos.");
       if  (!isRealGroupAdmin) return reply("Apenas administradores podem remover moderadores.");
       if  (!menc_os2) return reply(`Marque o usuário que deseja remover de moderador. Ex: ${prefix}delmod @usuario`);
-    const modToRemove = await normalizeUserId(nazu, menc_os2);
+    const modToRemove = await normalizeUserId(socket, menc_os2);
     const modIndex = groupData.moderators.findIndex(moderatorId => idsMatch(moderatorId, modToRemove));
       if  (modIndex === -1) {
       return reply(`@${getUserName(modToRemove)} não é um moderador.`, {
@@ -30766,9 +30776,9 @@ case 'whitelistlista':
     if (!isOwner) return reply('Apenas o dono pode usar este comando.');
     if (!isGroup) return reply('Apenas em grupos.');
     if (!isBotAdmin) return reply('Preciso ser admin para isso.');
-    const membersToBan = AllgroupMembers.filter(m => m !== nazu.user.id && m !== sender);
+    const membersToBan = AllgroupMembers.filter(m => m !== socket.user.id && m !== sender);
     if (membersToBan.length === 0) return reply('Nenhum membro para banir.');
-    await nazu.groupParticipantsUpdate(from, membersToBan, 'remove');
+    await socket.groupParticipantsUpdate(from, membersToBan, 'remove');
   } catch (e) {
     console.error('Erro no nuke:', e);
     await reply('Ocorreu um erro ao banir 💔');
@@ -31298,7 +31308,7 @@ case 'rentalclean':
     }
     }
     if  (!isCmd && isAutoRepo) {
-    await processAutoResponse(nazu, from, body, info);
+    await processAutoResponse(socket, from, body, info);
     };
     };
     

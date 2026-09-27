@@ -42,9 +42,9 @@ test('nick preserva ajuda, aliases e styleText legado', async () => {
   assert.equal(await domain.dispatch('nick', missing), true);
   assert.match(missing.replies[0], /GERADOR DE NICK/);
 
-  const context = baseContext({ query: 'nazuna', styleText: async (text) => [`A:${text}`, `B:${text}`] });
+  const context = baseContext({ query: 'shogun', styleText: async (text) => [`A:${text}`, `B:${text}`] });
   assert.equal(await domain.dispatch('gerarnick', context), true);
-  assert.deepEqual(context.replies, ['A:nazuna\nB:nazuna']);
+  assert.deepEqual(context.replies, ['A:shogun\nB:shogun']);
 });
 
 test('qrcode preserva loading, endpoint, legenda e mensagem citada', async () => {
@@ -105,8 +105,8 @@ test('tradutor mantém formato idioma | texto e chamada ao modelo legado', async
   const domain = new MiscToolsDomainDispatchTarget();
   const context = baseContext({
     query: 'inglês | Bom dia!',
-    defaultAiModel: 'modelo-teste',
-    formatAIResponse: (text) => text.trim(),
+    defaultConversationModel: 'modelo-teste',
+    formatConversationResponse: (text) => text.trim(),
     ai: {
       makeCognimaRequest: async (...args) => {
         calls.push(args);
@@ -124,7 +124,7 @@ test('tradutor mantém formato idioma | texto e chamada ao modelo legado', async
   assert.match(context.replies[1], /GOOD MORNING|Good morning!/i);
 });
 
-test('dicionario preserva resultado primário e fallback de IA', async () => {
+test('dicionario preserva resultado primário e fallback de conversa', async () => {
   const domain = new MiscToolsDomainDispatchTarget();
   const primary = baseContext({
     query: 'casa',
@@ -141,8 +141,8 @@ test('dicionario preserva resultado primário e fallback de IA', async () => {
   const fallback = baseContext({
     query: 'xyz',
     dictionary: async () => { throw new Error('offline'); },
-    defaultAiModel: 'modelo-teste',
-    formatAIResponse: (text) => `FMT:${text}`,
+    defaultConversationModel: 'modelo-teste',
+    formatConversationResponse: (text) => `FMT:${text}`,
     ai: { makeCognimaRequest: async () => ({ data: { choices: [{ message: { content: 'definição' } }] } }) },
   });
   assert.equal(await domain.dispatch('dicionario', fallback), true);

@@ -15,7 +15,7 @@ const BUNNYFY_ROUTES = Object.freeze({
   compatibilityCard: '/v1/images/compatibility-card',
   rankingCard: '/v1/images/ranking-card',
   achievementCard: '/v1/images/achievement-card',
-  aiChat: '/v1/ai/chat/completions',
+  conversationChat: '/v1/conversation/chat/completions',
   imageGenerate: '/v1/images/generate',
   movieQuiz: '/v1/games/quiz',
   tavernBoard: '/v1/games/tavern/board',
@@ -560,14 +560,14 @@ function parseMovieQuiz(value) {
   };
 }
 
-const AI_FINISH_REASONS = new Set(['stop', 'length', 'content_filter', 'tool_calls', 'other']);
+const CONVERSATION_FINISH_REASONS = new Set(['stop', 'length', 'content_filter', 'tool_calls', 'other']);
 
-function parseAiChat(value) {
+function parseConversationChat(value) {
   const data = requireObject(value, 'data');
   if (typeof data.text !== 'string' || !data.text.trim()) {
     throw new BunnyFyError('BUNNYFY_BAD_RESPONSE');
   }
-  if (data.finishReason !== null && !AI_FINISH_REASONS.has(data.finishReason)) {
+  if (data.finishReason !== null && !CONVERSATION_FINISH_REASONS.has(data.finishReason)) {
     throw new BunnyFyError('BUNNYFY_BAD_RESPONSE');
   }
 
@@ -634,7 +634,7 @@ export {
   assertNexoEncounterRenderView,
   parseAnimatedLogo,
   parseEnvelope,
-  parseAiChat,
+  parseConversationChat,
   parseImageProcess,
   parseSticker,
   parseMediaUpload,

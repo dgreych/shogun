@@ -75,7 +75,7 @@ class TavernGameService {
   async assertGroupEnabled(groupId) {
     const group = await this.tavern.repository.getGroup(groupId);
     if (!group?.enabled) {
-      throw new TavernRuleError('A Gyomei Tavern não está ativa neste grupo. Um admin precisa ativá-la com tavern on.');
+      throw new TavernRuleError('A Shogun Tavern não está ativa neste grupo. Um admin precisa ativá-la com tavern on.');
     }
     return group;
   }

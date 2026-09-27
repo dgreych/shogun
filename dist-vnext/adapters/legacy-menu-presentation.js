@@ -94,6 +94,7 @@ function resolveShogunRuntime(moduleValue) {
     const record = recordOf(moduleValue, 'Runtime do bot');
     return Object.freeze({
         highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime bot'),
+        ...(typeof record.resolveCommandMedia === 'function' ? { resolveCommandMedia: record.resolveCommandMedia } : {}),
     });
 }
 /**
@@ -209,7 +210,11 @@ export class LegacyMenuPresentationAdapter {
         }
         let mediaPath;
         let useVideo = false;
-        if (customMediaPath) {
+        const brandMedia = modules.runtime.resolveCommandMedia?.(descriptor.tokens[0] ?? '');
+        if (brandMedia?.brand === true && this.#fs.existsSync(brandMedia.path)) {
+            mediaPath = brandMedia.path;
+        }
+        else if (customMediaPath) {
             mediaPath = customMediaPath;
         }
         else {
@@ -236,7 +241,7 @@ export class LegacyMenuPresentationAdapter {
         const design = { ...recordOf(modules.database.getMenuDesignWithDefaults(botName, context.pushName, context.prefix), 'Design dos menus'), accessFor: (command, entry) => {
                 const resolved = resolveCommandInput(command, context.rawAliases);
                 const parameters = [resolved.matchedAlias?.fixedParams, entry?.arguments].filter(Boolean).join(' ');
-                return evaluateCommandAccess(findCommandAccessPolicy(resolved.command, { domain: descriptor.id === 'menunexo' ? 'nexo' : 'legacy', arguments: parameters }), context.access || UNRESOLVED_COMMAND_ACCESS);
+                return evaluateCommandAccess(findCommandAccessPolicy(resolved.command, { domain: descriptor.id === 'nexo' ? 'nexo' : 'legacy', arguments: parameters }), context.access || UNRESOLVED_COMMAND_ACCESS);
             } };
         const renderer = modules.renderers[descriptor.rendererKey];
         const rawMenu = descriptor.liteModeAware

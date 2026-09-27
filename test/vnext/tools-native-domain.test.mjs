@@ -161,7 +161,7 @@ test('listar e apagar lembretes preserva filtro por usuário, status e prefixo d
 
 test('aniversario usa arquivo irmão do estado do grupo e preserva formato legado', async () => {
   const domain = new ToolsDomainDispatchTarget();
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-birthday-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-birthday-'));
   const groupId = '120363000000000000@g.us';
   const groupFile = path.join(tempDir, `${groupId}.json`);
   const birthdayFile = path.join(tempDir, `${groupId}_aniversarios.json`);

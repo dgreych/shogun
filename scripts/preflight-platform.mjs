@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { prepareMediaTools } from './media-tools.mjs';
 
 import { loadLocalEnv } from '../dados/src/.scripts/envLoader.js';
 import {
@@ -14,6 +15,8 @@ import {
 } from '../dados/src/.scripts/instanceConfigStore.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
+const envState = loadLocalEnv();
+prepareMediaTools({ root: ROOT });
 const MIN_NODE = [20, 19, 0];
 const failures = [];
 const warnings = [];
@@ -29,7 +32,7 @@ function atLeast(actual, minimum) {
 }
 
 function probe(label, command, args, required = true) {
-  const result = spawnSync(command, args, { cwd: ROOT, encoding: 'utf8', shell: false });
+  const result = spawnSync(command, args, { cwd: ROOT, encoding: 'utf8', shell: false, timeout: 15000, windowsHide: true });
   if (result.status === 0) {
     const firstLine = `${result.stdout || result.stderr || ''}`.trim().split(/\r?\n/)[0];
     console.log(`✅ ${label}${firstLine ? ` — ${firstLine}` : ''}`);
@@ -45,15 +48,18 @@ function isTrue(value) {
   return ['1', 'true', 'yes', 'sim', 'on'].includes(String(value ?? '').trim().toLowerCase());
 }
 
-console.log('\n⛩️  Verificação do ambiente\n');
+console.log('\n🐈‍⬛ Verificação do ambiente Shogun\n');
 
 const nodeVersion = versionTuple(process.versions.node);
 if (atLeast(nodeVersion, MIN_NODE)) console.log(`✅ Node.js — v${process.versions.node}`);
 else failures.push(`Node.js ${MIN_NODE.join('.')} ou superior é necessário; atual: ${process.versions.node}`);
 
-probe('npm', process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--version']);
+const npmCli = process.env.npm_execpath || path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+if (fs.existsSync(npmCli)) probe('npm', process.execPath, [npmCli, '--version']);
+else probe('npm', 'npm', ['--version']);
 probe('Git', 'git', ['--version']);
-probe('FFmpeg', 'ffmpeg', ['-version']);
+probe('FFmpeg', process.env.FFMPEG_PATH || 'ffmpeg', ['-version']);
+probe('FFprobe', process.env.FFPROBE_PATH || 'ffprobe', ['-version']);
 
 const isTermux = Boolean(process.env.TERMUX_VERSION) || fs.existsSync('/data/data/com.termux');
 const platformName = isTermux ? 'Termux/Android' : `${process.platform}/${process.arch}`;
@@ -66,7 +72,6 @@ if (isTermux) {
   else warnings.push('termux-wake-lock não foi encontrado. Instale/atualize termux-tools; Termux:API não é necessário apenas para o wake lock.');
 }
 
-const envState = loadLocalEnv();
 if (envState.exists) console.log('✅ .env.local — carregado sem exibir valores');
 else warnings.push('.env.local ainda não existe. Execute npm run setup; o painel cria o arquivo privado para você.');
 
@@ -92,13 +97,10 @@ if (!bunnyFyEnabled) {
   console.log('ℹ️ BunnyFy — desativada');
 } else {
   console.log(`✅ BunnyFy — habilitada; ${activeModes.length} capacidade(s) ativa(s)`);
-  console.log(`✅ Credencial BunnyFy — ${secretState(process.env.BUNNYFY_API_TOKEN)}`);
+  console.log(`✅ Acesso BunnyFy — ${process.env.BUNNYFY_API_TOKEN ? secretState(process.env.BUNNYFY_API_TOKEN) : 'automático; franquia gratuita da instância'}`);
 }
 
 for (const key of activeModes) console.log(`  • ${key}=${String(process.env[key]).trim().toLowerCase()}`);
-console.log(`ℹ️ NVIDIA direta — ${secretState(process.env.NVIDIA_API_KEY)}`);
-console.log(`ℹ️ VEX legado — ${secretState(process.env.VEX_API_KEY)}`);
-console.log(`ℹ️ Upload GitHub legado — ${secretState(process.env.UPLOAD_GITHUB_TOKEN)}`);
 
 for (const warning of warnings) console.log(`⚠️ ${warning}`);
 for (const failure of failures) console.log(`❌ ${failure}`);

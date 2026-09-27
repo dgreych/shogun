@@ -10,7 +10,7 @@ import { TavernRepository } from '../persistence/TavernRepository.js';
 import { createMatch, createTestEngine } from './testHelpers.js';
 
 async function createFixture(t) {
-  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-match-'));
+  const tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-match-'));
   t.after(() => fs.rm(tempDirectory, { recursive: true, force: true }));
   const databasePath = path.join(tempDirectory, 'tavern.sqlite');
   const testEngine = await createTestEngine();

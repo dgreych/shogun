@@ -1,4 +1,4 @@
-# Mídias de runtime da Gyomei Tavern
+# Mídias de runtime da Shogun Tavern
 
 Este diretório contém apenas arquivos usados ou reservados para o runtime. Os
 concept boards permanecem fora do projeto porque servem como referência, não

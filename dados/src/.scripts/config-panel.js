@@ -1,315 +1,44 @@
 #!/usr/bin/env node
-
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { spawnSync } from 'node:child_process';
-
-import {
-  BUNNYFY_MODE_KEYS,
-  ROOT_DIR,
-  loadEnvDocument,
-  loadInstanceConfig,
-  normalizeOwnerNumber,
-  saveEnvUpdates,
-  saveInstanceConfig,
-  secretState,
-  validateEnvUpdates,
-  validateIdentity
-} from './instanceConfigStore.js';
+import { BUNNYFY_MODE_KEYS, loadEnvDocument, loadInstanceConfig, normalizeOwnerNumber, saveEnvUpdates, saveInstanceConfig } from './instanceConfigStore.js';
+import { BUNNYFY_SERVICE_ORIGIN } from '../services/bunnyfy/instanceAccess.js';
 
 const rl = readline.createInterface({ input, output });
 
-const MODE_LABELS = Object.freeze({
-  BUNNYFY_AI_MODE: 'Assistente / IA',
-  BUNNYFY_YOUTUBE_MODE: 'YouTube',
-  BUNNYFY_IMAGES_MODE: 'Tratamento de imagens',
-  BUNNYFY_STICKERS_MODE: 'Figurinhas',
-  BUNNYFY_CANVAS_MODE: 'Cards e canvas',
-  BUNNYFY_LOGOS_MODE: 'Logos animadas',
-  BUNNYFY_TRANSCRIPTION_MODE: 'Transcrição',
-  BUNNYFY_FACEBOOK_MODE: 'Downloads do Facebook',
-  BUNNYFY_PINTEREST_MODE: 'Pinterest',
-  BUNNYFY_TIKTOK_MODE: 'Downloads do TikTok',
-  BUNNYFY_KWAI_MODE: 'Downloads do Kwai',
-  BUNNYFY_GAMES_MODE: 'Jogos servidos pela API',
-  BUNNYFY_IMAGE_GEN_MODE: 'Geração de imagem',
-  BUNNYFY_TAVERN_RENDER_MODE: 'Renderização Tavern',
-  BUNNYFY_NEXO_RENDER_MODE: 'Renderização NEXO'
-});
-
-
-function clear() {
-  if (output.isTTY) output.write('\x1Bc');
-}
-
-function title(text) {
-  output.write(`\n⛩️  ${text}\n${'─'.repeat(Math.max(18, text.length + 4))}\n`);
-}
-
-function envValue(draft, key, fallback = '') {
-  return Object.hasOwn(draft, key) ? String(draft[key] ?? '') : fallback;
-}
-
-function yes(value) {
-  return ['1', 'true', 'yes', 'sim', 's', 'on'].includes(String(value ?? '').trim().toLowerCase());
-}
-
-async function askText(label, current = '', { required = false, normalize = value => value, validate = null } = {}) {
+async function ask(label, current, validate = value => Boolean(value)) {
   while (true) {
-    const suffix = current ? ` [${current}]` : '';
-    const answer = (await rl.question(`${label}${suffix}: `)).trim();
-    const value = normalize(answer || current);
-    if (required && !String(value).trim()) {
-      output.write('  ⚠️ Este campo é obrigatório.\n');
-      continue;
-    }
-    const problem = validate?.(value);
-    if (problem) {
-      output.write(`  ⚠️ ${problem}\n`);
-      continue;
-    }
-    return value;
+    const answer = (await rl.question(`${label}${current ? ` [${current}]` : ''}: `)).trim() || current;
+    if (validate(answer)) return answer;
+    output.write('Confira o valor e tente novamente.\n');
   }
 }
 
-async function askYesNo(label, current = false) {
-  const marker = current ? 'S/n' : 's/N';
-  while (true) {
-    const answer = (await rl.question(`${label} [${marker}]: `)).trim().toLowerCase();
-    if (!answer) return current;
-    if (['s', 'sim', 'y', 'yes'].includes(answer)) return true;
-    if (['n', 'nao', 'não', 'no'].includes(answer)) return false;
-    output.write('  ⚠️ Responda s ou n.\n');
-  }
-}
-
-async function askChoice(label, choices, currentIndex = 0) {
-  output.write(`\n${label}\n`);
-  choices.forEach((choice, index) => output.write(`  ${index + 1}. ${choice}\n`));
-  while (true) {
-    const answer = (await rl.question(`Escolha [${currentIndex + 1}]: `)).trim();
-    if (!answer) return currentIndex;
-    const index = Number(answer) - 1;
-    if (Number.isInteger(index) && index >= 0 && index < choices.length) return index;
-    output.write('  ⚠️ Opção inválida.\n');
-  }
-}
-
-async function askSecret(label, current = '') {
-  output.write(`${label} [${secretState(current)}]\n`);
-  output.write('  Enter mantém • - remove • novo valor substitui: ');
-  let answer = '';
+try {
+  const config = loadInstanceConfig();
+  const existing = Object.fromEntries(loadEnvDocument().values);
+  output.write('\n🐈‍⬛ SHOGUN · CONFIGURAÇÃO\n\n');
+  config.nomebot = await ask('Nome do bot', config.nomebot || 'SHOGUN');
+  config.numerodono = normalizeOwnerNumber(await ask('Número do dono com DDI e DDD', /^\d{10,15}$/.test(normalizeOwnerNumber(config.numerodono)) ? config.numerodono : '', value => /^\d{10,15}$/.test(normalizeOwnerNumber(value))));
+  config.numerobot = normalizeOwnerNumber(await ask('Número do bot com DDI e DDD', config.numerobot || '', value => /^\d{10,15}$/.test(normalizeOwnerNumber(value))));
+  config.nomedono ||= 'Dono';
+  if (config.nomedono === 'Comandante') config.nomedono = 'Dono';
+  config.prefixo ||= '!';
+  output.write('\nChave BunnyFy: opcional. Enter mantém a chave atual ou ativa o acesso gratuito.\n');
+  let key;
   try {
     if (output.isTTY) output.write('\x1b[8m');
-    answer = await rl.question('');
-  } finally {
-    if (output.isTTY) output.write('\x1b[0m');
-    output.write('\n');
-  }
-  if (answer === '-') return '';
-  if (!answer) return current;
-  return answer.trim();
-}
-
-async function editIdentity(config, envDraft) {
-  title('Identidade da instância');
-  config.nomedono = await askText('Nome do dono principal', config.nomedono, { required: true });
-  config.numerodono = await askText('Número do dono (país + DDD + número)', config.numerodono, {
-    required: true,
-    normalize: normalizeOwnerNumber,
-    validate: value => /^\d{10,15}$/.test(value) ? null : 'Use entre 10 e 15 dígitos.'
-  });
-  config.nomebot = await askText('Nome desta instalação', config.nomebot, { required: true });
-  config.prefixo = await askText('Prefixo de comandos', config.prefixo, {
-    required: true,
-    validate: value => String(value).length === 1 ? null : 'Use exatamente um caractere.'
-  });
-
-  envDraft.DEFAULT_PERSONA = 'shogun';
-  envDraft.BOT_NAME = config.nomebot;
-}
-
-async function editBunnyFy(envDraft) {
-  title('Integração BunnyFy');
-  output.write('A BunnyFy é um serviço separado. Esta instalação recebe somente URL e credencial de consumidor.\n');
-  output.write('Chaves internas dos provedores da API não pertencem ao SHOGUN.\n\n');
-
-  const enabled = await askYesNo('Usar BunnyFy nesta instância?', yes(envValue(envDraft, 'BUNNYFY_ENABLED', 'false')));
-  envDraft.BUNNYFY_ENABLED = enabled ? 'true' : 'false';
-  if (!enabled) {
-    output.write('ℹ️ BunnyFy ficará desligada. Os modos foram preservados para uma reativação futura.\n');
-    return;
-  }
-
-  envDraft.BUNNYFY_BASE_URL = await askText('URL da BunnyFy', envValue(envDraft, 'BUNNYFY_BASE_URL'), {
-    required: true,
-    validate: value => {
-      try {
-        const url = new URL(value);
-        return ['http:', 'https:'].includes(url.protocol) ? null : 'Use uma URL http ou https.';
-      } catch {
-        return 'URL inválida.';
-      }
-    }
-  });
-  envDraft.BUNNYFY_API_TOKEN = await askSecret('Credencial BunnyFy do consumidor', envValue(envDraft, 'BUNNYFY_API_TOKEN'));
-  envDraft.BUNNYFY_ALLOW_INSECURE_HTTP = (await askYesNo(
-    'Permitir HTTP sem TLS? Use apenas em loopback/laboratório controlado',
-    yes(envValue(envDraft, 'BUNNYFY_ALLOW_INSECURE_HTTP', 'false'))
-  )) ? 'true' : 'false';
-
-  const action = await askChoice('Como deseja configurar as capacidades?', [
-    'Manter os modos atuais',
-    'Configurar cada capacidade',
-    'Desligar todas as capacidades BunnyFy'
-  ], 0);
-
-  if (action === 2) {
-    for (const key of BUNNYFY_MODE_KEYS) envDraft[key] = 'off';
-    return;
-  }
-  if (action !== 1) return;
-
-  for (const key of BUNNYFY_MODE_KEYS) {
-    const current = envValue(envDraft, key, 'off').toLowerCase();
-    const currentIndex = Math.max(0, ['off', 'primary', 'exclusive'].indexOf(current));
-    const mode = await askChoice(MODE_LABELS[key] || key, [
-      'off — não usar BunnyFy',
-      'primary — BunnyFy primeiro; fallback quando o recurso permitir',
-      'exclusive — somente BunnyFy'
-    ], currentIndex);
-    envDraft[key] = ['off', 'primary', 'exclusive'][mode];
-  }
-}
-
-async function editDirectProviders(envDraft) {
-  title('Integrações diretas e compatibilidade');
-  output.write('Essas credenciais são opcionais. Deixe em branco quando a BunnyFy assumir a capacidade.\n\n');
-  envDraft.NVIDIA_API_KEY = await askSecret('NVIDIA direta', envValue(envDraft, 'NVIDIA_API_KEY'));
-
-  const vexEnabled = await askYesNo(
-    'Usar fallback VEX legado para transcrição?',
-    Boolean(envValue(envDraft, 'VEX_API_KEY') || envValue(envDraft, 'VEX_SITE'))
-  );
-  if (vexEnabled) {
-    envDraft.VEX_SITE = await askText('URL/site VEX', envValue(envDraft, 'VEX_SITE'), { required: true });
-    envDraft.VEX_API_KEY = await askSecret('Chave VEX', envValue(envDraft, 'VEX_API_KEY'));
-  } else {
-    envDraft.VEX_SITE = '';
-    envDraft.VEX_API_KEY = '';
-  }
-
-  const uploadEnabled = await askYesNo(
-    'Usar upload GitHub legado?',
-    Boolean(envValue(envDraft, 'UPLOAD_GITHUB_TOKEN') || envValue(envDraft, 'UPLOAD_GITHUB_REPO'))
-  );
-  if (uploadEnabled) {
-    envDraft.UPLOAD_GITHUB_REPO = await askText('Repositório de upload (owner/repo)', envValue(envDraft, 'UPLOAD_GITHUB_REPO'), { required: true });
-    envDraft.UPLOAD_GITHUB_TOKEN = await askSecret('Token de upload', envValue(envDraft, 'UPLOAD_GITHUB_TOKEN'));
-  } else {
-    envDraft.UPLOAD_GITHUB_REPO = '';
-    envDraft.UPLOAD_GITHUB_TOKEN = '';
-  }
-}
-
-function showReview(config, envDraft) {
-  title('Revisão segura');
-  const identityFailures = validateIdentity(config);
-  const envFailures = validateEnvUpdates(envDraft);
-  output.write(`Dono principal: ${config.nomedono || 'não configurado'}\n`);
-  output.write(`Número do dono: ${normalizeOwnerNumber(config.numerodono) ? 'configurado' : 'não configurado'}\n`);
-  output.write(`Nome do bot: ${config.nomebot || 'não configurado'}\n`);
-  output.write(`Prefixo: ${config.prefixo || 'não configurado'}\n`);
-  output.write(`Identidade: ${'shogun'}\n`);
-  output.write(`BunnyFy: ${yes(envValue(envDraft, 'BUNNYFY_ENABLED')) ? 'ativa' : 'desativada'}\n`);
-  output.write(`Credencial BunnyFy: ${secretState(envValue(envDraft, 'BUNNYFY_API_TOKEN'))}\n`);
-  output.write(`NVIDIA direta: ${secretState(envValue(envDraft, 'NVIDIA_API_KEY'))}\n`);
-  output.write(`VEX legado: ${secretState(envValue(envDraft, 'VEX_API_KEY'))}\n`);
-  output.write(`Upload GitHub legado: ${secretState(envValue(envDraft, 'UPLOAD_GITHUB_TOKEN'))}\n`);
-
-  const activeModes = BUNNYFY_MODE_KEYS
-    .filter(key => envValue(envDraft, key, 'off') !== 'off')
-    .map(key => `${MODE_LABELS[key] || key}: ${envValue(envDraft, key, 'off')}`);
-  output.write(`Capacidades BunnyFy ativas: ${activeModes.length || 0}\n`);
-  for (const line of activeModes) output.write(`  • ${line}\n`);
-
-  const failures = [...identityFailures, ...envFailures];
-  if (failures.length) {
-    output.write('\n🚫 Pendências:\n');
-    failures.forEach(problem => output.write(`  • ${problem}\n`));
-  } else {
-    output.write('\n✅ Configuração pronta para ser salva. Nenhum segredo foi exibido.\n');
-  }
-  return failures;
-}
-
-function runPreflight() {
-  title('Diagnóstico pós-configuração');
-  const result = spawnSync(process.execPath, ['scripts/preflight-platform.mjs'], {
-    cwd: ROOT_DIR,
-    stdio: 'inherit',
-    env: process.env
-  });
-  return result.status ?? 1;
-}
-
-async function main() {
-  const config = loadInstanceConfig();
-  const envDocument = loadEnvDocument();
-  const envDraft = Object.fromEntries(envDocument.values);
-
-  clear();
-  output.write('\n╭──────────────────────────────────────────────────────────────╮\n');
-  output.write('│                SHOGUN · QUARTEL DE CONFIGURAÇÃO             │\n');
-  output.write('├──────────────────────────────────────────────────────────────┤\n');
-  output.write('│ Configure a instância sem abrir JSON ou .env manualmente.   │\n');
-  output.write('│ Segredos nunca são mostrados na revisão do painel.          │\n');
-  output.write('╰──────────────────────────────────────────────────────────────╯\n');
-
-  let dirty = false;
-  while (true) {
-    const choice = await askChoice('Painel principal', [
-      'Identidade, dono e persona',
-      'BunnyFy e capacidades',
-      'NVIDIA, VEX e integrações legadas',
-      'Revisar configuração sem revelar segredos',
-      'Salvar configuração',
-      'Salvar e executar diagnóstico',
-      'Sair sem salvar'
-    ], 0);
-
-    if (choice === 0) {
-      await editIdentity(config, envDraft);
-      dirty = true;
-    } else if (choice === 1) {
-      await editBunnyFy(envDraft);
-      dirty = true;
-    } else if (choice === 2) {
-      await editDirectProviders(envDraft);
-      dirty = true;
-    } else if (choice === 3) {
-      showReview(config, envDraft);
-    } else if (choice === 4 || choice === 5) {
-      const failures = showReview(config, envDraft);
-      if (failures.length) continue;
-      saveInstanceConfig(config);
-      saveEnvUpdates(envDraft);
-      dirty = false;
-      output.write('\n✅ Configuração salva em arquivos privados locais com permissões restritas.\n');
-      if (choice === 5) runPreflight();
-    } else {
-      if (dirty) {
-        const exit = await askYesNo('Há alterações não salvas. Sair mesmo assim?', false);
-        if (!exit) continue;
-      }
-      break;
-    }
-  }
-}
-
-main()
-  .catch(error => {
-    output.write(`\n❌ O painel não conseguiu concluir: ${error.message}\n`);
-    process.exitCode = 1;
-  })
-  .finally(() => rl.close());
+    key = (await rl.question('Chave BunnyFy (- para remover): ')).trim();
+  } finally { if (output.isTTY) output.write('\x1b[0m'); output.write('\n'); }
+  const updates = { BOT_NAME: config.nomebot, DEFAULT_PERSONA: 'shogun', BUNNYFY_ENABLED: 'true', BUNNYFY_BASE_URL: BUNNYFY_SERVICE_ORIGIN,
+    BUNNYFY_ALLOW_INSECURE_HTTP: 'true', BUNNYFY_API_TOKEN: key === '-' ? '' : key || existing.BUNNYFY_API_TOKEN || '' };
+  for (const mode of BUNNYFY_MODE_KEYS) updates[mode] = 'exclusive';
+  saveInstanceConfig(config);
+  saveEnvUpdates(updates);
+  output.write(`\nConfiguração salva. O prefixo dos comandos é ${config.prefixo}.\n`);
+  output.write('BunnyFy: conversa e modelos disponíveis; outros serviços têm 20 chamadas gratuitas por dia, sem chave paga.\n');
+  output.write(`Endereço oficial: ${BUNNYFY_SERVICE_ORIGIN}\nNão altere esse endereço. As credenciais dos provedores são gerenciadas pela BunnyFy.\n`);
+} catch (error) {
+  output.write(`\nNão foi possível concluir a configuração: ${error.message}\n`);
+  process.exitCode = 1;
+} finally { rl.close(); }

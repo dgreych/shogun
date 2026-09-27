@@ -49,7 +49,7 @@ function ctx({ transport, playerId = 'one@s.whatsapp.net', chatId = 'group-onboa
 }
 
 async function createFixture(t) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-onboarding-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-onboarding-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const databasePath = path.join(directory, 'tavern.sqlite');
   const tavern = await TavernService.create({ databasePath });

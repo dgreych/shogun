@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.dirname(__filename);
 const SRC_DIR = path.resolve(SCRIPTS_DIR, '..');
 const RUNTIME_INDEX = path.join(SRC_DIR, '.runtime-index.js');
-const RUNTIME_IA = path.join(SRC_DIR, 'funcs', 'private', '.runtime-ia.js');
+const RUNTIME_ASSISTANT = path.join(SRC_DIR, 'funcs', 'private', '.runtime-assistant.js');
 
 function replaceRequired(source, search, replacement, description) {
   if (source.includes(replacement)) return source;
@@ -67,8 +67,8 @@ function patchRuntimeIndex(source) {
 
   output = replaceRequired(
     output,
-    `    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela IA. respAssist.resp:\`, respAssist.resp);\n    }`,
-    `    } else if (respAssist?.message) {\n      console.warn(\`⚠️ [\${personality}] A IA falhou sem respostas válidas:\`, respAssist.erro || 'erro desconhecido');\n      reply(respAssist.message);\n    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela IA\`, {\n        responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,\n        responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0\n      });\n    }`,
+    `    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa. respAssist.resp:\`, respAssist.resp);\n    }`,
+    `    } else if (respAssist?.message) {\n      console.warn(\`⚠️ [\${personality}] A conversa falhou sem respostas válidas:\`, respAssist.erro || 'erro desconhecido');\n      reply(respAssist.message);\n    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa\`, {\n        responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,\n        responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0\n      });\n    }`,
     'resposta visível quando a NVIDIA falhar'
   );
 
@@ -91,7 +91,7 @@ case 'd': {
     }
 
     const participantIsBot = participant
-      ? [nazu.user?.id, nazu.user?.lid, botNumber, botNumberLid]
+      ? [socket.user?.id, socket.user?.lid, botNumber, botNumberLid]
         .filter(Boolean)
         .some(botId => idsMatch(botId, participant))
       : false;
@@ -108,7 +108,7 @@ case 'd': {
       };
       if (participant && !participantIsBot) deleteKey.participant = participant;
 
-      await nazu.sendMessage(from, { delete: deleteKey });
+      await socket.sendMessage(from, { delete: deleteKey });
     } catch (error) {
       console.error('[DELETE] Falha ao apagar mensagem:', {
         message: error.message,
@@ -125,36 +125,36 @@ case 'd': {
   return output;
 }
 
-function patchRuntimeIa(source) {
+function patchRuntimeAssistant(source) {
   let output = source;
 
   output = output.replace(`import axios from 'axios';\n`, '');
 
   if (output.includes('requestNvidiaChat') || output.includes('resolveEmbeddedNvidiaKey') || output.includes('getNvidiaApiKey')) {
-    throw new Error('Transporte NVIDIA direto proibido no runtime de IA; use BunnyFy.');
+    throw new Error('Transporte NVIDIA direto proibido no runtime de conversa; use BunnyFy.');
   }
 
-  if (!output.includes('createBunnyFyAiClient')) {
-    throw new Error('Runtime de IA não usa BunnyFy como gateway obrigatório.');
+  if (!output.includes('createBunnyFyConversationClient')) {
+    throw new Error('Runtime de conversa não usa BunnyFy como gateway obrigatório.');
   }
 
-  output = output.replaceAll('[NVIDIA] Erro na assistente', '[BUNNYFY_AI] Erro na assistente');
-  output = output.replaceAll('Erro na API NVIDIA', 'Erro no gateway BunnyFy AI');
-  output = output.replaceAll('NVIDIA_REQUEST_FAILED', 'BUNNYFY_AI_FAILED');
+  output = output.replaceAll('[NVIDIA] Erro na assistente', '[BUNNYFY_CONVERSATION] Erro na assistente');
+  output = output.replaceAll('Erro na API NVIDIA', 'Erro no gateway BunnyFy conversa');
+  output = output.replaceAll('NVIDIA_REQUEST_FAILED', 'BUNNYFY_CONVERSATION_FAILED');
 
   return output;
 }
 
 export function applyCriticalRuntimeFixes() {
-  if (!fs.existsSync(RUNTIME_INDEX) || !fs.existsSync(RUNTIME_IA)) {
+  if (!fs.existsSync(RUNTIME_INDEX) || !fs.existsSync(RUNTIME_ASSISTANT)) {
     throw new Error('Os arquivos runtime ainda não foram gerados. Execute prepareRuntimeSources e finalizeShogunRuntime primeiro.');
   }
 
   const runtimeIndex = patchRuntimeIndex(fs.readFileSync(RUNTIME_INDEX, 'utf8'));
-  const runtimeIa = patchRuntimeIa(fs.readFileSync(RUNTIME_IA, 'utf8'));
+  const runtimeAssistant = patchRuntimeAssistant(fs.readFileSync(RUNTIME_ASSISTANT, 'utf8'));
 
   fs.writeFileSync(RUNTIME_INDEX, runtimeIndex);
-  fs.writeFileSync(RUNTIME_IA, runtimeIa);
+  fs.writeFileSync(RUNTIME_ASSISTANT, runtimeAssistant);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {

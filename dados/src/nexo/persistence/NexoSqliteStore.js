@@ -203,7 +203,7 @@ class NexoSqliteStore {
 
     try {
       await fs.writeFile(temporaryPath, bytes, { mode: 0o600 });
-      const handle = await fs.open(temporaryPath, 'r');
+      const handle = await fs.open(temporaryPath, 'r+');
       try {
         await handle.sync();
       } finally {

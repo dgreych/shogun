@@ -42,9 +42,9 @@ const sections = [
         {"command":"inv"},
     ] },
     { title: "REPUTAÇÃO & DENÚNCIAS", entries: [
-        {"command":"rep","arguments":"+ @user"},
-        {"command":"rep","description":"@user"},
-        {"command":"rep","arguments":"@user"},
+        {"command":"repbn","arguments":"+ @user"},
+        {"command":"repbn","arguments":"- @user"},
+        {"command":"repbn","arguments":"@user"},
         {"command":"toprep"},
         {"command":"denunciar","arguments":"@user <motivo>"},
         {"command":"denuncias"},

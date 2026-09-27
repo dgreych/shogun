@@ -15,7 +15,7 @@ function sameId(first, second) {
 }
 
 function fixture(seed = {}, overrides = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-admin-native-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-admin-native-'));
   const groupFile = path.join(root, 'group.json');
   const initial = { ...seed };
   fs.writeFileSync(groupFile, JSON.stringify(initial));

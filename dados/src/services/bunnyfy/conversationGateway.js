@@ -1,10 +1,11 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
 import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
+import { automaticInstanceToken } from './instanceAccess.js';
 import { getConfig } from '../../utils/shogunStore.js';
 import { DEFAULT_NVIDIA_MODEL, isKnownNvidiaModel, requestNvidiaChat } from '../../utils/nvidiaApi.js';
 
-const AI_MODES = new Set(['off', 'primary', 'exclusive']);
+const CONVERSATION_MODES = new Set(['off', 'primary', 'exclusive']);
 const DIRECT_FALLBACK_CODES = new Set([
   'BUNNYFY_BAD_RESPONSE',
   'BUNNYFY_NETWORK_ERROR',
@@ -23,16 +24,16 @@ function isNvidiaIsolated(env = resolveBunnyFyRuntimeEnv()) {
   return ['true', '1'].includes(String(env.BUNNYFY_NVIDIA_ISOLATED || '').trim().toLowerCase());
 }
 
-function resolveBunnyFyAiMode(env = resolveBunnyFyRuntimeEnv()) {
+function resolveBunnyFyConversationMode(env = resolveBunnyFyRuntimeEnv()) {
   if (!['true', '1'].includes(String(env.BUNNYFY_ENABLED || '').trim().toLowerCase())) {
     return 'off';
   }
-  const mode = String(env.BUNNYFY_AI_MODE || 'off').trim().toLowerCase();
-  if (!AI_MODES.has(mode)) throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
+  const mode = String(env.BUNNYFY_CONVERSATION_MODE || 'off').trim().toLowerCase();
+  if (!CONVERSATION_MODES.has(mode)) throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
   return mode;
 }
 
-function shouldFallbackDirectAi(error) {
+function shouldFallbackDirectConversation(error) {
   const status = Number(error?.status);
   if (Number.isInteger(status) && status >= 500) return true;
   return DIRECT_FALLBACK_CODES.has(error?.code);
@@ -148,7 +149,7 @@ function directResultToCanonical(result) {
 
 async function createDirectCompletion(messages, options, env, directRequest = requestNvidiaChat) {
   const credentials = directCredentials(env);
-  const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
+  const configuredTimeout = Number(env.BUNNYFY_CONVERSATION_TIMEOUT_MS);
   const result = await directRequest({
     apiKey: credentials.apiKey,
     model: options?.model || credentials.model,
@@ -168,9 +169,9 @@ function bunnyFyManagedOptions(options = {}) {
     : managedOptions;
 }
 
-function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = {}) {
-  const configuredTimeout = Number(env.BUNNYFY_AI_TIMEOUT_MS);
-  const initialMode = resolveBunnyFyAiMode(env);
+function createBunnyFyConversationClient(env = resolveBunnyFyRuntimeEnv(), dependencies = {}) {
+  const configuredTimeout = Number(env.BUNNYFY_CONVERSATION_TIMEOUT_MS);
+  const initialMode = resolveBunnyFyConversationMode(env);
   const initialIsolation = isNvidiaIsolated(env);
   let bunnyFyClient = dependencies.bunnyFyClient || null;
   const directRequest = dependencies.directRequest || requestNvidiaChat;
@@ -179,6 +180,7 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
     return new BunnyFyClient({
       baseUrl: env.BUNNYFY_BASE_URL,
       token: env.BUNNYFY_API_TOKEN,
+      tokenProvider: automaticInstanceToken,
       allowInsecureHttp: ['true', '1'].includes(
         String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
       ),
@@ -188,8 +190,8 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
     });
   }
 
-  // A quarentena de NVIDIA é intencionalmente anterior aos modos de IA.
-  // Ela impede tanto BunnyFy-AI quanto o fallback NVIDIA direto, sem alterar
+  // A quarentena de NVIDIA é intencionalmente anterior aos modos de conversa.
+  // Ela impede tanto BunnyFy-conversa quanto o fallback NVIDIA direto, sem alterar
   // BUNNYFY_ENABLED nem os modos independentes de imagens, stickers, canvas,
   // logos, jogos e demais capacidades.
   if (!initialIsolation && initialMode !== 'off' && !bunnyFyClient) bunnyFyClient = buildBunnyFyClient();
@@ -209,7 +211,7 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
         });
       }
 
-      const mode = resolveBunnyFyAiMode(env);
+      const mode = resolveBunnyFyConversationMode(env);
       if (mode === 'off') {
         return createDirectCompletion(messages, options, env, directRequest);
       }
@@ -221,8 +223,8 @@ function createBunnyFyAiClient(env = resolveBunnyFyRuntimeEnv(), dependencies = 
       try {
         return await getBunnyFyClient().createChatCompletion(messages, managedOptions);
       } catch (error) {
-        if (mode !== 'primary' || !shouldFallbackDirectAi(error)) throw error;
-        console.warn('[BUNNYFY_AI] Falha transitória na BunnyFy; usando fallback NVIDIA direto.', {
+        if (mode !== 'primary' || !shouldFallbackDirectConversation(error)) throw error;
+        console.warn('[BUNNYFY_CONVERSATION] Falha transitória na BunnyFy; usando fallback NVIDIA direto.', {
           code: error?.code,
           status: error?.status
         });
@@ -255,11 +257,11 @@ export {
   buildBunnyFyAccessMessage,
   buildBoundedChatMessages,
   bunnyFyManagedOptions,
-  createBunnyFyAiClient,
+  createBunnyFyConversationClient,
   isBunnyFyAccessError,
   isNvidiaIsolated,
   resolveBunnyFyAccountUrl,
-  resolveBunnyFyAiMode,
-  shouldFallbackDirectAi,
+  resolveBunnyFyConversationMode,
+  shouldFallbackDirectConversation,
   toLegacyChatResponse
 };

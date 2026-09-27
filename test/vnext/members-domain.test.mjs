@@ -46,7 +46,7 @@ test('Members active monta scope somente para token owned e executa handler extr
         groupPrefix: '!',
         isGroup: true,
         isGroupAdmin: true,
-        nazu: { sendMessage: async () => ({}) },
+        socket: { sendMessage: async () => ({}) },
         normalizar: (value) => String(value || '').toLowerCase(),
         reply: async (text) => { replies.push(text); },
         sender: '5511999999999@s.whatsapp.net',

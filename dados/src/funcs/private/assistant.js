@@ -7,11 +7,11 @@ import userContextDB from '../../utils/userContextDB.js';
 import * as automacoesV9 from '../../utils/shogunRuntime.js';
 import {
   buildBoundedChatMessages,
-  createBunnyFyAiClient,
+  createBunnyFyConversationClient,
   toLegacyChatResponse
 } from '../../services/bunnyfy/index.js';
 
-function getBunnyFyAiModelOverride() {
+function getBunnyFyConversationModelOverride() {
   return automacoesV9.getConfig()?.nvidia_model || undefined;
 }
 
@@ -56,10 +56,10 @@ async function makeNvidiaRequest(modelo, texto, systemPrompt = null, historico =
     history: historico,
     text: texto
   });
-  const result = await createBunnyFyAiClient().createChatCompletion(messages, {
+  const result = await createBunnyFyConversationClient().createChatCompletion(messages, {
     temperature: 0.7,
     maxOutputTokens: 2000,
-    model: modelo || getBunnyFyAiModelOverride()
+    model: modelo || getBunnyFyConversationModelOverride()
   });
   return toLegacyChatResponse(result);
 }
@@ -185,7 +185,7 @@ function extractJSON(content) {
   }
 
   // Sem resgate possível, o usuário NUNCA pode receber o payload cru: antes
-  // disso, a estrutura interna da assistente ia inteira para a conversa.
+  // disso, a estrutura interna da assistente assistant inteira para a conversa.
   console.warn('⚠️ JSON malformado da assistente e sem campo resp recuperável; payload descartado.');
   return { resp: [{ resp: 'Me perdi no meio da resposta. Pergunta de novo?' }] };
 }
@@ -443,7 +443,7 @@ function clearConversationData(maxAge = 7 * 24 * 60 * 60 * 1000) {
   });
 }
 
-async function processUserMessages(data, nazu = null, ownerNumber = null, personality = 'shogun', modoAdulto = false) {
+async function processUserMessages(data, socket = null, ownerNumber = null, personality = 'shogun', modoAdulto = false) {
   personality = 'shogun';
   try {
     const { mensagens, model } = data;
@@ -504,7 +504,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
         const systemPrompt = automacoesV9.buildAssistantSystemPrompt('shogun', '', { modoAdulto });
         // Chamada única para processamento com contexto
         const response = (await makeNvidiaRequest(
-          model || getBunnyFyAiModelOverride(),
+          model || getBunnyFyConversationModelOverride(),
           JSON.stringify(userInput),
           systemPrompt,
           historico[userId] || []
@@ -605,7 +605,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
           }
         }
       } catch (apiError) {
-        console.error('[BUNNYFY_AI] Erro na assistente:', {
+        console.error('[BUNNYFY_CONVERSATION] Erro na assistente:', {
           code: apiError.code,
           status: apiError.status,
           message: apiError.message
@@ -613,7 +613,7 @@ async function processUserMessages(data, nazu = null, ownerNumber = null, person
 
         return {
           resp: [],
-          erro: apiError.code || 'BUNNYFY_AI_FAILED',
+          erro: apiError.code || 'BUNNYFY_CONVERSATION_FAILED',
           status: apiError.status || null,
           message: apiError.userMessage || 'O Shogun não conseguiu responder agora. Tente novamente em instantes.'
         };

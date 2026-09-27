@@ -10,7 +10,7 @@ import {
   assertNexoCharacterRenderView,
   assertNexoEncounterRenderView,
   parseAnimatedLogo,
-  parseAiChat,
+  parseConversationChat,
   parseEnvelope,
   parseImageProcess,
   parseMediaUpload,
@@ -137,6 +137,7 @@ class BunnyFyClient {
   constructor({
     baseUrl,
     token,
+    tokenProvider,
     allowInsecureHttp = false,
     timeoutMs = 120_000,
     maxResponseBytes = 2 * 1024 * 1024,
@@ -147,7 +148,9 @@ class BunnyFyClient {
   }) {
     if (typeof fetchImpl !== 'function') throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
     this.baseUrl = normalizeBaseUrl(baseUrl, { allowInsecureHttp });
-    this.token = validateToken(token);
+    this.token = String(token || '').trim() ? validateToken(token) : null;
+    this.tokenProvider = tokenProvider;
+    if (!this.token && typeof tokenProvider !== 'function') throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
     this.timeoutMs = Math.max(1, Number(timeoutMs) || 120_000);
     this.maxResponseBytes = Math.max(1024, Number(maxResponseBytes) || 2 * 1024 * 1024);
     this.retries = Math.max(0, Math.min(3, Number(retries) || 0));
@@ -203,7 +206,7 @@ class BunnyFyClient {
         Accept: descriptor.mime || 'application/octet-stream',
         'X-Request-Id': requestId
       };
-      if (!signedAccess) requestHeaders.Authorization = `Bearer ${this.token}`;
+      if (!signedAccess) requestHeaders.Authorization = `Bearer ${await this.accessToken()}`;
 
       const response = await this.fetchImpl(descriptor.mediaUrl, {
         method: 'GET',
@@ -266,7 +269,7 @@ class BunnyFyClient {
       try {
         const requestHeaders = {
           Accept: 'application/json',
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${await this.accessToken()}`,
           'X-Request-Id': requestId,
           ...headers
         };
@@ -314,7 +317,7 @@ class BunnyFyClient {
             retryable: errorEnvelope?.error?.retryable,
             requestId: responseRequestId
           });
-          if (attempt < attempts && (error.retryable || TRANSIENT_STATUS.has(response.status))) {
+          if (error.code !== 'BUNNYFY_TRIAL_DAILY_LIMIT' && attempt < attempts && (error.retryable || TRANSIENT_STATUS.has(response.status))) {
             await this.sleep(attempt * 100);
             continue;
           }
@@ -330,7 +333,7 @@ class BunnyFyClient {
             retryable: envelope.error.retryable,
             requestId: responseRequestId
           });
-          if (attempt < attempts && (error.retryable || TRANSIENT_STATUS.has(response.status))) {
+          if (error.code !== 'BUNNYFY_TRIAL_DAILY_LIMIT' && attempt < attempts && (error.retryable || TRANSIENT_STATUS.has(response.status))) {
             await this.sleep(attempt * 100);
             continue;
           }
@@ -352,6 +355,18 @@ class BunnyFyClient {
       }
     }
     throw new BunnyFyError('BUNNYFY_NETWORK_ERROR', { requestId });
+  }
+
+  async accessToken() {
+    return this.token || validateToken(await this.tokenProvider(this.baseUrl));
+  }
+
+  async conversationModels() {
+    return (await this.request('/v1/conversation/models')).data;
+  }
+
+  async instanceUsage() {
+    return (await this.request('/v1/instances/usage')).data;
   }
 
   async uploadMedia(buffer, {
@@ -568,12 +583,12 @@ class BunnyFyClient {
     if (model !== undefined && (typeof model !== 'string' || !/^[A-Za-z0-9._/-]{1,200}$/.test(model))) {
       throw new BunnyFyError('BUNNYFY_BAD_REQUEST');
     }
-    const response = await this.request(BUNNYFY_ROUTES.aiChat, {
+    const response = await this.request(BUNNYFY_ROUTES.conversationChat, {
       method: 'POST',
       json: { messages, temperature, maxOutputTokens, ...(model ? { model } : {}) }
     });
     return {
-      ...parseAiChat(response.data),
+      ...parseConversationChat(response.data),
       requestId: response.requestId
     };
   }

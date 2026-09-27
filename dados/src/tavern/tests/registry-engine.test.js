@@ -33,8 +33,8 @@ test('CardRegistry rejeita carta inválida e ID duplicado', () => {
 });
 
 test('RNG produz a mesma sequência a partir da mesma seed e snapshot', () => {
-  const first = new SeededRandom('gyomei');
-  const second = new SeededRandom('gyomei');
+  const first = new SeededRandom('shogun');
+  const second = new SeededRandom('shogun');
   assert.deepEqual(
     [first.next(), first.next(), first.next()],
     [second.next(), second.next(), second.next()]

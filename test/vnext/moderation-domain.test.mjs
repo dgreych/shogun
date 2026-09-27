@@ -28,7 +28,7 @@ function removeUserFromMap(map, userId) {
 }
 
 function fixture(overrides = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-moderation-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-moderation-'));
   const groupFile = path.join(root, 'group.json');
   fs.writeFileSync(groupFile, JSON.stringify({ x9: false, mutedUsers: {}, mutedUsers2: {} }));
 

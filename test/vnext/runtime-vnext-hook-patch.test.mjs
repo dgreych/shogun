@@ -11,7 +11,7 @@ import { buildPreparedRuntimeCommandSource } from '../../scripts/analyze-runtime
 
 const IMPORT_ANCHOR = "import { MessageReplayGuard, createMessageReplayKey } from './security/MessageReplayGuard.js';";
 const IMPORT_LINE = "import { dispatchLegacySwitchVNext } from '../../dist-vnext/runtime/legacy-switch-hook.js';";
-const CIRCUIT_DECLARATION = 'let __gyomeiVNextContextCircuitOpen = false;';
+const CIRCUIT_DECLARATION = 'let __shogunVNextContextCircuitOpen = false;';
 const MARKER = '// ===== VNEXT OWNERSHIP SEAM: PRE-SWITCH =====';
 const BRIDGE_MARKER = '// ===== VNEXT MACROTRANCHE LEGACY BRIDGE =====';
 const SWITCH = '    switch (command) {';
@@ -46,11 +46,11 @@ test('patch insere seam exatamente uma vez depois do bridge e antes do switch pr
   assert.ok(membersScopeIndex > 0, 'scope lazy Members precisa existir no seam');
   const rootContext = between.slice(0, membersScopeIndex);
 
-  assert.match(between, /if \(isCmd && command && !__gyomeiVNextContextCircuitOpen\)/);
+  assert.match(between, /if \(isCmd && command && !__shogunVNextContextCircuitOpen\)/);
   assert.match(between, /let __vnextContext;/);
   assert.match(between, /try \{\s*__vnextContext = \{/);
   assert.match(between, /__vnextContextError instanceof ReferenceError/);
-  assert.match(between, /__gyomeiVNextContextCircuitOpen = true/);
+  assert.match(between, /__shogunVNextContextCircuitOpen = true/);
   assert.match(between, /if \(__vnextContext\) \{\s*const __vnextOwned = await dispatchLegacySwitchVNext\(command,/);
   assert.match(between, /if \(__vnextOwned\) return;/);
   assert.match(rootContext, /prefix:\s*groupPrefix,/);
@@ -78,7 +78,7 @@ test('patch insere seam exatamente uma vez depois do bridge e antes do switch pr
   assert.match(rootContext, /optimizer,/);
   assert.match(rootContext, /parseReminderInput,/);
   assert.match(rootContext, /tzFormat,/);
-  assert.match(rootContext, /ai:\s*ia,/);
+  assert.match(rootContext, /ai:\s*assistant,/);
   assert.equal(/\n\s*ai,\s*\n/.test(rootContext), false);
   assert.match(between, /buildMembersScope:\s*\(\)\s*=>\s*\(\{/);
   assert.match(between, /\n\s*q,\s*\n/);
@@ -86,7 +86,7 @@ test('patch insere seam exatamente uma vez depois do bridge e antes do switch pr
   assert.match(between, /get i6\(\) \{ return i6; \}/);
   assert.match(between, /set i6\(__value\) \{ i6 = __value; \}/);
   assert.match(between, /isMacrotrancheOwnedCommand:/);
-  assert.match(between, /executeLegacyOwnedCommand:\s*__gyomeiExecuteMacrotrancheLegacy/);
+  assert.match(between, /executeLegacyOwnedCommand:\s*__shogunExecuteMacrotrancheLegacy/);
 });
 
 test('dependências do contexto e do bridge existem antes do seam', () => {
@@ -96,7 +96,7 @@ test('dependências do contexto e do bridge existem antes do seam', () => {
   const beforeSwitch = source.slice(0, switchIndex);
 
   const requiredBindings = [
-    [/import\s+\*\s+as\s+ia\s+from\s+'\.\/funcs\/private\/(?:\.runtime-)?ia\.js';/, 'ia'],
+    [/import\s+\*\s+as\s+assistant\s+from\s+'\.\/funcs\/private\/(?:\.runtime-)?assistant\.js';/, 'assistant'],
     [/const\s+from\s*=/, 'from'],
     [/const\s+isGroup\s*=/, 'isGroup'],
     [/let\s+sender\s*;/, 'sender'],
@@ -115,8 +115,8 @@ test('dependências do contexto e do bridge existem antes do seam', () => {
     [/\boptimizer\b/, 'optimizer'],
     [/\bparseReminderInput\b/, 'parseReminderInput'],
     [/\btzFormat\b/, 'tzFormat'],
-    [/const\s+__gyomeiMacrotrancheOwnedCommands\s*=\s*new Set/, '__gyomeiMacrotrancheOwnedCommands'],
-    [/const\s+__gyomeiExecuteMacrotrancheLegacy\s*=\s*async/, '__gyomeiExecuteMacrotrancheLegacy'],
+    [/const\s+__shogunMacrotrancheOwnedCommands\s*=\s*new Set/, '__shogunMacrotrancheOwnedCommands'],
+    [/const\s+__shogunExecuteMacrotrancheLegacy\s*=\s*async/, '__shogunExecuteMacrotrancheLegacy'],
   ];
 
   for (const [pattern, binding] of requiredBindings) {
@@ -142,8 +142,8 @@ async function shogunExec(command) {
   const isGroup = false, isOwner = false, isSubOwner = false, isRealGroupAdmin = false, isBotAdmin = false;
   const groupMetadata = null, automacoesV9 = { isPrimaryOwner: () => false }, sender = 'membro@lid';
   const numerodono = '', lidowner = '', info = { key: { fromMe: false } }, groupData = {}, aliases = [], q = '';
-  const __gyomeiMacrotrancheOwnedCommands = new Set(['calc']);
-  const __gyomeiExecuteMacrotrancheLegacy = async () => {};
+  const __shogunMacrotrancheOwnedCommands = new Set(['calc']);
+  const __shogunExecuteMacrotrancheLegacy = async () => {};
     switch (command) {
       case 'calc': return 'legacy-ok';
       default: return 'legacy-default';
@@ -161,7 +161,7 @@ async function shogunExec(command) {
     );
 
   const buildSyntheticRuntime = new Function(
-    `${patched}\nreturn { run: shogunExec, calls: () => __vnextDispatchCalls, circuit: () => __gyomeiVNextContextCircuitOpen };`,
+    `${patched}\nreturn { run: shogunExec, calls: () => __vnextDispatchCalls, circuit: () => __shogunVNextContextCircuitOpen };`,
   );
   const runtime = buildSyntheticRuntime();
   const originalConsoleError = console.error;
@@ -222,7 +222,7 @@ test('patch recusa ambiguidade do switch principal em vez de injetar no lugar er
 
 test('source preparado resultante continua sintaticamente válido para Node ESM', () => {
   const patched = patchVNextOwnershipHook(buildRuntimeSource());
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gyomei-vnext-hook-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-vnext-hook-'));
   const tempFile = path.join(tempDir, 'runtime-index.mjs');
   try {
     fs.writeFileSync(tempFile, patched);

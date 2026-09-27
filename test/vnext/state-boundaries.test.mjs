@@ -30,7 +30,7 @@ for (const value of [
 for (const value of [
   'dados/src/.runtime-start.js',
   'dados/src/.runtime-index.js',
-  'dados/src/funcs/private/.runtime-ia.js',
+  'dados/src/funcs/private/.runtime-assistant.js',
 ]) {
   test(`reconhece runtime gerado: ${value}`, () => {
     assert.equal(classifyDeploymentPath(value), 'generated-runtime');

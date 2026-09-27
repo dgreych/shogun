@@ -6,7 +6,7 @@ import { renderDownloadMenu } from '../../dist-vnext/menu/download.js';
 
 const cases = [
   ['default', ['!', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Maurício']],
-  ['alternate-prefix', ['#', 'Gyomei Bot', 'Teste']],
+  ['alternate-prefix', ['#', 'Shogun Bot', 'Teste']],
   ['custom-theme', ['.', '𝖘𝖍𝖔𝖌𝖚𝖓', 'Usuário', {
     header: 'BOT=#nome#|P=#prefix#',
     menuTopBorder: '<TOP>',

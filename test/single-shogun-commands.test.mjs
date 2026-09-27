@@ -4,7 +4,7 @@ import test from 'node:test';
 import { buildPreparedRuntimeCommandSource } from '../scripts/analyze-runtime-command-surface.mjs';
 
 const source = buildPreparedRuntimeCommandSource();
-const retired = ['change' + 'perso', 'mudar' + 'persona', 'setperfil' + 'persona', 'setmidia-' + 'profilep', 'set-' + 'personalidade', 'set' + 'personalidade', 'personalidade', 'test' + 'personalidade', 'test' + 'ia'];
+const retired = ['change' + 'perso', 'mudar' + 'persona', 'setperfil' + 'persona', 'setmidia-' + 'profilep', 'set-' + 'personalidade', 'set' + 'personalidade', 'personalidade', 'test' + 'personalidade', 'test' + 'assistant'];
 
 test('o boot não recria comandos de seleção de perfil nem seus diagnósticos', () => {
   for (const token of retired) assert.doesNotMatch(source, new RegExp(`case ['"]${token}['"]\\s*:`));

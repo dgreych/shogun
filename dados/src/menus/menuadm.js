@@ -4,7 +4,7 @@ const sections = [
     { title: "GESTÃO DE USUÁRIOS", optionKey: "adminMenuTitle", entries: [
         {"command":"ban"},
         {"command":"ban2"},
-        {"command":"bam","arguments":"(ban fake)"},
+        {"command":"bam","description":"Simular um banimento."},
         {"command":"setbammsg"},
         {"command":"promover"},
         {"command":"rebaixar"},
@@ -70,7 +70,7 @@ const sections = [
         {"command":"revokemodcmd"},
         {"command":"listmodcmds"},
     ] },
-    { title: "WHITELIST DE ANTIS", entries: [
+    { title: "EXCEÇÕES ÀS PROTEÇÕES", entries: [
         {"command":"wladd"},
         {"command":"wl.remove"},
         {"command":"wl.lista"},
@@ -110,7 +110,7 @@ const sections = [
         {"command":"rmfotosaiu"},
         {"command":"setprefix"},
     ] },
-    { title: "AUTO-RESPOSTAS", entries: [
+    { title: "RESPOSTAS AUTOMÁTICAS", entries: [
         {"command":"addautoadm"},
         {"command":"addautoadmidia"},
         {"command":"listautoadm"},
@@ -118,7 +118,7 @@ const sections = [
         {"command":"autorespostas"},
         {"command":"autorepo"},
     ] },
-    { title: "MODO & ATIVAÇÕES", entries: [
+    { title: "MODOS & ATIVAÇÕES", entries: [
         {"command":"autodl"},
         {"command":"minmessage"},
         {"command":"assistente"},

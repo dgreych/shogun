@@ -75,6 +75,7 @@ function fixture(options = {}) {
           shogun: { header: 'SHOGUN-THEME' },
         },
         highlightMenuCommands: (text, prefix) => `HIGHLIGHT(${prefix}):${text}`,
+        resolveCommandMedia: options.resolveCommandMedia,
       };
     },
     fileSystem: {
@@ -147,7 +148,16 @@ test('preserva áudio antes da mídia e prioridade da mídia por categoria', asy
   assert.equal(fx.rendererCalls[0].args.length, 4);
 });
 
-test('personalização antiga mantém foto e modo lite sem selecionar outro desenho', async () => {
+test('nova arte da categoria tem prioridade sobre a foto antiga do grupo', async () => {
+  const fx = fixture({ files: { '/brand/downloads.jpg': 'CAT-DOWNLOADS', '/custom/group.jpg': 'OLD-PHOTO' },
+    groupCustomizationEnabled: true, groupCustomization: { customPhoto: '/custom/group.jpg' },
+    resolveCommandMedia: command => command === 'menudown' ? { path: '/brand/downloads.jpg', brand: true } : null });
+  await fx.adapter.present(request('menudown', fx.context));
+  assert.deepEqual(fx.calls[0].content.image, Buffer.from('CAT-DOWNLOADS'));
+  assert.equal(fx.calls[0].content.video, undefined);
+});
+
+test('personalização antiga mantém foto e modo lite quando a nova arte está ausente', async () => {
   const fx = fixture({
     files: {
       '/custom/group.jpg': 'GROUP-PHOTO',

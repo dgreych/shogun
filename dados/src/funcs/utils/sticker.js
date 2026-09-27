@@ -180,7 +180,7 @@ async function resolveInputToBuffer(input) {
 /**
  * Envia sticker
  */
-const sendSticker = async (nazu, jid, {
+const sendSticker = async (socket, jid, {
   sticker: input,
   type = "image",
   packname = "",
@@ -201,7 +201,7 @@ const sendSticker = async (nazu, jid, {
     webpBuffer = await writeExif(webpBuffer, { packname, author });
   }
 
-  await nazu.sendMessage(jid, { sticker: webpBuffer }, { quoted });
+  await socket.sendMessage(jid, { sticker: webpBuffer }, { quoted });
   return webpBuffer;
 };
 

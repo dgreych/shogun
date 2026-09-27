@@ -7,7 +7,7 @@ const sections = [
     { title: "CAPTURAS & VISUALIZAÇÃO", optionKey: "captureMenuTitle", entries: [
         {"command":"ssweb"},
         {"command":"qrcode","arguments":"<texto>"},
-        {"command":"lerqr","arguments":"(responda imagem)"},
+        {"command":"lerqr","description":"Responda à imagem com o código."},
     ] },
     { title: "CALCULADORA", entries: [
         {"command":"calc","arguments":"<expressão>"},

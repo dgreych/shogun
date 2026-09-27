@@ -29,6 +29,11 @@ const sections = [
         {"command":"setheader"},
         {"command":"resetdesign"},
     ] },
+    { title: "PROMOÇÕES", entries: [
+        { command: "defmsgpromo", arguments: "<mensagem>", description: "Salva um texto e recebe um ID." },
+        { command: "listmsgpromo", description: "Consulta textos e progresso do envio." },
+        { command: "sendmsgpromo", arguments: "<id>", description: "Agenda o envio gradual aos grupos." },
+    ] },
     { title: "SISTEMA & AUTOMAÇÃO", optionKey: "automationMenuTitle", entries: [
         {"command":"addauto"},
         {"command":"addautomidia"},
@@ -95,7 +100,7 @@ const sections = [
         {"command":"removesubbot"},
         {"command":"listarsubbots"},
         {"command":"conectarsubbot"},
-    ], notes: ["🔑 Sub-bot use: #prefix#gerarcodigo"] },
+    ], notes: ["No sub-bot, use #prefix#gerarcodigo."] },
     { title: "CONTROLE & MANUTENÇÃO", optionKey: "botControlMenuTitle", entries: [
         {"command":"atualizar"},
         {"command":"reiniciar"},
@@ -130,14 +135,14 @@ const sections = [
         {"command":"nuke"},
         {"command":"msgprefix"},
     ] },
-    { title: "Transmissão em Grupos:", entries: [
+    { title: "TRANSMISSÃO EM GRUPOS", entries: [
         {"command":"tm"},
     ] },
-    { title: "Transmissão Privada:", entries: [
+    { title: "TRANSMISSÃO NO PRIVADO", entries: [
         {"command":"tm2"},
         {"command":"statustm"},
-    ], notes: ["📝 Usuários inscrevem com:","#prefix#inscrevertm (no PV)"] },
-    { title: "Divulgação do Dono (novo):", entries: [
+    ], notes: ["Inscrição pelo privado: #prefix#inscrevertm."] },
+    { title: "DIVULGAÇÃO DO DONO", entries: [
         {"command":"divdono","arguments":"add"},
         {"command":"divdono","arguments":"rem"},
         {"command":"divdono","arguments":"list"},

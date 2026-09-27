@@ -35,7 +35,7 @@ export function selectMenuEntries(entries, accessFor) {
 
 export function renderShogunMenu({ title, prefix, userName, sections, accessFor }) {
     const lines = [
-        '╭━━━─〔 ⛩ SHOGUN 〕─━━━',
+        '╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━',
         '┃',
         `┃  *${plainText(title)}*`,
         `┃  Usuário › ${sanitizeMenuDisplayName(userName)}`,

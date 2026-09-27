@@ -67,7 +67,7 @@ class FastHandRenderer {
 let contextSequence = 0;
 
 async function createFixture(t, { mutableClock = false } = {}) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-phase-b-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-phase-b-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const databasePath = path.join(directory, 'tavern.sqlite');
   let timestamp = Date.parse('2026-08-09T12:00:00.000Z');
@@ -146,7 +146,7 @@ test('tutorial e referência de comandos ficam acessíveis antes da ativação',
     args: ['tutorial'],
     messageId: 'tutorial'
   }));
-  assert.match(transport.groupTexts.at(-1).text, /TUTORIAL DA GYOMEI TAVERN/);
+  assert.match(transport.groupTexts.at(-1).text, /TUTORIAL DA SHOGUN TAVERN/);
   assert.match(transport.groupTexts.at(-1).text, /!mulligan manter/);
   assert.match(transport.groupTexts.at(-1).text, /mão nunca é publicada/i);
 
@@ -155,7 +155,7 @@ test('tutorial e referência de comandos ficam acessíveis antes da ativação',
     args: ['comandos'],
     messageId: 'commands'
   }));
-  assert.match(transport.groupTexts.at(-1).text, /COMANDOS DA GYOMEI TAVERN/);
+  assert.match(transport.groupTexts.at(-1).text, /COMANDOS DA SHOGUN TAVERN/);
   assert.match(transport.groupTexts.at(-1).text, /!atacar <criatura> <alvo\|heroi>/);
   assert.match(transport.groupTexts.at(-1).text, /!tavern tutorial/);
 
@@ -164,7 +164,7 @@ test('tutorial e referência de comandos ficam acessíveis antes da ativação',
     args: ['ajuda'],
     messageId: 'help'
   }));
-  assert.match(transport.groupTexts.at(-1).text, /COMANDOS DA GYOMEI TAVERN/);
+  assert.match(transport.groupTexts.at(-1).text, /COMANDOS DA SHOGUN TAVERN/);
   assert.equal(await fixture.game.getGroup('group-one@g.us'), null);
 });
 

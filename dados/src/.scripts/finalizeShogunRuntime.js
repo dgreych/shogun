@@ -6,7 +6,7 @@ import { buildMacrotrancheLegacyBridge } from './vnextMacrotrancheBridge.js';
 const __filename = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.dirname(__filename);
 const RUNTIME_INDEX = path.resolve(SCRIPTS_DIR, '..', '.runtime-index.js');
-const RUNTIME_IA = path.resolve(SCRIPTS_DIR, '..', 'funcs', 'private', '.runtime-ia.js');
+const RUNTIME_ASSISTANT = path.resolve(SCRIPTS_DIR, '..', 'funcs', 'private', '.runtime-assistant.js');
 const RUNTIME_START = path.join(SCRIPTS_DIR, '.runtime-start.js');
 const MEMBERS_SCOPE_MANIFEST = path.join(SCRIPTS_DIR, 'vnextMembersDomainScope.json');
 
@@ -137,7 +137,7 @@ function buildMembersScopeFactorySource() {
  *
  * O source versionado continua intacto. A alteração é aplicada somente ao
  * .runtime-index.js gerado no boot, pela mesma camada de patches já usada pelo
- * Gyomei. O gate estrutural exige exatamente um anchor para evitar injeção em
+ * Shogun. O gate estrutural exige exatamente um anchor para evitar injeção em
  * switch interno ou drift silencioso do monólito.
  *
  * A montagem do contexto é deliberadamente separada do dispatch. Se um binding
@@ -156,7 +156,7 @@ function buildMembersScopeFactorySource() {
 export function patchVNextOwnershipHook(source) {
   const importAnchor = "import { MessageReplayGuard, createMessageReplayKey } from './security/MessageReplayGuard.js';";
   const hookImport = "import { dispatchLegacySwitchVNext } from '../../dist-vnext/runtime/legacy-switch-hook.js';";
-  const circuitDeclaration = 'let __gyomeiVNextContextCircuitOpen = false;';
+  const circuitDeclaration = 'let __shogunVNextContextCircuitOpen = false;';
   const switchAnchor = '    switch (command) {';
   const hookMarker = '    // ===== VNEXT OWNERSHIP SEAM: PRE-SWITCH =====';
 
@@ -211,11 +211,11 @@ export function patchVNextOwnershipHook(source) {
         return;
       }
     }
-    if (isCmd && command && !__gyomeiVNextContextCircuitOpen) {
+    if (isCmd && command && !__shogunVNextContextCircuitOpen) {
       let __vnextContext;
       try {
         __vnextContext = {
-          socket: nazu,
+          socket: socket,
           message: info,
           mediaPath: store,
           messagesCache,
@@ -246,7 +246,7 @@ export function patchVNextOwnershipHook(source) {
           groupData,
           quotedContextInfo: getQuotedContextInfo(info.message),
           quotedParticipant: menc_prt,
-          botIds: [nazu.user?.id, nazu.user?.lid, botNumber, botNumberLid].filter(Boolean),
+          botIds: [socket.user?.id, socket.user?.lid, botNumber, botNumberLid].filter(Boolean),
           identitiesMatch: idsMatch,
           validateModerationTarget,
           removeUserFromMap,
@@ -263,9 +263,9 @@ export function patchVNextOwnershipHook(source) {
           downloadContentFromMessage,
           messageType: type,
           dictionary: Dicionary,
-          ai: ia,
-          defaultAiModel: DEFAULT_NVIDIA_MODEL,
-          formatAIResponse,
+          ai: assistant,
+          defaultConversationModel: DEFAULT_NVIDIA_MODEL,
+          formatConversationResponse,
           getFileBuffer,
           uploadMedia: upload,
           isQuotedImage,
@@ -273,12 +273,12 @@ export function patchVNextOwnershipHook(source) {
           isQuotedDocument,
           isQuotedAudio,
 ${membersScopeFactory}
-          isMacrotrancheOwnedCommand: (__command) => __gyomeiMacrotrancheOwnedCommands.has(String(__command || '').trim().toLowerCase()),
-          executeLegacyOwnedCommand: __gyomeiExecuteMacrotrancheLegacy
+          isMacrotrancheOwnedCommand: (__command) => __shogunMacrotrancheOwnedCommands.has(String(__command || '').trim().toLowerCase()),
+          executeLegacyOwnedCommand: __shogunExecuteMacrotrancheLegacy
         };
       } catch (__vnextContextError) {
         const __vnextStructuralFailure = __vnextContextError instanceof ReferenceError;
-        if (__vnextStructuralFailure) __gyomeiVNextContextCircuitOpen = true;
+        if (__vnextStructuralFailure) __shogunVNextContextCircuitOpen = true;
         console.error(
           __vnextStructuralFailure
             ? '[VNEXT] Falha estrutural ao montar contexto; circuit breaker aberto e switch legado preservado.'
@@ -307,7 +307,7 @@ ${switchAnchor}`;
 
 export function finalizeShogunRuntime() {
   let runtimeIndex = fs.readFileSync(RUNTIME_INDEX, 'utf8');
-  let runtimeIa = fs.readFileSync(RUNTIME_IA, 'utf8');
+  let runtimeAssistant = fs.readFileSync(RUNTIME_ASSISTANT, 'utf8');
   let runtimeStart = fs.readFileSync(RUNTIME_START, 'utf8');
 
   // Os patches históricos precisam ser aplicados antes da fotografia usada
@@ -350,12 +350,12 @@ export function finalizeShogunRuntime() {
     'cartão de comandos similares'
   );
 
-  runtimeIa = assertNoDirectNvidiaTransport(runtimeIa);
+  runtimeAssistant = assertNoDirectNvidiaTransport(runtimeAssistant);
 
   runtimeIndex = buildMacrotrancheLegacyBridge(runtimeIndex);
   runtimeIndex = patchVNextOwnershipHook(runtimeIndex);
 
   fs.writeFileSync(RUNTIME_INDEX, runtimeIndex);
-  fs.writeFileSync(RUNTIME_IA, runtimeIa);
+  fs.writeFileSync(RUNTIME_ASSISTANT, runtimeAssistant);
   fs.writeFileSync(RUNTIME_START, runtimeStart);
 }

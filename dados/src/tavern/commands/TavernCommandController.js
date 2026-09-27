@@ -113,7 +113,7 @@ function formatHandCaption(state, playerId, prefix) {
 }
 
 function buildCommandReference(prefix) {
-  return `📜 *COMANDOS DA GYOMEI TAVERN*\n\n` +
+  return `📜 *COMANDOS DA SHOGUN TAVERN*\n\n` +
     `*Administração*\n` +
     `${prefix}tavern on|off|status\n` +
     `${prefix}tavern config\n` +
@@ -130,7 +130,7 @@ function buildCommandReference(prefix) {
 }
 
 function buildTutorial(prefix) {
-  return `📚 *TUTORIAL DA GYOMEI TAVERN*\n\n` +
+  return `📚 *TUTORIAL DA SHOGUN TAVERN*\n\n` +
     `*1. Ativação*\n` +
     `Um administrador usa ${prefix}tavern on no grupo.\n\n` +
     `*2. Desafio*\n` +
@@ -280,8 +280,8 @@ class TavernCommandController {
       const group = await this.game.setGroupEnabled(chatId, operation === 'on');
       await transport.sendGroupText(
         group.enabled
-          ? `🍺 *Gyomei Tavern ativada neste grupo.*\n\nDesafie alguém com ${prefix}duelo @usuario.`
-          : '🔒 *Gyomei Tavern desativada neste grupo.*\nColeções e histórico foram preservados.'
+          ? `🍺 *Shogun Tavern ativada neste grupo.*\n\nDesafie alguém com ${prefix}duelo @usuario.`
+          : '🔒 *Shogun Tavern desativada neste grupo.*\nColeções e histórico foram preservados.'
       );
       return;
     }
@@ -323,7 +323,7 @@ class TavernCommandController {
     const activeMatches = await this.game.tavern.repository.listActiveMatches(chatId);
     const turnMode = group?.settings?.turnMode || this.game.tavern.config.defaults.turnMode;
     await transport.sendGroupText(
-      `🍺 *GYOMEI TAVERN*\n\n` +
+      `🍺 *SHOGUN TAVERN*\n\n` +
       `Estado: ${group?.enabled ? 'ativa' : 'desativada'}\n` +
       `Nível da Taverna: ${group?.tavernLevel || 1}\n` +
       `Partidas ativas: ${activeMatches.length}\n` +

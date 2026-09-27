@@ -6,7 +6,7 @@ function descriptor(input) {
  *
  * Estes cinco descritores correspondem a cinco famílias completas e contíguas
  * do switch(command) legado. São comandos de brincadeira/apresentação que
- * compartilham o mesmo comportamento e não atravessam BunnyFy, IA, NEXO ou a
+ * compartilham o mesmo comportamento e não atravessam BunnyFy, conversa, NEXO ou a
  * economia persistente. Manter as famílias inteiras evita ownership parcial.
  */
 export const FUN_COMMAND_DESCRIPTORS = Object.freeze([

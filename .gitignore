@@ -48,6 +48,7 @@ dados/src/funcs/private/.runtime-*.js
 dados/database/dono/automacoes-v9.json
 dados/database/dono/deleted-messages-v9.json
 dados/database/dono/command-media/
+dados/database/auth/
 
 # Logs, caches, temporários e dumps.
 *.log
@@ -75,3 +76,4 @@ Thumbs.db
 # Checkouts isolados de trabalho.
 .worktrees/
 .checkpoint-state/
+.superpowers/

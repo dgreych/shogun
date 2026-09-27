@@ -13,7 +13,7 @@ async function isolatedCore(t) {
   });
   fs.mkdirSync(path.join(root, 'src/utils'), { recursive: true });
   fs.mkdirSync(path.join(root, 'src/menus'), { recursive: true });
-  for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js']) {
+  for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js', 'runtimeIdentity.js']) {
     fs.copyFileSync(path.resolve('dados/src/utils', file), path.join(root, 'src/utils', file));
   }
   fs.copyFileSync('dados/src/menus/theme.js', path.join(root, 'src/menus/theme.js'));

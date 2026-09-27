@@ -8,7 +8,7 @@ export const PRODUCTION_STATE_BOUNDARIES = Object.freeze({
 export const GENERATED_RUNTIME_BOUNDARIES = Object.freeze([
     'dados/src/.runtime-start.js',
     'dados/src/.runtime-index.js',
-    'dados/src/funcs/private/.runtime-ia.js',
+    'dados/src/funcs/private/.runtime-assistant.js',
 ]);
 export function normalizeRepositoryPath(value) {
     return value

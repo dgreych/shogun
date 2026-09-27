@@ -1,4 +1,4 @@
-// --- COMANDOS DE IA EXPANDIDOS ---
+// --- COMANDOS DE conversa EXPANDIDOS ---
 // Horóscopo, Debate, História Interativa
 import fs from 'fs';
 import path from 'path';
@@ -96,7 +96,7 @@ const generateHoroscope = async (signoInput, aiFunction, prefix = '/') => {
     if (!aiFunction) {
         return {
             success: false,
-            message: '❌ Função de IA não disponível!'
+            message: '❌ Função de conversa não disponível!'
         };
     }
     
@@ -166,7 +166,7 @@ const generateDebate = async (tema, aiFunction, prefix = '/') => {
     if (!aiFunction) {
         return {
             success: false,
-            message: '❌ Função de IA não disponível!'
+            message: '❌ Função de conversa não disponível!'
         };
     }
     
@@ -299,7 +299,7 @@ const startStory = async (groupId, genre, aiFunction, prefix = '/') => {
     }
     
     if (!aiFunction) {
-        return { success: false, message: '❌ Função de IA não disponível!' };
+        return { success: false, message: '❌ Função de conversa não disponível!' };
     }
     
     try {
@@ -348,7 +348,7 @@ const continueStory = async (groupId, choice, aiFunction) => {
     }
     
     if (!aiFunction) {
-        return { success: false, message: '❌ Função de IA não disponível!' };
+        return { success: false, message: '❌ Função de conversa não disponível!' };
     }
     
     try {

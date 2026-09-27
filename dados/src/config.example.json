@@ -1,6 +1,7 @@
 {
-  "nomedono": "Comandante",
+  "nomedono": "Dono",
   "numerodono": "55DDDNUMERO",
   "nomebot": "SHOGUN",
-  "prefixo": "!"
+  "prefixo": "!",
+  "numerobot": ""
 }

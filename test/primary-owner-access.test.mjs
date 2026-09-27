@@ -17,7 +17,7 @@ test('donos principais privados recebem acesso original sem promover donos adici
   fs.mkdirSync(path.join(source, 'utils'), { recursive: true });
   fs.mkdirSync(path.join(source, 'menus'), { recursive: true });
   fs.copyFileSync(path.resolve('dados/src/menus/theme.js'), path.join(source, 'menus/theme.js'));
-  for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js']) {
+  for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js', 'runtimeIdentity.js']) {
     fs.copyFileSync(path.resolve('dados/src/utils', file), path.join(source, 'utils', file));
   }
   const configPath = path.join(source, 'config.json');

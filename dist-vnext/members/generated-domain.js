@@ -1,6 +1,6 @@
 async function member_001_roles(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { ROLE_GOING_BASE, ROLE_NOT_GOING_BASE, args, formatRoleSummary, from, groupData, groupPrefix, isGroup, isGroupAdmin, nazu, normalizar, reply, sender } = scope;
+    let { ROLE_GOING_BASE, ROLE_NOT_GOING_BASE, args, formatRoleSummary, from, groupData, groupPrefix, isGroup, isGroupAdmin, socket, normalizar, reply, sender } = scope;
     try {
         switch (command) {
             case 'roles':
@@ -22,7 +22,7 @@ async function member_001_roles(scope) {
                     const listLines = roleEntries.map(([roleCode, roleData], index) => formatRoleSummary(roleCode, roleData, roleEntries.length > 1 ? index : null));
                     const listText = `🪩 *Rolês ativos*\n\n${listLines.join('\n\n')}\n\n🙋 Reaja com ${ROLE_GOING_BASE} ou use ${groupPrefix}role.vou CODIGO\n🤷 Reaja com ${ROLE_NOT_GOING_BASE} ou use ${groupPrefix}role.nvou CODIGO`;
                     try {
-                        await nazu.sendMessage(sendTarget, { text: listText });
+                        await socket.sendMessage(sendTarget, { text: listText });
                         if (sendInPv && sendTarget !== from) {
                             await reply('📬 Enviei a lista de rolês no seu privado!', { mentions: [sender] });
                         }
@@ -142,7 +142,7 @@ async function member_006_role_nvou(scope) {
 }
 async function member_007_role(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { args, ensureRoleParticipants, from, getUserName, groupData, groupPrefix, info, isGroup, nazu, reply, sanitizeRoleCode } = scope;
+    let { args, ensureRoleParticipants, from, getUserName, groupData, groupPrefix, info, isGroup, socket, reply, sanitizeRoleCode } = scope;
     try {
         switch (command) {
             case 'role':
@@ -201,17 +201,17 @@ async function member_007_role(scope) {
                                     payload.gifPlayback = true;
                                 }
                             }
-                            await nazu.sendMessage(from, payload, { quoted: info });
+                            await socket.sendMessage(from, payload, { quoted: info });
                         }
                         catch (mediaError) {
                             console.log('Erro ao enviar mídia do rolê:', mediaError.message);
                             // Se falhar, envia apenas texto
-                            await nazu.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
+                            await socket.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
                         }
                     }
                     else {
                         // Se não tiver mídia, envia apenas texto
-                        await nazu.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
+                        await socket.sendMessage(from, { text: lines.join('\n'), mentions: [...going, ...notGoing] }, { quoted: info });
                     }
                 }
                 catch (e) {
@@ -2264,7 +2264,7 @@ async function member_086_vender(scope) {
 }
 async function member_217_zipbot(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { axios, from, info, nazu, nomebot, reply } = scope;
+    let { axios, from, info, socket, nomebot, reply } = scope;
     try {
         switch (command) {
             case 'zipbot':
@@ -2282,7 +2282,7 @@ async function member_217_zipbot(scope) {
                     if (!zipResponse.data) {
                         throw new Error('Resposta vazia do servidor GitHub');
                     }
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         document: Buffer.from(zipResponse.data),
                         fileName: 'shogun.zip',
                         mimetype: 'application/zip',
@@ -2378,7 +2378,7 @@ async function member_218_gitbot(scope) {
       │ 🔄 *Atualizado:* ${updatedAt}
       │ 📤 *Último push:* ${pushedAt}
       │
-      │ ⏱️ *Nazuna vem sendo ativamente*
+      │ ⏱️ *Shogun vem sendo ativamente*
       │ *mantida há:* ${tempoAtivo}
       │
       │ 🔗 *Links:*
@@ -2411,7 +2411,7 @@ async function member_218_gitbot(scope) {
 }
 async function member_307_rankativos(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, groupMetadata, i6, info, isGroup, nazu, reply, socialCardWithBunnyFy } = scope;
+    let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, groupMetadata, i6, info, isGroup, socket, reply, socialCardWithBunnyFy } = scope;
     try {
         switch (command) {
             case 'rankativos':
@@ -2475,7 +2475,7 @@ async function member_307_rankativos(scope) {
                         })),
                         theme: 'emerald'
                     }, { legacyFallback: async () => null }).catch(() => null);
-                    await nazu.sendMessage(from, rankingCard?.ok ? {
+                    await socket.sendMessage(from, rankingCard?.ok ? {
                         image: rankingCard.buffer,
                         mimetype: rankingCard.mime,
                         caption: blad,
@@ -2499,7 +2499,7 @@ async function member_307_rankativos(scope) {
 }
 async function member_308_rankinativos(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, info, isGroup, nazu, reply } = scope;
+    let { AllgroupMembers, from, fs, getUserName, groupData, groupFile, info, isGroup, socket, reply } = scope;
     try {
         switch (command) {
             case 'rankinativos':
@@ -2557,7 +2557,7 @@ async function member_308_rankinativos(scope) {
                             menc.push(blue67[i6].id);
                         }
                     }
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         text: blad,
                         mentions: menc
                     }, {
@@ -2641,7 +2641,7 @@ async function member_309_checkativo(scope) {
 }
 async function member_310_atividade(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { AllgroupMembers, from, getUserName, groupData, groupFile, info, isGroup, nazu, optimizer, reply, writeJsonFile } = scope;
+    let { AllgroupMembers, from, getUserName, groupData, groupFile, info, isGroup, socket, optimizer, reply, writeJsonFile } = scope;
     try {
         switch (command) {
             case 'atividade':
@@ -2682,7 +2682,7 @@ async function member_310_atividade(scope) {
                             mentions.push(user.id);
                         }
                     });
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         text: activityMessage,
                         mentions: mentions
                     }, {
@@ -2703,7 +2703,7 @@ async function member_310_atividade(scope) {
 }
 async function member_311_totalcmd(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { __dirname, from, fs, info, nazu, reply } = scope;
+    let { __dirname, from, fs, info, socket, reply } = scope;
     try {
         switch (command) {
             case 'totalcmd':
@@ -2713,7 +2713,7 @@ async function member_311_totalcmd(scope) {
                         if (err)
                             throw err;
                         const comandos = [...data.matchAll(/case [`'"](\w+)[`'"]/g)].map(m => m[1]);
-                        await nazu.sendMessage(from, {
+                        await socket.sendMessage(from, {
                             text: `╭〔 🤖 *Meus Comandos* 〕╮\n` + `┣ 📌 Total: *${comandos.length}* comandos\n` + `╰━━━━━━━━━━━━━━━╯`
                         }, {
                             quoted: info
@@ -2734,7 +2734,7 @@ async function member_311_totalcmd(scope) {
 }
 async function member_312_meustatus(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { GRUPOS_DIR, from, fs, getUserName, groupData, groupName, info, isGroup, isGroupAdmin, isOwner, isPremium, nazu, nomebot, nomedono, pathz, pushname, reply, sender } = scope;
+    let { GRUPOS_DIR, from, fs, getUserName, groupData, groupName, info, isGroup, isGroupAdmin, isOwner, isPremium, socket, nomebot, nomedono, pathz, pushname, reply, sender } = scope;
     try {
         switch (command) {
             case 'meustatus':
@@ -2774,12 +2774,12 @@ async function member_312_meustatus(scope) {
                     const userStatus = isOwner ? 'Dono' : isPremium ? 'Premium' : isGroupAdmin ? 'Admin' : 'Membro';
                     let profilePic = null;
                     try {
-                        profilePic = await nazu.profilePictureUrl(sender, 'image');
+                        profilePic = await socket.profilePictureUrl(sender, 'image');
                     }
                     catch (e) { }
                     const statusMessage = `📊 *Meu Status - ${userName}* 📊\n\n👤 *Nome*: ${userName}\n📱 *Número*: @${getUserName(sender)}\n⭐ *Status*: ${userStatus}\n\n${isGroup ? `\n📌 *No Grupo: ${groupName}*\n💬 Mensagens: ${groupMessages}\n⚒️ Comandos: ${groupCommands}\n🎨 Figurinhas: ${groupStickers}\n` : ''}\n\n🌐 *Geral (Todos os Grupos)*\n💬 Mensagens: ${totalMessages}\n⚒️ Comandos: ${totalCommands}\n🎨 Figurinhas: ${totalStickers}\n\n✨ *Bot*: ${nomebot} by ${nomedono} ✨`;
                     if (profilePic) {
-                        await nazu.sendMessage(from, {
+                        await socket.sendMessage(from, {
                             image: {
                                 url: profilePic
                             },
@@ -2790,7 +2790,7 @@ async function member_312_meustatus(scope) {
                         });
                     }
                     else {
-                        await nazu.sendMessage(from, {
+                        await socket.sendMessage(from, {
                             text: statusMessage,
                             mentions: [sender]
                         }, {
@@ -2812,7 +2812,7 @@ async function member_312_meustatus(scope) {
 }
 async function member_314_statusbot(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { __dirname, botState, botVersion, formatUptime, fs, globalBlocks, isRentalModeActive, isUserId, nazu, nomebot, nomedono, os, premiumListaZinha, reply } = scope;
+    let { __dirname, botState, botVersion, formatUptime, fs, globalBlocks, isRentalModeActive, isUserId, socket, nomebot, nomedono, os, premiumListaZinha, reply } = scope;
     try {
         switch (command) {
             case 'statusbot':
@@ -2823,7 +2823,7 @@ async function member_314_statusbot(scope) {
                     const botMemUsage = process.memoryUsage();
                     const memUsed = (botMemUsage.heapUsed / 1024 / 1024).toFixed(2);
                     const memTotal = (botMemUsage.heapTotal / 1024 / 1024).toFixed(2);
-                    const allGroups = await nazu.groupFetchAllParticipating();
+                    const allGroups = await socket.groupFetchAllParticipating();
                     const totalGroups = Object.keys(allGroups).length;
                     let totalUsers = 0;
                     Object.values(allGroups).forEach(group => {
@@ -2866,7 +2866,7 @@ async function member_314_statusbot(scope) {
 }
 async function member_316_topcmd(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { __dirname, commandStats, from, fs, info, menuTopCmd, nazu, nomebot, prefix, pushname, reply } = scope;
+    let { __dirname, commandStats, from, fs, info, menuTopCmd, socket, nomebot, prefix, pushname, reply } = scope;
     try {
         switch (command) {
             case 'topcmd':
@@ -2884,7 +2884,7 @@ async function member_316_topcmd(scope) {
                     const mediaPath = useVideo ? menuVideoPath : menuImagePath;
                     const mediaBuffer = fs.readFileSync(mediaPath);
                     const menuText = await menuTopCmd(prefix, nomebot, pushname, topCommands);
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         [useVideo ? 'video' : 'image']: mediaBuffer,
                         caption: menuText,
                         gifPlayback: useVideo,
@@ -3031,7 +3031,7 @@ async function member_318_statusgp(scope) {
 }
 async function member_324_ping(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { formatUptime, from, info, nazu, reply } = scope;
+    let { formatUptime, from, info, socket, reply } = scope;
     try {
         switch (command) {
             case 'ping':
@@ -3057,7 +3057,7 @@ async function member_324_ping(scope) {
                         statusTexto = 'Ruim';
                         statusCor = '🟥';
                     }
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         text: `╭⊱ ⚡ *STATUS DA CONEXÃO* ⚡ ⊱╮
       │
       │ 📡 *Informações de Latência*
@@ -3264,7 +3264,7 @@ async function member_446_denuncias(scope) {
 }
 async function member_479_perfil(scope) {
     const command = String(scope.command || "").trim().toLowerCase();
-    let { from, getUserName, info, menc_os2, nazu, pushname, reply, sender } = scope;
+    let { from, getUserName, info, menc_os2, socket, pushname, reply, sender } = scope;
     try {
         switch (command) {
             case 'perfil':
@@ -3308,7 +3308,7 @@ async function member_479_perfil(scope) {
                     const randomHumor = humors[Math.floor(Math.random() * humors.length)];
                     let profilePic = 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747053564257_bzswae.bin';
                     try {
-                        profilePic = await nazu.profilePictureUrl(target, 'image');
+                        profilePic = await socket.profilePictureUrl(target, 'image');
                     }
                     catch (error) {
                         console.warn(`Falha ao obter foto do perfil de ${targetName}:`, error.message);
@@ -3316,7 +3316,7 @@ async function member_479_perfil(scope) {
                     let bio = 'Sem bio disponível';
                     let bioSetAt = '';
                     try {
-                        const statusData = await nazu.fetchStatus(target);
+                        const statusData = await socket.fetchStatus(target);
                         const status = statusData?.[0]?.status;
                         if (status) {
                             bio = status.status || bio;
@@ -3433,7 +3433,7 @@ async function member_479_perfil(scope) {
                     // O cartão gerado trocava o rosto da pessoa por um bloco com as iniciais.
                     // Aqui a foto de perfil é o conteúdo, não a moldura: do alvo quando há
                     // menção ou citação, de quem chamou quando não há.
-                    await nazu.sendMessage(from, {
+                    await socket.sendMessage(from, {
                         image: { url: profilePic },
                         caption: perfilText,
                         mentions: [target]

@@ -77,7 +77,7 @@ test('comando prefixado fora do domínio cai uma única vez no legado', async ()
 
 test('mensagem sem prefixo permanece integralmente no legado', async () => {
   const { calls, dispatcher } = system();
-  const receipt = await dispatcher.dispatch(input({ body: 'oi gyomei' }));
+  const receipt = await dispatcher.dispatch(input({ body: 'oi shogun' }));
   assert.equal(receipt.owner, 'legacy');
   assert.equal(receipt.parsed.isCommand, false);
   assert.equal(calls.present.length, 0);

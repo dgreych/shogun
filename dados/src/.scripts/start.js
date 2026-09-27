@@ -43,13 +43,13 @@ const version = getVersion();
 
 async function showTermuxGuidance() {
   if (!isTermux) return;
-  info('📱 Termux detectado. Para manter a patrulha acordada, use termux-wake-lock.');
+  info('📱 Termux detectado. Para manter o bot conectado, use termux-wake-lock.');
   info('📖 A inicialização no Android fica em docs/instalacao/termux.md.');
 }
 
 function setupGracefulShutdown() {
   const shutdown = () => {
-    mensagem('🛑 Encerrando o SHOGUN. Até a próxima patrulha!');
+    mensagem('🛑 Encerrando o SHOGUN. Até a próxima!');
     if (botProcess) {
       botProcess.removeAllListeners();
       botProcess.kill();
@@ -71,7 +71,7 @@ function setupGracefulShutdown() {
 
 async function displayHeader() {
   const header = [
-    `${colors.bold}⛩️ SHOGUN — Conexão WhatsApp${colors.reset}`,
+    `${colors.bold}🐈‍⬛ SHOGUN — Conexão WhatsApp${colors.reset}`,
     `${colors.bold}📦 Versão: ${version}${colors.reset}`,
   ];
 
@@ -175,6 +175,7 @@ async function checkAutoConnect() {
 }
 
 async function promptConnectionMethod() {
+  if (!process.stdin.isTTY) return false;
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { DEFAULT_NVIDIA_MODEL, isKnownNvidiaModel } from './nvidiaApi.js';
+import { projectSingleIdentity } from './runtimeIdentity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,26 +60,9 @@ export function writeJson(file, value) {
 
 export function getAutomationData() {
   const stored = readJson(AUTOMATIONS_FILE, {});
-  const commandMedia = { ...(stored.commandMedia || {}) };
-  const previousScope = String(stored.activePersona || process.env.DEFAULT_PERSONA || '').trim().toLowerCase();
-  if (previousScope && previousScope !== 'shogun') {
-    const prefix = `${previousScope}_`;
-    for (const [command, media] of Object.entries(commandMedia)) {
-      if (!command.startsWith(prefix)) continue;
-      const current = `shogun_${command.slice(prefix.length)}`;
-      if (!Object.hasOwn(commandMedia, current)) commandMedia[current] = media;
-      delete commandMedia[command];
-    }
-  }
-  return {
-    ...DEFAULT_DATA,
-    ...stored,
-    activePersona: 'shogun',
-    autoTranscriptionGroups: stored.autoTranscriptionGroups || {},
-    commandMedia,
-    additionalOwners: Array.isArray(stored.additionalOwners) ? stored.additionalOwners : [],
-    assistantPrompts: stored.assistantPrompts || {}
-  };
+  const current = { ...DEFAULT_DATA, ...projectSingleIdentity(stored, process.env.DEFAULT_PERSONA) };
+  if (JSON.stringify(current) !== JSON.stringify(stored)) writeJson(AUTOMATIONS_FILE, current);
+  return current;
 }
 
 export function saveAutomationData(data) {

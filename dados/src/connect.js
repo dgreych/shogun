@@ -20,6 +20,7 @@ import axios from 'axios';
 
 import PerformanceOptimizer from './utils/performanceOptimizer.js';
 import RentalExpirationManager from './utils/rentalExpirationManager.js';
+import { setPromotionConnection } from './utils/promotionRuntime.js';
 import { loadMsgBotOn } from './utils/database.js';
 import { buildUserId } from './utils/helpers.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
@@ -234,7 +235,7 @@ function formatMessageText(template, replacements) {
     return text;
 }
 
-async function createGroupMessage(NazunaSock, groupMetadata, participants, settings, isWelcome = true) {
+async function createGroupMessage(ShogunSock, groupMetadata, participants, settings, isWelcome = true) {
     const jsonGp = await loadGroupSettings(groupMetadata.id);
     const mentions = participants.map(p => p);
     const bannerName = participants.length === 1 ? participants[0].split('@')[0] : `${participants.length} Membros`;
@@ -255,7 +256,7 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
     if (settings.image) {
     let profilePicUrl = 'https://raw.githubusercontent.com/dgreych/shogun/main/assets/brand/shogun-mark.png';
     if (participants.length === 1) {
-    profilePicUrl = await NazunaSock.profilePictureUrl(participants[0], 'image').catch(() => profilePicUrl);
+    profilePicUrl = await ShogunSock.profilePictureUrl(participants[0], 'image').catch(() => profilePicUrl);
     }
 
     let image = null;
@@ -296,7 +297,7 @@ async function createGroupMessage(NazunaSock, groupMetadata, participants, setti
     return message;
 }
 
-async function handleGroupParticipantsUpdate(NazunaSock, inf) {
+async function handleGroupParticipantsUpdate(ShogunSock, inf) {
     try {
     const from = inf.id || inf.jid || (inf.participants && inf.participants.length > 0 ? inf.participants[0].split('@')[0] + '@s.whatsapp.net' : null);
     
@@ -320,7 +321,7 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
     }
     
     // Ignora eventos do próprio bot
-    const botId = NazunaSock.user.id.split(':')[0];
+    const botId = ShogunSock.user.id.split(':')[0];
 
     inf.participants = inf.participants.map(isValidParticipant).filter(Boolean);
 
@@ -328,7 +329,7 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
     return;
     }
     
-    let groupMetadata = await NazunaSock.groupMetadata(from).catch(err => {
+    let groupMetadata = await ShogunSock.groupMetadata(from).catch(err => {
     console.error(`❌ Erro ao buscar metadados do grupo ${from}: ${err.message}`);
     return null;
     });
@@ -361,11 +362,11 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
         }
     }
     if (membersToRemove.length > 0) {
-        await NazunaSock.groupParticipantsUpdate(from, membersToRemove, 'remove').catch(err => {
+        await ShogunSock.groupParticipantsUpdate(from, membersToRemove, 'remove').catch(err => {
         console.error(`❌ Erro ao remover membros do grupo ${from}: ${err.message}`);
         });
         
-        await NazunaSock.sendMessage(from, {
+        await ShogunSock.sendMessage(from, {
         text: `🚫 Foram removidos ${membersToRemove.length} membros por regras de moderação:\n- ${removalReasons.join('\n- ')}`,
         mentions: membersToRemove,
         }).catch(err => {
@@ -374,11 +375,11 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
     }
     
     if (membersToWelcome.length > 0) {
-        const message = await createGroupMessage(NazunaSock, groupMetadata, membersToWelcome, groupSettings.welcome || {
+        const message = await createGroupMessage(ShogunSock, groupMetadata, membersToWelcome, groupSettings.welcome || {
         text: groupSettings.textbv
         });
         
-        await NazunaSock.sendMessage(from, message).catch(err => {
+        await ShogunSock.sendMessage(from, message).catch(err => {
         console.error(`❌ Erro ao enviar mensagem de boas-vindas: ${err.message}`);
         });
     }
@@ -386,8 +387,8 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
     }
     case 'remove': {
     if (groupSettings.exit?.enabled) {
-        const message = await createGroupMessage(NazunaSock, groupMetadata, inf.participants, groupSettings.exit, false);
-        await NazunaSock.sendMessage(from, message).catch(err => {
+        const message = await createGroupMessage(ShogunSock, groupMetadata, inf.participants, groupSettings.exit, false);
+        await ShogunSock.sendMessage(from, message).catch(err => {
         console.error(`❌ Erro ao enviar mensagem de saída: ${err.message}`);
         });
     }
@@ -406,7 +407,7 @@ async function handleGroupParticipantsUpdate(NazunaSock, inf) {
 
 // Handler para solicitações de entrada em grupos
 // Evento 'group.join-request' emitido pelo Baileys
-async function handleGroupJoinRequest(NazunaSock, inf) {
+async function handleGroupJoinRequest(ShogunSock, inf) {
     try {
     const from = inf.id;
     
@@ -457,7 +458,7 @@ async function handleGroupJoinRequest(NazunaSock, inf) {
         await saveGroupSettings(from, groupSettings);
         
         // Enviar captcha no PV
-        await NazunaSock.sendMessage(participantJid, {
+        await ShogunSock.sendMessage(participantJid, {
         text: `🔐 *Verificação de Segurança*\n\nVocê solicitou entrar no grupo. Para ser aprovado, resolva esta conta:\n\n❓ Quanto é *${num1} + ${num2}*?\n\n⏱️ Você tem 5 minutos para responder.\n\n💡 Responda apenas com o número.`
         }).catch(err => console.error(`❌ Erro ao enviar captcha: ${err.message}`));
         
@@ -467,12 +468,12 @@ async function handleGroupJoinRequest(NazunaSock, inf) {
         if (currentSettings.pendingCaptchas?.[participantJid]) {
         delete currentSettings.pendingCaptchas[participantJid];
         await saveGroupSettings(from, currentSettings);
-        await NazunaSock.groupRequestParticipantsUpdate(from, [participantJid], 'reject').catch(() => {});
+        await ShogunSock.groupRequestParticipantsUpdate(from, [participantJid], 'reject').catch(() => {});
         }
         }, 5 * 60 * 1000);
     } else {
         // Auto-aceitar direto sem captcha
-        await NazunaSock.groupRequestParticipantsUpdate(from, [participantJid], 'approve');
+        await ShogunSock.groupRequestParticipantsUpdate(from, [participantJid], 'approve');
     }
     } catch (err) {
     console.error(`Erro ao processar auto-aceitar: ${err.message}`);
@@ -728,7 +729,7 @@ async function handleJidFiles(jidFiles, jidToLidMap, orphanJidsSet) {
     return { totalReplacements, totalRemovals, updatedFiles, renamedFiles, deletedFiles };
 }
 
-async function fetchLidWithRetry(NazunaSock, jid, maxRetries = 3) {
+async function fetchLidWithRetry(ShogunSock, jid, maxRetries = 3) {
     if (!jid || !isValidJid(jid)) {
     console.warn(`⚠️ JID inválido fornecido: ${jid}`);
     return null;
@@ -736,7 +737,7 @@ async function fetchLidWithRetry(NazunaSock, jid, maxRetries = 3) {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-    const result = await NazunaSock.onWhatsApp(jid);
+    const result = await ShogunSock.onWhatsApp(jid);
     if (result && result[0] && result[0].lid) {
     return { jid, lid: result[0].lid };
     }
@@ -753,7 +754,7 @@ async function fetchLidWithRetry(NazunaSock, jid, maxRetries = 3) {
     return null;
 }
 
-async function fetchLidsInBatches(NazunaSock, uniqueJids, batchSize = 5) {
+async function fetchLidsInBatches(ShogunSock, uniqueJids, batchSize = 5) {
     const lidResults = [];
     const jidToLidMap = new Map();
     let successfulFetches = 0;
@@ -761,7 +762,7 @@ async function fetchLidsInBatches(NazunaSock, uniqueJids, batchSize = 5) {
     for (let i = 0; i < uniqueJids.length; i += batchSize) {
     const batch = uniqueJids.slice(i, i + batchSize);
     
-    const batchPromises = batch.map(jid => fetchLidWithRetry(NazunaSock, jid));
+    const batchPromises = batch.map(jid => fetchLidWithRetry(ShogunSock, jid));
     const batchResults = await Promise.allSettled(batchPromises);
     
     batchResults.forEach((result, index) => {
@@ -781,10 +782,10 @@ async function fetchLidsInBatches(NazunaSock, uniqueJids, batchSize = 5) {
     return { lidResults, jidToLidMap, successfulFetches };
 }
 
-async function updateOwnerLid(NazunaSock) {
+async function updateOwnerLid(ShogunSock) {
     const ownerJid = `${numerodono}@s.whatsapp.net`;
     try {
-    const result = await fetchLidWithRetry(NazunaSock, ownerJid);
+    const result = await fetchLidWithRetry(ShogunSock, ownerJid);
     if (result) {
     config.lidowner = result.lid;
     await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
@@ -794,7 +795,7 @@ async function updateOwnerLid(NazunaSock) {
     }
 }
 
-async function performMigration(NazunaSock) {
+async function performMigration(ShogunSock) {
     let scanResult;
     try {
     scanResult = await scanForJids(DATABASE_DIR);
@@ -809,7 +810,7 @@ async function performMigration(NazunaSock) {
     return;
     }
     
-    const { jidToLidMap, successfulFetches } = await fetchLidsInBatches(NazunaSock, uniqueJids);
+    const { jidToLidMap, successfulFetches } = await fetchLidsInBatches(ShogunSock, uniqueJids);
     const orphanJidsSet = new Set(uniqueJids.filter(jid => !jidToLidMap.has(jid)));
 
     if (jidToLidMap.size === 0) {
@@ -861,7 +862,7 @@ async function createBotSocket(authDir) {
     const version = [2, 3000, 1044006379];
     console.log(`📱 Usando versão do WhatsApp: ${version.join('.')}`);
     
-    const NazunaSock = makeWASocket({
+    const ShogunSock = makeWASocket({
     version: version,
     emitOwnEvents: true,
     fireInitQueries: true,
@@ -879,7 +880,7 @@ async function createBotSocket(authDir) {
     logger
     });
 
-    if (codeMode && !NazunaSock.authState.creds.registered) {
+    if (codeMode && !ShogunSock.authState.creds.registered) {
     console.log('📱 Insira o número de telefone (com código de país, ex: 551199999999): ');
     let phoneNumber = await ask('--> ');
     phoneNumber = phoneNumber.replace(/\D/g, '');
@@ -887,14 +888,14 @@ async function createBotSocket(authDir) {
     console.log('⚠️ Número inválido! Use um número válido com código de país (ex: 551199999999).');
     process.exit(1);
     }
-    const code = await NazunaSock.requestPairingCode(phoneNumber.replaceAll('+', '').replaceAll(' ', '').replaceAll('-', ''));
+    const code = await ShogunSock.requestPairingCode(phoneNumber.replaceAll('+', '').replaceAll(' ', '').replaceAll('-', ''));
     console.log(`🔑 Código de pareamento: ${code}`);
     console.log('📲 Envie este código no WhatsApp para autenticar o bot.');
     }
 
-    NazunaSock.ev.on('creds.update', saveCreds);
+    ShogunSock.ev.on('creds.update', saveCreds);
 
-    NazunaSock.ev.on('groups.update', async (updates) => {
+    ShogunSock.ev.on('groups.update', async (updates) => {
     if (!Array.isArray(updates) || updates.length === 0) return;
     
     if (DEBUG_MODE) {
@@ -913,7 +914,7 @@ async function createBotSocket(authDir) {
     if (!ev || !ev.id) return;
     
     try {
-        const meta = await NazunaSock.groupMetadata(ev.id).catch(() => null);
+        const meta = await ShogunSock.groupMetadata(ev.id).catch(() => null);
         if (meta) {
         // Metadados atualizados, pode ser usado para cache futuro
         if (DEBUG_MODE) {
@@ -928,7 +929,7 @@ async function createBotSocket(authDir) {
     await Promise.allSettled(updatePromises);
     });
 
-    NazunaSock.ev.on('group-participants.update', async (inf) => {
+    ShogunSock.ev.on('group-participants.update', async (inf) => {
     if (DEBUG_MODE) {
     console.log('\n🐛 ========== GROUP PARTICIPANTS UPDATE ==========');
     console.log('📅 Timestamp:', new Date().toISOString());
@@ -939,11 +940,11 @@ async function createBotSocket(authDir) {
     console.log('�📦 Full event data:', JSON.stringify(inf, null, 2));
     console.log('🐛 ================================================\n');
     }
-    await handleGroupParticipantsUpdate(NazunaSock, inf);
+    await handleGroupParticipantsUpdate(ShogunSock, inf);
     });
     
     // Listener para solicitações de entrada em grupos (join requests)
-    NazunaSock.ev.on('group.join-request', async (inf) => {
+    ShogunSock.ev.on('group.join-request', async (inf) => {
     if (DEBUG_MODE) {
     console.log('\n🐛 ========== GROUP JOIN REQUEST ==========');
     console.log('📅 Timestamp:', new Date().toISOString());
@@ -956,7 +957,7 @@ async function createBotSocket(authDir) {
     console.log('📦 Full event data:', JSON.stringify(inf, null, 2));
     console.log('🐛 ===========================================\n');
     }
-    await handleGroupJoinRequest(NazunaSock, inf);
+    await handleGroupJoinRequest(ShogunSock, inf);
     });
 
     let messagesListenerAttached = false;
@@ -1029,7 +1030,7 @@ async function createBotSocket(authDir) {
     const looksLikeCommand = error?.isCommandFailure === true
         || (/^\S/.test(body) && !/^[a-zA-Z0-9À-ÿ]/.test(body));
     if (remoteJid && looksLikeCommand && !info?.key?.fromMe) {
-        await NazunaSock.sendMessage(
+        await ShogunSock.sendMessage(
         remoteJid,
         { text: '❌ Não consegui concluir esse comando (erro interno). Tente novamente em instantes.' },
         { quoted: info }
@@ -1068,7 +1069,7 @@ async function createBotSocket(authDir) {
     
     // Processa mensagem
     if (typeof indexModule === 'function') {
-    await indexModule(NazunaSock, info, null, messagesCache, rentalExpirationManager);
+    await indexModule(ShogunSock, info, null, messagesCache, rentalExpirationManager);
     } else {
     throw new Error('Módulo index.js não é uma função válida. Verifique o arquivo index.js.');
     }
@@ -1078,7 +1079,7 @@ async function createBotSocket(authDir) {
     if (messagesListenerAttached) return;
     messagesListenerAttached = true;
 
-    NazunaSock.ev.on('messages.upsert', async (m) => {
+    ShogunSock.ev.on('messages.upsert', async (m) => {
     if (!m.messages || !Array.isArray(m.messages)) return;
     
     // Se for 'append', só processa se for solicitação de entrada (messageStubType 172)
@@ -1117,13 +1118,13 @@ async function createBotSocket(authDir) {
     });
     };
 
-    NazunaSock.ev.on('connection.update', async (update) => {
+    ShogunSock.ev.on('connection.update', async (update) => {
     const {
     connection,
     lastDisconnect,
     qr
     } = update;
-    if (qr && !NazunaSock.authState.creds.registered && !codeMode) {
+    if (qr && !ShogunSock.authState.creds.registered && !codeMode) {
     // O painel desenha o Shogun e o estado; o QR é impresso logo abaixo, por
     // fora da arte — misturar os dois acoplaria desenho a protocolo, e o QR
     // precisa sair intacto para o leitor do WhatsApp conseguir ler.
@@ -1138,14 +1139,15 @@ async function createBotSocket(authDir) {
     });
     }
     if (connection === 'open') {
+    setPromotionConnection(ShogunSock, true);
     console.log(`🔄 Conexão aberta. Inicializando sistema de otimização...`);
     
     await initializeOptimizedCaches();
     
-    await updateOwnerLid(NazunaSock);
-    await performMigration(NazunaSock);
+    await updateOwnerLid(ShogunSock);
+    await performMigration(ShogunSock);
     
-    rentalExpirationManager.nazu = NazunaSock;
+    rentalExpirationManager.socket = ShogunSock;
     await rentalExpirationManager.initialize();
     
     attachMessagesListener();
@@ -1166,7 +1168,7 @@ async function createBotSocket(authDir) {
         const conteudo = existsSync(marca)
             ? { image: { url: marca }, caption: msgBotOnConfig.message }
             : { text: msgBotOnConfig.message };
-        await NazunaSock.sendMessage(ownerJid, conteudo);
+        await ShogunSock.sendMessage(ownerJid, conteudo);
         console.log('✅ Mensagem de inicialização enviada para o dono');
         } catch (sendError) {
         console.error('❌ Erro ao enviar mensagem de inicialização:', sendError.message);
@@ -1201,6 +1203,7 @@ async function createBotSocket(authDir) {
     console.log(`   fila: ${messageQueue.maxPorPessoa} comandos por pessoa · ${messageQueue.maxPorGrupo} por grupo · teto ${messageQueue.maxGlobal}`);
     }
     if (connection === 'close') {
+    setPromotionConnection(ShogunSock, false);
     const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
     const reasonMessage = {
         [DisconnectReason.loggedOut]: 'Deslogado do WhatsApp',
@@ -1283,7 +1286,7 @@ async function createBotSocket(authDir) {
     }, reconnectDelay);
     }
     });
-    return NazunaSock;
+    return ShogunSock;
     } catch (err) {
     console.error(`❌ Erro ao criar socket do bot: ${err.message}`);
     throw err;

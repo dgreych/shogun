@@ -6,6 +6,90 @@ import { BunnyFyError } from './BunnyFyError.js';
 
 const TOKEN = 'token-local-de-teste';
 
+const BOARD_VIEW = {
+  schemaVersion: 1,
+  kind: 'board',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  turn: { number: 2, activeSlot: 'bottom', deadlineAt: '2026-08-15T20:00:00.000Z' },
+  terrain: { name: 'Salão da Tavern' },
+  players: [
+    {
+      slot: 'bottom', displayName: 'Aventureiro', classId: 'GUARDIAN',
+      hero: { hp: 29, armor: 2 }, mana: { current: 3, max: 3 },
+      handCount: 4, deckCount: 25, board: []
+    },
+    {
+      slot: 'top', displayName: 'Oponente', classId: 'EXILE',
+      hero: { hp: 25, armor: 0 }, mana: { current: 0, max: 2 },
+      handCount: 5, deckCount: 24, board: []
+    }
+  ]
+};
+
+const HAND_VIEW = {
+  schemaVersion: 1,
+  kind: 'hand',
+  status: 'ACTIVE',
+  phase: 'MAIN',
+  isActive: true,
+  viewer: {
+    classId: 'GUARDIAN', mana: { current: 3, max: 3 }, nextSpellDiscount: 0, boardCount: 1
+  },
+  cards: [{
+    cardId: 'GY-001', name: 'Sentinela', type: 'MINION', rarity: 'COMMON', cost: 2,
+    attack: 2, health: 3, keywords: ['GUARD'], classId: 'GUARDIAN', text: 'Protege a mesa.'
+  }]
+};
+
+const TURN_SCENE_VIEW = {
+  schemaVersion: 1,
+  kind: 'scene',
+  sceneKind: 'turn',
+  payload: {
+    playerName: 'Aventureiro',
+    classId: 'GUARDIAN',
+    turnNumber: 2,
+    deadlineLabel: '2min'
+  }
+};
+
+const NEXO_CIRCLE_VIEW = {
+  schemaVersion: 1,
+  kind: 'circle',
+  titleLabel: 'Estação Zero',
+  modeLabel: 'Casual',
+  statusLabel: 'Tenso',
+  metrics: [{ label: 'Pulso', value: 68, max: 100 }],
+  highlights: ['Vozes sob a ponte']
+};
+
+const NEXO_CHARACTER_VIEW = {
+  schemaVersion: 1,
+  kind: 'character',
+  titleLabel: 'Lume',
+  originLabel: 'Fugitivo do Arquivo',
+  toneLabel: 'Véu + Eco',
+  impulseLabel: 'Entender o oculto',
+  scarLabel: 'Eco estranho',
+  metrics: [{ label: 'Vitalidade', value: 21, max: 21 }],
+  techniqueLabels: ['Marca Velada'],
+  traitLabels: ['Investigador']
+};
+
+const NEXO_ENCOUNTER_VIEW = {
+  schemaVersion: 1,
+  kind: 'encounter',
+  titleLabel: 'Vigia Sem Rosto',
+  round: 2,
+  postureLabel: 'Pulso',
+  outcomeLabel: 'PLENO',
+  actor: { label: 'Lume', metrics: [{ label: 'Vitalidade', value: 18, max: 21 }] },
+  enemy: { label: 'Vigia', metrics: [{ label: 'Vitalidade', value: 74, max: 120 }], intentLabel: 'Apagar o último a agir' },
+  actionLabels: ['Golpe Solar'],
+  statusLabels: ['Guarda 3']
+};
+
 function envelope(data, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -37,7 +121,124 @@ function makeClient(fetchImpl, options = {}) {
   });
 }
 
-test('Bearer exige HTTPS fora do loopback e nunca libera HTTP externo', () => {
+test('renders da Tavern enviam somente Render View v1 em {view}', async () => {
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return success({
+      width: url.includes('/hand?') ? 720 : 1200,
+      height: url.includes('/hand?') ? 960 : url.endsWith('/board') ? 940 : 675,
+      media: { mediaId: 'tavern-render-12345', mediaUrl: '/v1/media/tavern-render-12345' }
+    });
+  });
+
+  await client.renderTavernBoard(BOARD_VIEW, { idempotencyKey: 'board-view-1' });
+  await client.renderTavernHand(HAND_VIEW, { page: 2, idempotencyKey: 'hand-view-1' });
+  await client.renderTavernScene(TURN_SCENE_VIEW, { idempotencyKey: 'scene-view-1' });
+
+  assert.deepEqual(requests.map(request => request.body), [
+    { view: BOARD_VIEW },
+    { view: HAND_VIEW },
+    { view: TURN_SCENE_VIEW }
+  ]);
+  assert.equal(JSON.stringify(requests).includes('playerId'), false);
+  assert.equal(JSON.stringify(requests).includes('playerNames'), false);
+  assert.equal(JSON.stringify(requests).includes('state'), false);
+  assert.equal(requests[1].url, 'https://api.bunnyfy.test/v1/games/tavern/hand?page=2');
+});
+
+test('Render View v1 recusa campos extras, identidade crua e contrato legado antes da rede', async () => {
+  let fetchCalls = 0;
+  const client = makeClient(async () => {
+    fetchCalls += 1;
+    return success({});
+  });
+
+  const jidBoard = structuredClone(BOARD_VIEW);
+  jidBoard.players[0].displayName = 'Nome 5511999999999@s.whatsapp.net (privado)';
+  const phoneBoard = structuredClone(BOARD_VIEW);
+  phoneBoard.players[0].displayName = '+55 (11) 99999-9999';
+  const invalidCompactIdBoard = structuredClone(BOARD_VIEW);
+  invalidCompactIdBoard.players[0].classId = 'GUARDIAN/fora-do-contrato';
+  const oversizedTurnBoard = structuredClone(BOARD_VIEW);
+  oversizedTurnBoard.turn.number = 100_000;
+  for (const operation of [
+    () => client.renderTavernBoard({ ...BOARD_VIEW, seed: 'SEGREDO' }),
+    () => client.renderTavernBoard(jidBoard),
+    () => client.renderTavernBoard(phoneBoard),
+    () => client.renderTavernBoard(invalidCompactIdBoard),
+    () => client.renderTavernBoard(oversizedTurnBoard),
+    () => client.renderTavernHand({ ...HAND_VIEW, opponent: { hand: ['SEGREDO'] } }),
+    () => client.renderTavernHand(HAND_VIEW, { page: 0 }),
+    () => client.renderTavernHand(HAND_VIEW, { page: 3 }),
+    () => client.renderTavernScene({
+      ...TURN_SCENE_VIEW,
+      payload: { ...TURN_SCENE_VIEW.payload, playerId: '5511999999999@s.whatsapp.net' }
+    }),
+    () => client.renderTavernHand({ state: {}, playerId: 'p1' })
+  ]) {
+    await assert.rejects(operation, error => error.code === 'BUNNYFY_BAD_REQUEST');
+  }
+  assert.equal(fetchCalls, 0);
+});
+
+test('renders do NEXO enviam somente Render View v1 em {view}, nas rotas próprias', async () => {
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return success({
+      width: 1200,
+      height: 675,
+      media: { mediaId: 'nexo-render-12345', mediaUrl: '/v1/media/nexo-render-12345' }
+    });
+  });
+
+  await client.renderNexoCircle(NEXO_CIRCLE_VIEW, { idempotencyKey: 'circle-view-1' });
+  await client.renderNexoCharacter(NEXO_CHARACTER_VIEW, { idempotencyKey: 'character-view-1' });
+  await client.renderNexoEncounter(NEXO_ENCOUNTER_VIEW, { idempotencyKey: 'encounter-view-1' });
+
+  assert.deepEqual(requests.map(request => request.url), [
+    'https://api.bunnyfy.test/v1/games/nexo/circle',
+    'https://api.bunnyfy.test/v1/games/nexo/character',
+    'https://api.bunnyfy.test/v1/games/nexo/encounter'
+  ]);
+  assert.deepEqual(requests.map(request => request.body), [
+    { view: NEXO_CIRCLE_VIEW },
+    { view: NEXO_CHARACTER_VIEW },
+    { view: NEXO_ENCOUNTER_VIEW }
+  ]);
+});
+
+test('Render View v1 do NEXO recusa campo extra, identidade crua e métrica fora do teto antes da rede', async () => {
+  let fetchCalls = 0;
+  const client = makeClient(async () => {
+    fetchCalls += 1;
+    return success({});
+  });
+
+  const jidCircle = structuredClone(NEXO_CIRCLE_VIEW);
+  jidCircle.statusLabel = 'Falando com 5511999999999@s.whatsapp.net';
+  const seedCharacter = structuredClone(NEXO_CHARACTER_VIEW);
+  seedCharacter.originLabel = 'seed abc123';
+  const overflowEncounter = structuredClone(NEXO_ENCOUNTER_VIEW);
+  overflowEncounter.actionLabels = Array.from({ length: 7 }, (_, index) => `ação ${index}`);
+  const excessMetricEncounter = structuredClone(NEXO_ENCOUNTER_VIEW);
+  excessMetricEncounter.actor.metrics = [{ label: 'Vitalidade', value: 30, max: 21 }];
+
+  for (const operation of [
+    () => client.renderNexoCircle({ ...NEXO_CIRCLE_VIEW, extra: 'fora do contrato' }),
+    () => client.renderNexoCircle(jidCircle),
+    () => client.renderNexoCharacter(seedCharacter),
+    () => client.renderNexoEncounter(overflowEncounter),
+    () => client.renderNexoEncounter(excessMetricEncounter),
+    () => client.renderNexoEncounter({ ...NEXO_ENCOUNTER_VIEW, round: 0 })
+  ]) {
+    await assert.rejects(operation, error => error.code === 'BUNNYFY_BAD_REQUEST');
+  }
+  assert.equal(fetchCalls, 0);
+});
+
+test('Bearer exige HTTPS fora do loopback, salvo exceção temporária VexHost exata', () => {
   assert.throws(
     () => new BunnyFyClient({ baseUrl: 'http://api.bunnyfy.test', token: TOKEN }),
     error => error instanceof BunnyFyError && error.code === 'BUNNYFY_CONFIG_INVALID'
@@ -48,12 +249,29 @@ test('Bearer exige HTTPS fora do loopback e nunca libera HTTP externo', () => {
 
   assert.throws(
     () => new BunnyFyClient({
-      baseUrl: 'http://api.bunnyfy.test',
-      token: TOKEN,
-      allowInsecureHttp: true
+      baseUrl: 'http://node1.vexhost.com.br:20056',
+      token: TOKEN
     }),
     error => error instanceof BunnyFyError && error.code === 'BUNNYFY_CONFIG_INVALID'
   );
+
+  const temporaryVexHostClient = new BunnyFyClient({
+    baseUrl: 'http://node1.vexhost.com.br:20056',
+    token: TOKEN,
+    allowInsecureHttp: true
+  });
+  assert.equal(temporaryVexHostClient.baseUrl, 'http://node1.vexhost.com.br:20056');
+
+  for (const baseUrl of [
+    'http://node1.vexhost.com.br:20057',
+    'http://outro.vexhost.com.br:20056',
+    'http://node1.vexhost.com.br:20056/caminho'
+  ]) {
+    assert.throws(
+      () => new BunnyFyClient({ baseUrl, token: TOKEN, allowInsecureHttp: true }),
+      error => error instanceof BunnyFyError && error.code === 'BUNNYFY_CONFIG_INVALID'
+    );
+  }
 });
 
 test('busca textual envia Bearer, contrato query e nenhum retry ou Idempotency-Key', async () => {
@@ -231,6 +449,24 @@ test('status HTTP não-ok prevalece quando o corpo é HTML, vazio ou inválido',
   }
 });
 
+test('status não-ok com corpo de erro legível preserva o código real do envelope, não só o status HTTP', async () => {
+  // BUNNYFY_CONTENT_BLOCKED e BUNNYFY_BAD_REQUEST são ambos status 400 —
+  // sem ler o código do envelope, os dois ficariam indistinguíveis pro
+  // consumidor (ex: Shogun precisa diferenciar recusa de política de
+  // qualquer outro 400 pra não sugerir "tente de novo" pra algo que
+  // nenhuma tentativa nova vai resolver).
+  const client = makeClient(async () => failure(400, 'BUNNYFY_CONTENT_BLOCKED', false), { retries: 0 });
+  await assert.rejects(
+    () => client.request('/v1/test'),
+    error => {
+      assert.ok(error instanceof BunnyFyError);
+      assert.equal(error.code, 'BUNNYFY_CONTENT_BLOCKED');
+      assert.equal(error.retryable, false);
+      return true;
+    }
+  );
+});
+
 test('falha ao ler body de resposta não-ok continua mapeada pelo status HTTP', async () => {
   const client = makeClient(async () => new Response(new ReadableStream({
     pull(controller) {
@@ -332,7 +568,7 @@ test('conversa usa modelo validado sem endpoint arbitrário, idempotência ou re
   );
 
   assert.equal(calls, 1);
-  assert.equal(received.url, 'https://api.bunnyfy.test/v1/ai/chat/completions');
+  assert.equal(received.url, 'https://api.bunnyfy.test/v1/conversation/chat/completions');
   assert.equal(received.options.headers.Authorization, `Bearer ${TOKEN}`);
   assert.equal(received.options.headers['Idempotency-Key'], undefined);
   assert.deepEqual(JSON.parse(received.options.body), {

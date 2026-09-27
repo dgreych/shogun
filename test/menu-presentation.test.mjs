@@ -9,7 +9,7 @@ const presentation = await import('../dados/src/menus/presentation.js').catch(er
 
 test('principal organiza os recursos nas categorias aprovadas sem descrições forçadas', async () => {
   const output = await menus.menu('!', 'SHOGUN', 'Maurício');
-  assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━\n/u);
+  assert.match(output, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━\n/u);
   assert.match(output, /┃  \*MENU PRINCIPAL\*/u);
   assert.match(output, /┣━━〔 ◈ \*MÍDIA & CRIAÇÃO\* 〕[\s\S]*!menudown[\s\S]*!menufig/u);
   assert.match(output, /┣━━〔 ◈ \*JOGOS & INTERAÇÕES\* 〕[\s\S]*!menubn[\s\S]*!menumemb[\s\S]*!menurpg/u);
@@ -32,7 +32,7 @@ test('exemplos de comandos preservam prefixos reais e argumentos', async () => {
     assert.ok(output.includes(`${prefix}quiz <categoria>`));
     assert.ok(output.includes(`${prefix}tictactoe @user`));
     assert.equal(output.includes(`${prefix}sexo`), false);
-    assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+    assert.match(output, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u);
   }
 });
 
@@ -42,7 +42,7 @@ test('todos os submenus carregados usam o mesmo acabamento sem ornamentação an
     const output = key === 'menubn'
       ? await render('!', 'SHOGUN', 'Maurício', true)
       : await render('!', 'SHOGUN', 'Maurício');
-    assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u, key);
+    assert.match(output, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u, key);
     assert.match(output, /╰━━━─〔 SHOGUN 〕─━━━━$/u, key);
     assert.doesNotMatch(output, /🫟|🍧|❁|OPERADOR/u, key);
   }
@@ -75,7 +75,7 @@ test('ranking mantém estatísticas e exemplos de consulta com o prefixo escolhi
     { name: 'play', count: 19, uniqueUsers: 4 },
     { name: 'sticker', count: 12, uniqueUsers: 3 },
   ]);
-  assert.match(output, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+  assert.match(output, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u);
   assert.ok(output.includes('/play'));
   assert.ok(output.includes('19 usos'));
   assert.ok(output.includes('4 usuários'));

@@ -4,9 +4,9 @@ import { getConfig } from '../../utils/shogunStore.js';
 // --- CONFIGURAÇÃO ---
 // Credenciais de upload (token do GitHub e repositório) vêm do config.json
 // do servidor (upload_github_token / upload_github_repo), nunca do código —
-// o mesmo padrão de configuração local usado pelas demais integrações. O token
+// mesmo padrão já usado para site_vex/apikey_vex neste projeto. O token
 // antigo (repositório de uploads anterior) parou de funcionar;
-// o valor de referência atual é o usado no Nazuna oficial mantido ativamente
+// o valor de referência atual é o usado no Shogun oficial mantido ativamente
 // repo uploadsnew/uploads.
 const FILE_TYPES = {
     fotos: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'ico', 'jfif', 'heic'],

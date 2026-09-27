@@ -23,13 +23,13 @@ export {
 export {
   buildBunnyFyAccessMessage,
   buildBoundedChatMessages,
-  createBunnyFyAiClient,
+  createBunnyFyConversationClient,
   isBunnyFyAccessError,
   resolveBunnyFyAccountUrl,
-  resolveBunnyFyAiMode,
-  shouldFallbackDirectAi,
+  resolveBunnyFyConversationMode,
+  shouldFallbackDirectConversation,
   toLegacyChatResponse
-} from './aiGateway.js';
+} from './conversationGateway.js';
 export {
   buildYoutubePreviewCaption,
   createYoutubePlayConcurrencyLimiter,

@@ -11,7 +11,7 @@ const sections = [
         {"command":"equipamentos"},
         {"command":"conquistas"},
     ] },
-    { title: "EVOLUÇÃO & PRESTIGE", optionKey: "evolutionMenuTitle", entries: [
+    { title: "EVOLUÇÃO & PRESTÍGIO", optionKey: "evolutionMenuTitle", entries: [
         {"command":"evoluir"},
         {"command":"prestige"},
         {"command":"streak"},
@@ -84,9 +84,9 @@ const sections = [
     ] },
     { title: "CLASSES & PROFISSÕES", entries: [
         {"command":"class","description":"Ver classes"},
-        {"command":"class","arguments":"<nome>","description":"Escolher"},
+        {"command":"class","arguments":"<nome>","description":"Escolher uma classe."},
     ] },
-    { title: "HOUSING", entries: [
+    { title: "CASA", entries: [
         {"command":"casa","description":"Ver sua casa"},
         {"command":"casa","arguments":"comprar <tipo>"},
         {"command":"casa","arguments":"coletar"},
@@ -115,7 +115,7 @@ const sections = [
         {"command":"guerra"},
         {"command":"desafio"},
     ] },
-    { title: "CRAFTING & EQUIPAMENTOS", optionKey: "craftingMenuTitle", entries: [
+    { title: "CRIAÇÃO & EQUIPAMENTOS", optionKey: "craftingMenuTitle", entries: [
         {"command":"forge","arguments":"<item>"},
         {"command":"enchant"},
         {"command":"dismantle","arguments":"<item>"},
@@ -186,7 +186,7 @@ const sections = [
         {"command":"doar","arguments":"<valor>"},
         {"command":"presente","arguments":"@user <item>"},
     ] },
-    { title: "ADMIN RPG (DONO)", optionKey: "adminMenuTitle", entries: [
+    { title: "GESTÃO DO RPG", optionKey: "adminMenuTitle", entries: [
         {"command":"rpgadd","arguments":"@user <valor>"},
         {"command":"rpgremove","arguments":"@user <valor>"},
         {"command":"rpgsetlevel","arguments":"@user <nivel>"},

@@ -3,6 +3,7 @@ import { sanitizeMenuDisplayName } from '../menus/presentation.js';
 import fs from 'fs';
 import pathz from 'path';
 import crypto from 'crypto';
+import { projectGroupCustomization } from './runtimeIdentity.js';
 
 import { ensureDirectoryExists, ensureJsonFileExists, loadJsonFile, normalizar, getUserName, isGroupId, isUserId, isValidLid, isValidJid, buildUserId, getLidFromJidCached, idsMatch, loadJsonFileSafe, saveJsonFileSafe, validateLevelingUser, validateEconomyUser, validateGroupData, createBackup, normalizeParam, compareParams, findKeyIgnoringAccents, findInArrayIgnoringAccents, resolveParamAlias, matchParam, PARAM_ALIASES } from './helpers.js';
 
@@ -498,28 +499,19 @@ const loadMsgBotOn = () => {
   
   const defaultEnabled = currentOwner === '553391967445' ? false : true;
   
-  const MENSAGEM_PADRAO = `✅ *𝖘𝖍𝖔𝖌𝖚𝖓 online*
+  const MENSAGEM_PADRAO = `🐈‍⬛ *SHOGUN ONLINE*
 
-Conectado e pronto, atendendo todos os grupos configurados.
+Conexão com o WhatsApp estabelecida.
 
-_Para desativar este aviso, use *msgboton*._`;
+Use *menu* com o prefixo da instância para consultar os comandos.
+Para desativar este aviso: *msgboton*.`;
 
   const data = loadJsonFile(MSGBOTON_FILE, {
     enabled: defaultEnabled,
     message: MENSAGEM_PADRAO
   });
 
-  // O texto fica salvo em disco, então instalações antigas continuariam
-  // enviando a mensagem da identidade anterior mesmo com o padrão novo. Só
-  // substitui quando reconhece o texto antigo; mensagem escrita pelo dono é
-  // preservada.
-  if (typeof data.message === 'string' && /GYOMEI|Nazuna|Hiudy|DevTokyo/i.test(data.message)) {
-    data.message = MENSAGEM_PADRAO;
-    try {
-      ensureDirectoryExists(DONO_DIR);
-      fs.writeFileSync(MSGBOTON_FILE, JSON.stringify(data, null, 2));
-    } catch { /* segue com o valor corrigido em memória */ }
-  }
+  data.message = MENSAGEM_PADRAO;
 
   return data;
 };
@@ -1000,7 +992,7 @@ const cleanSubdonosList = () => {
   };
 };
 
-const addSubdono = async (userId, numerodono, nazu = null) => {
+const addSubdono = async (userId, numerodono, socket = null) => {
   if (!userId || typeof userId !== 'string' || (!isUserId(userId) && !isValidJid(userId))) {
     return {
       success: false,
@@ -1008,9 +1000,9 @@ const addSubdono = async (userId, numerodono, nazu = null) => {
     };
   }
   // Normalizar JID para LID se possível
-  if (nazu && isValidJid(userId)) {
+  if (socket && isValidJid(userId)) {
     try {
-      const lid = await getLidFromJidCached(nazu, userId);
+      const lid = await getLidFromJidCached(socket, userId);
       if (lid && lid.includes('@lid')) {
         userId = lid;
       }
@@ -1067,16 +1059,16 @@ const addSubdono = async (userId, numerodono, nazu = null) => {
   }
 };
 
-const removeSubdono = async (userId, nazu = null) => {
+const removeSubdono = async (userId, socket = null) => {
   if (!userId || typeof userId !== 'string' || (!isUserId(userId) && !isValidJid(userId))) {
     return {
       success: false,
       message: 'ID de usuário inválido. Use o LID ou marque o usuário.'
     };
   }
-  if (nazu && isValidJid(userId)) {
+  if (socket && isValidJid(userId)) {
     try {
-      const lid = await getLidFromJidCached(nazu, userId);
+      const lid = await getLidFromJidCached(socket, userId);
       if (lid && lid.includes('@lid')) userId = lid;
     } catch (e) {
       console.warn('Erro ao normalizar JID para LID em removeSubdono:', e.message);
@@ -2352,7 +2344,7 @@ function getLevelingUser(levelingData, userId) {
   }
 }
 
-function checkLevelUp(userId, userData, levelingData, nazu, from) {
+function checkLevelUp(userId, userData, levelingData, socket, from) {
   try {
     // Validação de entrada
     if (!userData || typeof userData !== 'object') return;
@@ -2383,8 +2375,8 @@ function checkLevelUp(userId, userData, levelingData, nazu, from) {
       levelUpText += `╰━━━━━━━━━━━━━━━━━━━━━━╯\n`;
       levelUpText += `\n🎊 *Parabéns pelo progresso!* 🎊`;
       
-      if (nazu && from) {
-        nazu.sendMessage(from, {
+      if (socket && from) {
+        socket.sendMessage(from, {
           text: levelUpText,
           mentions: [userId]
         }).catch(err => console.error('Erro ao enviar msg level up:', err.message));
@@ -2552,7 +2544,7 @@ const deleteAutoResponse = (groupId, responseId, isGlobal = false) => {
   }
 };
 
-const processAutoResponse = async (nazu, from, triggerText, info) => {
+const processAutoResponse = async (socket, from, triggerText, info) => {
   try {
     const normalizedTrigger = normalizar(triggerText);
     
@@ -2560,7 +2552,7 @@ const processAutoResponse = async (nazu, from, triggerText, info) => {
     const globalResponses = loadCustomAutoResponses();
     for (const response of globalResponses) {
       if (normalizedTrigger.includes(response.trigger || response.received)) {
-        await sendAutoResponse(nazu, from, response, info);
+        await sendAutoResponse(socket, from, response, info);
         return true;
       }
     }
@@ -2570,7 +2562,7 @@ const processAutoResponse = async (nazu, from, triggerText, info) => {
       const groupResponses = loadGroupAutoResponses(from);
       for (const response of groupResponses) {
         if (normalizedTrigger.includes(response.trigger)) {
-          await sendAutoResponse(nazu, from, response, info);
+          await sendAutoResponse(socket, from, response, info);
           return true;
         }
       }
@@ -2583,13 +2575,13 @@ const processAutoResponse = async (nazu, from, triggerText, info) => {
   }
 };
 
-const sendAutoResponse = async (nazu, from, response, quotedMessage) => {
+const sendAutoResponse = async (socket, from, response, quotedMessage) => {
   try {
     const responseData = response.response || response;
     
     // Compatibilidade com sistema antigo (apenas texto)
     if (typeof responseData === 'string') {
-      await nazu.sendMessage(from, { text: responseData }, { quoted: quotedMessage });
+      await socket.sendMessage(from, { text: responseData }, { quoted: quotedMessage });
       return;
     }
 
@@ -2646,7 +2638,7 @@ const sendAutoResponse = async (nazu, from, response, quotedMessage) => {
         messageContent.text = responseData.content || 'Resposta automática';
     }
 
-    await nazu.sendMessage(from, messageContent, sendOptions);
+    await socket.sendMessage(from, messageContent, sendOptions);
   } catch (error) {
     console.error('❌ Erro ao enviar auto-resposta:', error);
   }
@@ -2708,17 +2700,17 @@ const saveGlobalBlacklist = data => {
   }
 };
 
-const addGlobalBlacklist = async (userId, reason, addedBy, nazu = null) => {
+const addGlobalBlacklist = async (userId, reason, addedBy, socket = null) => {
   if (!userId || typeof userId !== 'string' || (!isUserId(userId) && !isValidJid(userId))) {
     return {
       success: false,
       message: 'ID de usuário inválido. Use o LID ou marque o usuário.'
     };
   }
-  // Se userId é um JID e temos o nazu, tentamos normalizar para LID
-  if (nazu && isValidJid(userId)) {
+  // Se userId é um JID e temos o socket, tentamos normalizar para LID
+  if (socket && isValidJid(userId)) {
     try {
-      const lid = await getLidFromJidCached(nazu, userId);
+      const lid = await getLidFromJidCached(socket, userId);
       if (lid && lid.includes('@lid')) userId = lid;
     } catch (e) {
       console.warn('Erro ao normalizar JID para LID em addGlobalBlacklist:', e.message);
@@ -2751,17 +2743,17 @@ const addGlobalBlacklist = async (userId, reason, addedBy, nazu = null) => {
   }
 };
 
-const removeGlobalBlacklist = async (userId, nazu = null) => {
+const removeGlobalBlacklist = async (userId, socket = null) => {
   if (!userId || typeof userId !== 'string' || (!isUserId(userId) && !isValidJid(userId))) {
     return {
       success: false,
       message: 'ID de usuário inválido. Use o LID ou marque o usuário.'
     };
   }
-  // Tenta normalizar para LID se tivermos acesso ao nazu
-  if (nazu && isValidJid(userId)) {
+  // Tenta normalizar para LID se tivermos acesso ao socket
+  if (socket && isValidJid(userId)) {
     try {
-      const lid = await getLidFromJidCached(nazu, userId);
+      const lid = await getLidFromJidCached(socket, userId);
       if (lid && lid.includes('@lid')) userId = lid;
     } catch (e) {
       console.warn('Erro ao normalizar JID para LID em removeGlobalBlacklist:', e.message);
@@ -3082,7 +3074,14 @@ const formatTimeLeft = (milliseconds) => {
 
 const loadGroupCustomization = () => {
   ensureJsonFileExists(GROUP_CUSTOMIZATION_FILE, { enabled: false, groups: {} });
-  return loadJsonFile(GROUP_CUSTOMIZATION_FILE);
+  const stored = loadJsonFile(GROUP_CUSTOMIZATION_FILE);
+  const current = projectGroupCustomization(stored);
+  if (JSON.stringify(current) !== JSON.stringify(stored)) {
+    const temporary = `${GROUP_CUSTOMIZATION_FILE}.${process.pid}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(current, null, 2));
+    fs.renameSync(temporary, GROUP_CUSTOMIZATION_FILE);
+  }
+  return current;
 };
 
 const saveGroupCustomization = (data) => {
@@ -3106,10 +3105,6 @@ const getGroupCustomization = (groupId) => {
   const data = loadGroupCustomization();
   const custom = data.groups[groupId];
   if (!custom) return null;
-  if (custom.customPersona && custom.customPersona !== 'shogun') {
-    const { customPersona, customName, ...current } = custom;
-    return current;
-  }
   return custom;
 };
 
@@ -3154,31 +3149,6 @@ const removeGroupCustomPhoto = (groupId) => {
       fs.unlinkSync(data.groups[groupId].customPhoto);
     }
     delete data.groups[groupId].customPhoto;
-    if (Object.keys(data.groups[groupId]).length === 0) {
-      delete data.groups[groupId];
-    }
-    saveGroupCustomization(data);
-  }
-  return true;
-};
-
-// Persona escolhida por !changeperso dentro de um grupo específico — usa o
-// mesmo arquivo/gate (enabled + isGroupAdmin) das demais personalizações de
-// grupo (nome, foto), em vez de um sistema separado.
-const setGroupCustomPersona = (groupId, personaKey) => {
-  const data = loadGroupCustomization();
-  if (!data.groups[groupId]) {
-    data.groups[groupId] = {};
-  }
-  data.groups[groupId].customPersona = personaKey;
-  saveGroupCustomization(data);
-  return true;
-};
-
-const removeGroupCustomPersona = (groupId) => {
-  const data = loadGroupCustomization();
-  if (data.groups[groupId]) {
-    delete data.groups[groupId].customPersona;
     if (Object.keys(data.groups[groupId]).length === 0) {
       delete data.groups[groupId];
     }
@@ -3420,8 +3390,6 @@ export {
   setGroupCustomPhoto,
   removeGroupCustomName,
   removeGroupCustomPhoto,
-  setGroupCustomPersona,
-  removeGroupCustomPersona,
   // Sistema de Áudio do Menu
   loadMenuAudio,
   saveMenuAudio,

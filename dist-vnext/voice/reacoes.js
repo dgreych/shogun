@@ -49,7 +49,7 @@ const TEMAS = Object.freeze([
     [['rank', 'top', 'placar', 'lider'], ['🏆', '🥇', '📈']],
     [['perfil', 'profile', 'user', 'usuario'], ['🪪', '👤', '🎭']],
     [['transcri', 'voz', 'tts', 'fala', 'speak'], ['🗣️', '🎙️', '💬']],
-    [['ia', 'gpt', 'chat', 'pergunt', 'resum', 'traduz', 'translate'], ['🧠', '💭', '🗯️']],
+    [['assistant', 'gpt', 'chat', 'pergunt', 'resum', 'traduz', 'translate'], ['🧠', '💭', '🗯️']],
     [['tempo', 'clima', 'weather', 'hora', 'data', 'agenda', 'lembr'], ['🌤️', '⏰', '📅']],
     [['busca', 'search', 'pesquis', 'procur'], ['🔍', '🧭', '🔦']],
     [['down', 'baix', 'dl'], ['📥', '⬇️', '📦']],

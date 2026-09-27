@@ -70,7 +70,7 @@ test('plano de importação respeita a ordem das chaves estrangeiras', () => {
 });
 
 test('coleta os dados ativos da Fase B sem alterar o contrato SQLite', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-import-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-import-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const databasePath = path.join(directory, 'tavern.sqlite');
   const tavern = await TavernService.create({ databasePath });
@@ -84,7 +84,7 @@ test('coleta os dados ativos da Fase B sem alterar o contrato SQLite', async t =
 });
 
 test('importação cria checkpoint e não reaplica a mesma origem', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-cutover-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-cutover-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const databasePath = path.join(directory, 'tavern.sqlite');
   const tavern = await TavernService.create({ databasePath });
@@ -102,7 +102,7 @@ test('importação cria checkpoint e não reaplica a mesma origem', async t => {
 });
 
 test('importação recusa destino ocupado sem checkpoint', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-occupied-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-occupied-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const databasePath = path.join(directory, 'tavern.sqlite');
   const tavern = await TavernService.create({ databasePath });

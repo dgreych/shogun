@@ -27,8 +27,8 @@ const REGRAS: ReadonlyArray<readonly [RegExp, Intencao]> = [
   [/(voice|voz|bass|reverb|overdrive|equaliz|reverse|pitch|flanger|chorus|phaser|tremolo|lowpass|grave|slowvid|fastvid|velocidade|speed|cortaraudio|cutaudio|cortarvideo|cutvideo|normaliz|volumeboost|aumentarvolume|^eco$)/, 'converter'],
   [/(pretoebranco|sepia|espelhar|rotacionar|mirror|rotate|qrcode|lerqr|readqr|scanqr)/, 'converter'],
   [/^(audio|video|vid)(lento|rapido|reverso|slow|fast|reverse)/, 'converter'],
-  // Geração por IA
-  [/^(ia$|gpt|imagine|desenh|logo|canvas|banner|perfilcanvas|historia|story|aventura)/, 'gerar'],
+  // Geração por conversa
+  [/^(assistant$|gpt|imagine|desenh|logo|canvas|banner|perfilcanvas|historia|story|aventura)/, 'gerar'],
   [/^(gemma|phi|qwen|llama|baichuan|marin|kimi|mistral|magistral|rakutenai|rocket|^yi$|swallow|falcon|codegemma)/, 'conversar'],
   [/^(resumir|ideias?|explic|corrigir|correcao|recomend|debater|debate|testia|testpersonalidade)/, 'conversar'],
   // Busca e consulta externa

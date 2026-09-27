@@ -83,8 +83,8 @@ class BoardRenderer {
     canvas.composite(new Jimp(WIDTH, HEIGHT, 0x00000022), 0, 0);
 
     const title = state.status === 'FINISHED'
-      ? 'GYOMEI TAVERN - PARTIDA ENCERRADA'
-      : `GYOMEI TAVERN - TURNO ${state.turn.number}`;
+      ? 'SHOGUN TAVERN - PARTIDA ENCERRADA'
+      : `SHOGUN TAVERN - TURNO ${state.turn.number}`;
     canvas.print(font32, 28, 12, { text: title, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, WIDTH - 56, 42);
 
     await this.drawHero(canvas, state, topId, playerNames[topId], 54, font16, font32);

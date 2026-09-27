@@ -17,7 +17,7 @@ const CONFIG = {
     DEFAULT_ACTION: 'avisar'
 };
 
-// Palavras-chave para detecção rápida (fallback se IA falhar)
+// Palavras-chave para detecção rápida (fallback se conversa falhar)
 const TOXIC_KEYWORDS = [
     // Ofensas gerais
     'idiota', 'burro', 'imbecil', 'retardado', 'otário', 'babaca',
@@ -80,7 +80,7 @@ const enableAntitoxic = (groupId, action = CONFIG.DEFAULT_ACTION) => {
         success: true,
         message: `🛡️ *ANTITOXIC ATIVADO*\n\n` +
                  `⚠️ *AVISO IMPORTANTE:*\n` +
-                 `Este sistema usa IA para detectar mensagens tóxicas e *pode cometer erros*. ` +
+                 `Este sistema usa conversa para detectar mensagens tóxicas e *pode cometer erros*. ` +
                  `Nem toda mensagem marcada é realmente ofensiva, e algumas ofensas podem passar despercebidas.\n\n` +
                  `📌 *Configuração:*\n` +
                  `• Ação: ${action}\n` +
@@ -186,9 +186,9 @@ const quickCheck = (message) => {
     return { isToxic: false, score: 0 };
 };
 
-// Analisar mensagem (para ser chamada com IA)
+// Analisar mensagem (para ser chamada com conversa)
 const analyzeMessage = async (message, aiFunction = null) => {
-    // Se não tiver função de IA, usar detecção por palavras-chave
+    // Se não tiver função de conversa, usar detecção por palavras-chave
     if (!aiFunction) {
         return quickCheck(message);
     }
@@ -217,11 +217,11 @@ Responda apenas o JSON, sem explicações adicionais.`;
                 isToxic: result.score >= CONFIG.THRESHOLD,
                 score: result.score,
                 reason: result.reason,
-                byAI: true
+                byConversation: true
             };
         }
     } catch (err) {
-        console.error('[ANTITOXIC] Erro na IA:', err.message);
+        console.error('[ANTITOXIC] Erro na conversa:', err.message);
     }
     
     // Fallback para detecção por palavras-chave
@@ -291,14 +291,14 @@ const processMessage = async (groupId, userId, message, aiFunction = null) => {
         reason: analysis.reason || 'Conteúdo potencialmente ofensivo',
         warningCount: userWarning.count,
         maxWarnings: CONFIG.MAX_WARNINGS,
-        byAI: analysis.byAI || false
+        byConversation: analysis.byConversation || false
     };
 };
 
 // Gerar mensagem de aviso
 const generateWarningMessage = (userId, result) => {
-    const aiDisclaimer = result.byAI 
-        ? '\n\n_⚠️ Esta análise foi feita por IA e pode conter erros._'
+    const aiDisclaimer = result.byConversation 
+        ? '\n\n_⚠️ Esta análise foi feita por conversa e pode conter erros._'
         : '';
     
     if (result.action === 'avisar') {

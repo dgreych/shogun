@@ -9,7 +9,7 @@ import { evaluateCommandAccess, commandAccessMessage } from '../../dist-vnext/co
 const anchor = "import { MessageReplayGuard, createMessageReplayKey } from './security/MessageReplayGuard.js';";
 const patched = patchVNextOwnershipHook(`${anchor}\n    switch (command) { default: break; }`);
 const start = patched.indexOf('// ===== VNEXT OWNERSHIP SEAM: PRE-SWITCH =====');
-const end = patched.indexOf('if (isCmd && command && !__gyomeiVNextContextCircuitOpen)', start);
+const end = patched.indexOf('if (isCmd && command && !__shogunVNextContextCircuitOpen)', start);
 const prefix = patched.slice(start, end);
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
@@ -40,7 +40,7 @@ test('guarda de acesso permanece antes da montagem do contexto e do circuit brea
 test('remetente citado nunca assume os privilégios do dono ou administrador', async () => {
   const source = fs.readFileSync('dados/src/index.js', 'utf8');
   const identityBlock = source.slice(source.indexOf('    let sender;'), source.indexOf('    // Debug: log do sender identificado'));
-  const resolveSender = new AsyncFunction('info', 'nazu', 'isValidJid', 'getLidFromJidCached',
+  const resolveSender = new AsyncFunction('info', 'socket', 'isValidJid', 'getLidFromJidCached',
     `const isGroup = info.key.remoteJid.endsWith('@g.us');\n${identityBlock}\nreturn sender;`);
   const quote = { extendedTextMessage: { text: '!menudono', contextInfo: { participant: '5511999999999@s.whatsapp.net' } } };
   const missing = { key: { remoteJid: '123456789@g.us', fromMe: false }, message: quote };

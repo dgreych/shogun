@@ -26,7 +26,7 @@ test('parser aceita JDBC MySQL e decodifica credenciais sem expor a URL', () => 
 });
 
 test('configuração privada seleciona MySQL sem colocar segredo no código', async t => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'gyomei-tavern-mysql-config-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'shogun-tavern-mysql-config-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const filename = path.join(directory, 'tavern.mysql.json');
   await fs.writeFile(filename, JSON.stringify({

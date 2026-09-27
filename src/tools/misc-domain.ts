@@ -42,8 +42,8 @@ export interface MiscToolsExecutionContext extends MacrotrancheExecutionContext 
   readonly messageType?: string | null;
   readonly dictionary?: ((word: string) => Promise<DictionaryResult>) | null;
   readonly ai?: { makeCognimaRequest(model: string, prompt: string, media: null): Promise<AiResponse> } | null;
-  readonly defaultAiModel?: string | null;
-  readonly formatAIResponse?: ((text: string) => string) | null;
+  readonly defaultConversationModel?: string | null;
+  readonly formatConversationResponse?: ((text: string) => string) | null;
   readonly getFileBuffer?: ((message: unknown, type: 'document' | 'video' | 'image' | 'audio') => Promise<unknown>) | null;
   readonly uploadMedia?: ((media: unknown) => Promise<string>) | null;
   readonly isQuotedImage?: boolean;
@@ -202,9 +202,9 @@ async function dictionaryCommand(context: MiscToolsExecutionContext): Promise<vo
   } catch {
     const prompt = `Defina a palavra "${word}" em português de forma completa e fofa. Inclua a classe gramatical, os principais significados e um exemplo de uso em uma frase curta e bonitinha.`;
     try {
-      const ai = required(context.ai, 'ia');
-      const model = required(context.defaultAiModel, 'DEFAULT_NVIDIA_MODEL');
-      const formatter = required(context.formatAIResponse, 'formatAIResponse');
+      const ai = required(context.ai, 'assistant');
+      const model = required(context.defaultConversationModel, 'DEFAULT_NVIDIA_MODEL');
+      const formatter = required(context.formatConversationResponse, 'formatConversationResponse');
       const response = await ai.makeCognimaRequest(model, prompt, null);
       await context.reply(formatter(response.data.choices[0].message.content));
     } catch (error) {
@@ -230,9 +230,9 @@ async function translatorCommand(context: MiscToolsExecutionContext): Promise<vo
   const text = parts.slice(1).join('|').trim();
   try {
     await context.reply(required(context.pickLoadingMessage, 'pickLoadingMessage')());
-    const ai = required(context.ai, 'ia');
-    const model = required(context.defaultAiModel, 'DEFAULT_NVIDIA_MODEL');
-    const formatter = required(context.formatAIResponse, 'formatAIResponse');
+    const ai = required(context.ai, 'assistant');
+    const model = required(context.defaultConversationModel, 'DEFAULT_NVIDIA_MODEL');
+    const formatter = required(context.formatConversationResponse, 'formatConversationResponse');
     const prompt = `Traduza o seguinte texto para ${language}:\n\n${text}\n\nForneça apenas a tradução, sem explicações adicionais.`;
     const response = await ai.makeCognimaRequest(model, prompt, null);
     await context.reply(`🌐✨ *Prontinho! Sua tradução para ${language.toUpperCase()} está aqui:*\n\n${formatter(response.data.choices[0].message.content)}`);

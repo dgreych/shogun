@@ -1,7 +1,7 @@
 {
   "name": "shogun-whatsapp",
   "version": "2.0.0",
-  "description": "SHOGUN é seu sentinela no WhatsApp: organiza grupos, encontra mídias, anima conversas e reúne ferramentas para o dia a dia.",
+  "description": "Bot para WhatsApp com moderação de grupos, mídia, figurinhas, jogos e ferramentas.",
   "type": "module",
   "main": "dados/src/connect.js",
   "scripts": {
@@ -77,5 +77,9 @@
   "engines": {
     "node": ">=20.19.0",
     "npm": ">=9.0.0"
+  },
+  "optionalDependencies": {
+    "@ffprobe-installer/ffprobe": "2.1.2",
+    "ffmpeg-static": "5.3.0"
   }
 }

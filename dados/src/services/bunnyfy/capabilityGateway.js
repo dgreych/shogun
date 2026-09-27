@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
+import { automaticInstanceToken } from './instanceAccess.js';
+import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
 
 const MODES = new Set(['off', 'primary', 'exclusive']);
 const TRANSIENT_CODES = new Set([
@@ -13,22 +15,23 @@ const TRANSIENT_CODES = new Set([
   'BUNNYFY_UNAVAILABLE'
 ]);
 
-function masterEnabled(env = process.env) {
+function masterEnabled(env = resolveBunnyFyRuntimeEnv()) {
   return ['true', '1'].includes(String(env.BUNNYFY_ENABLED || '').trim().toLowerCase());
 }
 
-function resolveCapabilityMode(name, env = process.env) {
+function resolveCapabilityMode(name, env = resolveBunnyFyRuntimeEnv()) {
   if (!masterEnabled(env)) return 'off';
   const mode = String(env[name] || 'off').trim().toLowerCase();
   if (!MODES.has(mode)) throw new BunnyFyError('BUNNYFY_CONFIG_INVALID');
   return mode;
 }
 
-function createCapabilityClient(env = process.env) {
+function createCapabilityClient(env = resolveBunnyFyRuntimeEnv()) {
   const configuredTimeout = Number(env.BUNNYFY_CAPABILITY_TIMEOUT_MS);
   return new BunnyFyClient({
     baseUrl: env.BUNNYFY_BASE_URL,
     token: env.BUNNYFY_API_TOKEN,
+    tokenProvider: automaticInstanceToken,
     allowInsecureHttp: ['true', '1'].includes(
       String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
     ),
@@ -57,7 +60,7 @@ async function executeCapability({ mode, operation, legacyFallback }) {
 async function upscaleImageWithBunnyFy(buffer, {
   mime = 'image/jpeg',
   scale = 2,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -94,7 +97,7 @@ async function upscaleImageWithBunnyFy(buffer, {
 
 async function removeBackgroundWithBunnyFy(buffer, {
   mime = 'image/jpeg',
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -131,7 +134,7 @@ async function removeBackgroundWithBunnyFy(buffer, {
 async function imageGenerateWithBunnyFy(prompt, {
   width,
   height,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -163,7 +166,7 @@ async function imageGenerateWithBunnyFy(prompt, {
 // transparente dos renderers locais, sem precisar tocar em nenhum
 // controlador que já os chama.
 async function tavernBoardWithBunnyFy(view, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -184,7 +187,7 @@ async function tavernBoardWithBunnyFy(view, {
 
 async function tavernHandWithBunnyFy(view, {
   page = 1,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -205,7 +208,7 @@ async function tavernHandWithBunnyFy(view, {
 }
 
 async function tavernSceneWithBunnyFy(view, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -230,7 +233,7 @@ async function tavernSceneWithBunnyFy(view, {
 // seção do plano de coordenação: falha/timeout/429 nunca cancela uma
 // transação de jogo já válida).
 async function nexoCircleWithBunnyFy(view, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -248,7 +251,7 @@ async function nexoCircleWithBunnyFy(view, {
 }
 
 async function nexoCharacterWithBunnyFy(view, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -266,7 +269,7 @@ async function nexoCharacterWithBunnyFy(view, {
 }
 
 async function nexoEncounterWithBunnyFy(view, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -287,7 +290,7 @@ async function stickerWithBunnyFy(buffer, {
   kind,
   fit = 'contain',
   mime = 'application/octet-stream',
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -325,7 +328,7 @@ async function stickerWithBunnyFy(buffer, {
 }
 
 async function stickerCanvasWithBunnyFy(payload, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -356,7 +359,7 @@ async function welcomeCardWithBunnyFy(payload, {
   avatarMime = 'image/jpeg',
   backgroundBuffer,
   backgroundMime = 'image/jpeg',
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -401,7 +404,7 @@ async function welcomeCardWithBunnyFy(payload, {
 }
 
 async function animatedLogoWithBunnyFy(model, texts, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -435,7 +438,7 @@ async function animatedLogoWithBunnyFy(model, texts, {
 }
 
 async function socialCardWithBunnyFy(kind, payload, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -470,7 +473,7 @@ async function socialCardWithBunnyFy(kind, payload, {
 async function transcriptionWithBunnyFy(buffer, {
   mime = 'audio/ogg',
   language,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -525,7 +528,7 @@ const SOCIAL_DOWNLOAD_METHODS = {
  * comando, sem duplicar essa lógica no gateway.
  */
 async function socialDownloadWithBunnyFy(provider, url, {
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -561,7 +564,7 @@ async function socialDownloadWithBunnyFy(provider, url, {
  */
 async function pinterestSearchWithBunnyFy(query, {
   limit,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {
@@ -579,7 +582,7 @@ async function pinterestSearchWithBunnyFy(query, {
 
 async function movieQuizWithBunnyFy({
   difficulty,
-  env = process.env,
+  env = resolveBunnyFyRuntimeEnv(),
   clientFactory = createCapabilityClient,
   legacyFallback = async () => null
 } = {}) {

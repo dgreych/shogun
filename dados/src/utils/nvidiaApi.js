@@ -133,7 +133,7 @@ function sleep(ms) {
 
 /**
  * Transporte legado direto mantido exclusivamente para o contrato de rollout
- * BUNNYFY_AI_MODE=off|primary. Em exclusive ele não deve ser chamado.
+ * BUNNYFY_CONVERSATION_MODE=off|primary. Em exclusive ele não deve ser chamado.
  * A credencial continua vindo apenas do ambiente/configuração privada do bot.
  */
 export async function requestNvidiaChat({

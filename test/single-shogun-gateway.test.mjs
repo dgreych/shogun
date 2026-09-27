@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 function gatewayProbe({ failPrompt = false } = {}) {
-  const source = fs.readFileSync('dados/src/funcs/private/ia.js', 'utf8');
+  const source = fs.readFileSync('dados/src/funcs/private/assistant.js', 'utf8');
   const start = source.indexOf('async function processUserMessages(');
   const end = source.indexOf('function processLearning(', start);
   assert.ok(start >= 0 && end > start);
@@ -22,7 +22,7 @@ function gatewayProbe({ failPrompt = false } = {}) {
       if (failPrompt) throw Error('perfil indisponível');
       return `PERFIL=${profile}`;
     } },
-    getBunnyFyAiModelOverride: () => undefined,
+    getBunnyFyConversationModelOverride: () => undefined,
     makeNvidiaRequest: async (model, text, systemPrompt) => {
       requests.push({ model, text: JSON.parse(text), systemPrompt });
       return { data: { choices: [{ message: { content: JSON.stringify({

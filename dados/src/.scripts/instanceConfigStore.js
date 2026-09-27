@@ -11,7 +11,7 @@ export const ENV_LOCAL_PATH = path.join(ROOT_DIR, '.env.local');
 export const ENV_EXAMPLE_PATH = path.join(ROOT_DIR, '.env.example');
 
 export const BUNNYFY_MODE_KEYS = Object.freeze([
-  'BUNNYFY_AI_MODE',
+  'BUNNYFY_CONVERSATION_MODE',
   'BUNNYFY_YOUTUBE_MODE',
   'BUNNYFY_IMAGES_MODE',
   'BUNNYFY_STICKERS_MODE',
@@ -38,7 +38,7 @@ function safeJsonRead(file, fallback = {}) {
 
 export function loadInstanceConfig() {
   const fallback = safeJsonRead(CONFIG_EXAMPLE_PATH, {
-    nomedono: 'Comandante',
+    nomedono: 'Dono',
     numerodono: '55DDDNUMERO',
     nomebot: 'SHOGUN',
     prefixo: '!'
@@ -148,9 +148,7 @@ export function validateEnvUpdates(updates) {
   const active = BUNNYFY_MODE_KEYS.some(key => String(updates[key] ?? 'off').trim().toLowerCase() !== 'off');
   if (enabled && active) {
     const base = String(updates.BUNNYFY_BASE_URL ?? '').trim();
-    const token = String(updates.BUNNYFY_API_TOKEN ?? '').trim();
     if (!base) failures.push('BunnyFy ativa exige a URL da API.');
-    if (!token) failures.push('BunnyFy ativa exige a credencial de consumidor.');
     if (base) {
       try {
         const url = new URL(base);

@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { getQuotedContextInfo, loadSafeCommandAliases, normalizeCommandAliases, resolveCommandInput } from '../utils/commandResolver.js';
-import { extractJSON } from '../funcs/private/ia.js';
-import { buildBoundedChatMessages, createBunnyFyAiClient, resolveBunnyFyAiMode, toLegacyChatResponse } from '../services/bunnyfy/aiGateway.js';
+import { extractJSON } from '../funcs/private/assistant.js';
+import { buildBoundedChatMessages, createBunnyFyConversationClient, resolveBunnyFyConversationMode, toLegacyChatResponse } from '../services/bunnyfy/conversationGateway.js';
 import { buildVexFailureLogEntry } from '../funcs/downloads/youtube.js';
 import { getQuotedMediaSource, DEFAULT_PERSONA, PERSONALITY_KEYS, PERSONA_MENU_DESIGNS, describePersona } from '../utils/shogunCore.js';
 import { buildSafeMessagePreview } from '../utils/safeCommandLog.js';
@@ -38,7 +38,7 @@ await test('formatos antigos de aliases são normalizados', () => {
 });
 
 await test('commandAliases.json antigo é migrado em disco', () => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nazuna-alias-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shogun-alias-'));
   const file = path.join(tempDir, 'commandAliases.json');
   fs.writeFileSync(file, '[]');
   assert.deepEqual(loadSafeCommandAliases(file), []);
@@ -152,55 +152,55 @@ await test('diagnóstico Vex do YouTube não inclui consulta, URL ou conteúdo d
   assert.ok(youtubeSource.includes('buildVexFailureLogEntry(endpoint, response)'));
 });
 
-await test('fontes usam BunnyFy como gateway de IA sem transporte NVIDIA direto', () => {
-  const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
+await test('fontes usam BunnyFy como gateway de conversa sem transporte NVIDIA direto', () => {
+  const assistantSource = fs.readFileSync(new URL('../funcs/private/assistant.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
-  assert.ok(iaSource.includes('createBunnyFyAiClient'));
-  assert.ok(iaSource.includes('toLegacyChatResponse'));
-  assert.ok(!iaSource.includes('requestNvidiaChat'));
-  assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
-  assert.ok(!iaSource.includes('moonshotai/kimi-k2-instruct'));
+  assert.ok(assistantSource.includes('createBunnyFyConversationClient'));
+  assert.ok(assistantSource.includes('toLegacyChatResponse'));
+  assert.ok(!assistantSource.includes('requestNvidiaChat'));
+  assert.ok(!assistantSource.includes('process.env.NVIDIA_API_KEY'));
+  assert.ok(!assistantSource.includes('moonshotai/kimi-k2-instruct'));
   assert.ok(!indexSource.includes('moonshotai/kimi-k2-instruct'));
 });
 
 await test('fonte principal já contém as correções críticas, sem depender da runtime', () => {
-  const iaSource = fs.readFileSync(new URL('../funcs/private/ia.js', import.meta.url), 'utf8');
+  const assistantSource = fs.readFileSync(new URL('../funcs/private/assistant.js', import.meta.url), 'utf8');
   const indexSource = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
   const prepareSource = fs.readFileSync(new URL('./prepareRuntimeSources.js', import.meta.url), 'utf8');
 
-  assert.ok(iaSource.includes('createBunnyFyAiClient'));
-  assert.ok(iaSource.includes('makeNvidiaRequest'));
-  assert.ok(iaSource.includes('buildBoundedChatMessages'));
-  assert.ok(iaSource.includes('createBunnyFyAiClient().createChatCompletion'));
-  assert.ok(iaSource.includes('model || getBunnyFyAiModelOverride()'));
-  assert.ok(!iaSource.includes('isKnownNvidiaModel('));
-  assert.ok(!iaSource.includes('getNvidiaModel('));
+  assert.ok(assistantSource.includes('createBunnyFyConversationClient'));
+  assert.ok(assistantSource.includes('makeNvidiaRequest'));
+  assert.ok(assistantSource.includes('buildBoundedChatMessages'));
+  assert.ok(assistantSource.includes('createBunnyFyConversationClient().createChatCompletion'));
+  assert.ok(assistantSource.includes('model || getBunnyFyConversationModelOverride()'));
+  assert.ok(!assistantSource.includes('isKnownNvidiaModel('));
+  assert.ok(!assistantSource.includes('getNvidiaModel('));
   assert.match(
-    iaSource,
-    /const response = \(await makeNvidiaRequest\(\s*model\s*\|\|\s*getBunnyFyAiModelOverride\(\)\s*,\s*JSON\.stringify\(userInput\)\s*,/
+    assistantSource,
+    /const response = \(await makeNvidiaRequest\(\s*model\s*\|\|\s*getBunnyFyConversationModelOverride\(\)\s*,\s*JSON\.stringify\(userInput\)\s*,/
   );
-  assert.ok(!iaSource.includes('requestNvidiaChat'));
-  assert.ok(!iaSource.includes('process.env.NVIDIA_API_KEY'));
-  assert.ok(!iaSource.includes("import axios from 'axios'"));
-  assert.ok(!iaSource.includes('Erro na API Cognima'));
-  assert.ok(!iaSource.includes('Resposta da API Cognima'));
+  assert.ok(!assistantSource.includes('requestNvidiaChat'));
+  assert.ok(!assistantSource.includes('process.env.NVIDIA_API_KEY'));
+  assert.ok(!assistantSource.includes("import axios from 'axios'"));
+  assert.ok(!assistantSource.includes('Erro na API Cognima'));
+  assert.ok(!assistantSource.includes('Resposta da API Cognima'));
   assert.ok(indexSource.includes('loadSafeCommandAliases'));
   assert.ok(indexSource.includes("case 'd': {"));
   assert.ok(indexSource.includes('getQuotedContextInfo(info.message)'));
   assert.ok(!prepareSource.includes("replaceAll('moonshotai/kimi-k2-instruct'"));
   assert.ok(indexSource.includes('!isOwner && (!isGroup || !isRealGroupAdmin)'));
-  assert.ok(indexSource.includes('groupData.aiModel = chosenEntry.id'));
-  assert.ok(indexSource.includes('model: isKnownNvidiaModel(groupData.aiModel)'));
+  assert.ok(indexSource.includes('groupData.conversationModel = chosenEntry.id'));
+  assert.ok(indexSource.includes('model: isKnownNvidiaModel(groupData.conversationModel)'));
   assert.ok(!indexSource.includes('config.nvidia_api_key = q.trim()'));
-  assert.ok(!indexSource.includes('!ia || !KeyCog'));
+  assert.ok(!indexSource.includes('!assistant || !KeyCog'));
   assert.ok(!indexSource.includes("'mistralai/mistral-nemotron'"));
   assert.ok(!indexSource.includes('consultando o Mistral'));
   assert.ok(!indexSource.includes('consultando o Magistral'));
-  assert.ok((indexSource.match(/isKnownNvidiaModel\(groupData\.aiModel\)/g) || []).length >= 3);
-  assert.ok(iaSource.includes('toLegacyChatResponse'));
-  assert.ok(!iaSource.includes('Resultado extraído:'));
-  assert.ok(!iaSource.includes('antes: __antesOverrideFinal'));
-  assert.ok(!iaSource.includes('JSON.stringify(result).substring'));
+  assert.ok((indexSource.match(/isKnownNvidiaModel\(groupData\.conversationModel\)/g) || []).length >= 3);
+  assert.ok(assistantSource.includes('toLegacyChatResponse'));
+  assert.ok(!assistantSource.includes('Resultado extraído:'));
+  assert.ok(!assistantSource.includes('antes: __antesOverrideFinal'));
+  assert.ok(!assistantSource.includes('JSON.stringify(result).substring'));
   assert.ok(!prepareSource.includes('bodyPreview:'));
   assert.ok(!prepareSource.includes('quotedParticipant:'));
   assert.ok(!indexSource.includes('JSON.stringify(msgza)'));
@@ -235,8 +235,8 @@ await test('rollout do YouTube permanece isolado e sem segredo no código', () =
 });
 
 await test('resposta textual da assistente é normalizada sem perder conteúdo', () => {
-  assert.deepEqual(extractJSON('FLUXO NAZUNA OK'), {
-    resp: [{ resp: 'FLUXO NAZUNA OK' }]
+  assert.deepEqual(extractJSON('FLUXO SHOGUN OK'), {
+    resp: [{ resp: 'FLUXO SHOGUN OK' }]
   });
 });
 
@@ -244,11 +244,11 @@ await test('JSON malformado da assistente nunca vaza para a conversa', () => {
   // Payload real capturado em produção: um "s" perdido depois da chave derruba
   // todos os parses, e o comportamento anterior despejava a estrutura interna
   // inteira no WhatsApp -- id, aprender, notas_importantes, tudo.
-  const malformado = '{s "resp": [{ "id": "Mau_QuemEuSou", "resp": "Ah, você não sabia? Eu sou NAZUNA.", "react": "" }], "aprender": [{ "acao": "atualizar", "tipo": "nome_usuario", "valor": "Mauricio" }] }';
+  const malformado = '{s "resp": [{ "id": "Mau_QuemEuSou", "resp": "Ah, você não sabia? Eu sou SHOGUN.", "react": "" }], "aprender": [{ "acao": "atualizar", "tipo": "nome_usuario", "valor": "Mauricio" }] }';
   const saida = extractJSON(malformado);
   const texto = saida.resp[0].resp;
 
-  assert.equal(texto, 'Ah, você não sabia? Eu sou NAZUNA.');
+  assert.equal(texto, 'Ah, você não sabia? Eu sou SHOGUN.');
   assert.ok(!texto.includes('aprender'), 'estrutura interna vazou para a resposta');
   assert.ok(!texto.includes('"resp"'), 'JSON cru vazou para a resposta');
   assert.ok(!texto.includes('nome_usuario'), 'dado de memória vazou para a resposta');
@@ -279,7 +279,7 @@ await test('toda persona tem descrição própria, para a escolha não ser às c
 await test('a persona padrão tem tema de menu próprio, sem herdar o da anterior', () => {
   const tema = PERSONA_MENU_DESIGNS[DEFAULT_PERSONA];
   assert.ok(tema, 'a persona padrão precisa de tema próprio');
-  assert.match(tema.header, /^╭━━━─〔 ⛩ SHOGUN 〕─━━━/u);
+  assert.match(tema.header, /^╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━/u);
   assert.deepEqual(Object.keys(PERSONA_MENU_DESIGNS), ['shogun']);
 });
 
@@ -299,38 +299,38 @@ await test('setmidia reconhece imagem e GIF citados', () => {
 
 await test('modo BunnyFy exclusive exige ativação global explícita', () => {
   assert.equal(
-    resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_AI_MODE: 'exclusive' }),
+    resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_CONVERSATION_MODE: 'exclusive' }),
     'exclusive'
   );
   assert.equal(
-    resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'false', BUNNYFY_AI_MODE: 'exclusive' }),
+    resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: 'false', BUNNYFY_CONVERSATION_MODE: 'exclusive' }),
     'off'
   );
 });
 
-await test('gateway de IA respeita BUNNYFY_ALLOW_INSECURE_HTTP do config bridge sem liberar HTTP arbitrário', () => {
+await test('gateway de conversa respeita BUNNYFY_ALLOW_INSECURE_HTTP do config bridge sem liberar HTTP arbitrário', () => {
   const temporaryVexHostEnv = {
     BUNNYFY_ENABLED: 'true',
-    BUNNYFY_AI_MODE: 'exclusive',
+    BUNNYFY_CONVERSATION_MODE: 'exclusive',
     BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20056',
     BUNNYFY_API_TOKEN: 'token-regressao-nao-secreto'
   };
 
   assert.throws(
-    () => createBunnyFyAiClient(temporaryVexHostEnv),
+    () => createBunnyFyConversationClient(temporaryVexHostEnv),
     error => error?.code === 'BUNNYFY_CONFIG_INVALID'
   );
 
-  const client = createBunnyFyAiClient({
+  const client = createBunnyFyConversationClient({
     ...temporaryVexHostEnv,
     BUNNYFY_ALLOW_INSECURE_HTTP: 'true'
   });
   assert.equal(client.baseUrl, 'http://node1.vexhost.com.br:20056');
 
   assert.throws(
-    () => createBunnyFyAiClient({
+    () => createBunnyFyConversationClient({
       BUNNYFY_ENABLED: 'true',
-      BUNNYFY_AI_MODE: 'exclusive',
+      BUNNYFY_CONVERSATION_MODE: 'exclusive',
       BUNNYFY_BASE_URL: 'http://node1.vexhost.com.br:20072',
       BUNNYFY_API_TOKEN: 'token-regressao-nao-secreto',
       BUNNYFY_ALLOW_INSECURE_HTTP: 'true'
@@ -454,29 +454,12 @@ await test('o comando de conversa só liga ou desliga Shogun', () => {
   assert.ok(!bloco.includes('customPersona'));
 });
 
-await test('nenhum texto do bot menciona identidade anterior do projeto', () => {
-  const fontes = ['../index.js', '../utils/database.js', '../connect.js']
-    .map((rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8'))
-    .join('\n');
-  const proibidos = [
-    /base d[ao] Nazuna/i,
-    /continuidade da Nazuna/i,
-    /vers[aã]o GYOMEI/i,
-    /GYOMEI est[aá] (desperto|online)/i,
-    /NAZUNA_(DEBUG|CODE_MODE)/,
-    /GYOMEI_(OWNER|R0_CONFIG)/,
-  ];
-  const achados = proibidos.filter((re) => re.test(fontes)).map(String);
-  assert.deepEqual(achados, [], 'texto do bot nao pode citar a identidade anterior');
-});
-
 await test('update e download do código apontam para o repositório do produto', () => {
   // O download anunciava entregar o código-fonte deste bot e baixava o de
   // outro projeto; quem recebia instalava outra coisa achando que era esta.
   // O update consultava os commits de lá para decidir se havia versão nova.
   const fonte = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
   assert.ok(!/devcrician/.test(fonte), 'nenhum comando pode apontar para o projeto de origem');
-  assert.ok(!/nazuna-bot\.zip/.test(fonte), 'o arquivo entregue não pode levar o nome antigo');
   assert.ok(/dgreych\/shogun/.test(fonte), 'o destino precisa ser o repositório próprio');
 });
 

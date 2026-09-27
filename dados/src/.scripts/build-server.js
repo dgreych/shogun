@@ -78,7 +78,7 @@ const GENERATED_DATABASE_FILES = [
 const RUNTIME_ARTIFACTS = [
   'dados/src/.runtime-index.js',
   'dados/src/.runtime-connect.js',
-  'dados/src/funcs/private/.runtime-ia.js',
+  'dados/src/funcs/private/.runtime-assistant.js',
   'dados/src/menus/.runtime-index.js',
   'dados/src/menus/.runtime-menubn.js',
   'dados/src/.scripts/.runtime-start.js'
@@ -202,31 +202,31 @@ function rebaseLocalStatePaths(localState) {
   for (const relativePath of localState) visit(path.join(bundleDir, relativePath.replace(/\/$/, '')));
 }
 
-function secureIaDeclaration() {
+function secureAssistantDeclaration() {
   return "const IA_API_KEY = String(process.env.NVIDIA_API_KEY || '').trim();";
 }
 
 function sanitizeBundleSource() {
-  const iaFile = path.join(bundleDir, 'dados', 'src', 'funcs', 'private', 'ia.js');
-  if (!fs.existsSync(iaFile)) throw new Error('Arquivo legado da IA não foi encontrado na build.');
+  const assistantFile = path.join(bundleDir, 'dados', 'src', 'funcs', 'private', 'assistant.js');
+  if (!fs.existsSync(assistantFile)) throw new Error('Arquivo legado da conversa não foi encontrado na build.');
 
-  let source = fs.readFileSync(iaFile, 'utf8');
-  const legacyIaKeyPattern = /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/;
-  if (legacyIaKeyPattern.test(source)) {
-    source = source.replace(legacyIaKeyPattern, secureIaDeclaration());
+  let source = fs.readFileSync(assistantFile, 'utf8');
+  const legacyCredentialPattern = /const IA_API_KEY\s*=\s*['"][^'"]*['"]\s*;/;
+  if (legacyCredentialPattern.test(source)) {
+    source = source.replace(legacyCredentialPattern, secureAssistantDeclaration());
   }
 
   if (/nvapi-[A-Za-z0-9_-]+/.test(source)) {
     throw new Error('A build ainda contém uma chave NVIDIA hardcoded.');
   }
 
-  const usesBunnyFyGateway = source.includes('createBunnyFyAiClient');
+  const usesBunnyFyGateway = source.includes('createBunnyFyConversationClient');
   const externalizesLegacyNvidiaKey = source.includes('process.env.NVIDIA_API_KEY');
   if (!usesBunnyFyGateway && !externalizesLegacyNvidiaKey) {
-    throw new Error('A build de IA não usa o gateway BunnyFy nem externaliza a credencial NVIDIA legada.');
+    throw new Error('A build de conversa não usa o gateway BunnyFy nem externaliza a credencial NVIDIA legada.');
   }
 
-  fs.writeFileSync(iaFile, source);
+  fs.writeFileSync(assistantFile, source);
 }
 
 function resetJsonPreservingType(file) {

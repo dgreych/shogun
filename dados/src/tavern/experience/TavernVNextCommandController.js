@@ -126,7 +126,7 @@ class TavernVNextCommandController extends TavernCommandController {
 
     if (!group?.enabled) {
       const lines = [
-        '🍺 *GYOMEI TAVERN*',
+        '🍺 *SHOGUN TAVERN*',
         'Uma mesa de duelo por cartas feita para acontecer dentro do grupo.',
         '',
         'A mesa ainda está fechada neste grupo.'
@@ -189,7 +189,7 @@ class TavernVNextCommandController extends TavernCommandController {
     const player = await this.game.tavern.repository.getPlayer(playerId);
     if (!player?.activeClassId) {
       await transport.sendGroupText(
-        `🍺 *GYOMEI TAVERN — MESA LIVRE*\n\n` +
+        `🍺 *SHOGUN TAVERN — MESA LIVRE*\n\n` +
         `⚔️ *${prefix}duelo bot* te bota numa partida agora, sozinho, sem precisar de mais ninguém no grupo.\n\n` +
         `Quando quiser fixar suas cartas próprias (não é obrigatório pra jogar):\n\n` +
         this.buildStyleMenu(prefix) +
@@ -200,7 +200,7 @@ class TavernVNextCommandController extends TavernCommandController {
 
     const visual = classVisual(player.activeClassId);
     await transport.sendGroupText(
-      `🍺 *GYOMEI TAVERN — MESA LIVRE*\n\n` +
+      `🍺 *SHOGUN TAVERN — MESA LIVRE*\n\n` +
       `Não há duelo seu em andamento. Seu estilo: *${visual.archetype}* (${visual.label}). Modo padrão: *${turnMode.toLowerCase()}*.\n\n` +
       `🤖 ${prefix}duelo bot — treinar agora, sozinho\n` +
       `⚔️ ${prefix}duelo @usuario — desafiar uma pessoa\n` +
@@ -234,7 +234,7 @@ class TavernVNextCommandController extends TavernCommandController {
     const player = state.players[playerId];
     const analysis = this.experienceAdvisor.analyze(state, playerId, { prefix });
     const lines = [
-      '🕯️ *SUA MÃO — GYOMEI TAVERN*',
+      '🕯️ *SUA MÃO — SHOGUN TAVERN*',
       `Mana: *${player.mana.current}/${player.mana.max}* · Cartas: *${player.hand.length}*`
     ];
     const deadline = deadlineLabel(analysis.secondsRemaining);

@@ -13,6 +13,7 @@ import {
   writeJson
 } from './shogunStore.js';
 import { getActivePersona } from './shogunCore.js';
+import { resolveBrandMenuMedia } from './brandAssets.js';
 import { transcriptionWithBunnyFy } from '../services/bunnyfy/capabilityGateway.js';
 
 const MAX_RECENT_MESSAGES = 5000;
@@ -143,6 +144,8 @@ export function getCommandMedia(command) {
 // global/legada (setmidia <slot>), mantendo compatibilidade com o que já
 // estava configurado antes dessa camada existir.
 export function resolveCommandMedia(command) {
+  const brand = resolveBrandMenuMedia(command);
+  if (brand) return brand;
   const persona = getActivePersona();
   return getCommandMedia(`${persona}_${command}`) || getCommandMedia(command);
 }
@@ -170,7 +173,7 @@ function installCommandMediaInterceptor(sock) {
   sock.sendMessage = async (jid, content, options) => {
     try {
       const context = commandContext.get(jid);
-      const fresh = context && Date.now() - context.timestamp < 20000;
+      const fresh = context && context.messageId === options?.quoted?.key?.id && Date.now() - context.timestamp < 20000;
       const replaceable = content && (
         content.image
         || content.video
@@ -217,16 +220,16 @@ function installCommandMediaInterceptor(sock) {
   };
 }
 
-export function prepareCommandMediaContext(sock, chatId, command) {
+export function prepareCommandMediaContext(sock, chatId, command, message) {
   const normalized = normalizeCommand(command);
   const ignored = new Set([
     'setmidia', 'delmidia', 'remmidia', 'menumidia', 'listmidias',
     'setprompt', 'verprompt', 'resetprompt', 'prompts', 'menuprompt',
     'adddono', 'deldono', 'listdonos'
   ]);
-  if (!chatId || !normalized || ignored.has(normalized)) return;
+  if (!chatId || !normalized || !message?.key?.id || ignored.has(normalized)) return;
   installCommandMediaInterceptor(sock);
-  commandContext.set(chatId, { command: normalized, timestamp: Date.now() });
+  commandContext.set(chatId, { command: normalized, messageId: message.key.id, timestamp: Date.now() });
 }
 
 function recentKey(remoteJid, id) {

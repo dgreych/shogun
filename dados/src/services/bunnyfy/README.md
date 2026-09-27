@@ -1,4 +1,4 @@
-# Cliente BunnyFy do Gyomei
+# Cliente BunnyFy do Shogun
 
 Este módulo concentra autenticação, timeout, limite de resposta, idempotência,
 erros e validação do contrato BunnyFy. Consumidores não devem montar URLs,

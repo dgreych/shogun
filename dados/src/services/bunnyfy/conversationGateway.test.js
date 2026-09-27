@@ -5,39 +5,39 @@ import {
   DEFAULT_LIMITS,
   buildBunnyFyAccessMessage,
   buildBoundedChatMessages,
-  createBunnyFyAiClient,
+  createBunnyFyConversationClient,
   isBunnyFyAccessError,
   isNvidiaIsolated,
   resolveBunnyFyAccountUrl,
-  resolveBunnyFyAiMode,
-  shouldFallbackDirectAi,
+  resolveBunnyFyConversationMode,
+  shouldFallbackDirectConversation,
   toLegacyChatResponse
-} from './aiGateway.js';
+} from './conversationGateway.js';
 
 test('modo BunnyFy exige ativação global e aceita somente estados explícitos', () => {
-  assert.equal(resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'false', BUNNYFY_AI_MODE: 'exclusive' }), 'off');
-  assert.equal(resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_AI_MODE: 'primary' }), 'primary');
-  assert.equal(resolveBunnyFyAiMode({ BUNNYFY_ENABLED: '1', BUNNYFY_AI_MODE: 'exclusive' }), 'exclusive');
+  assert.equal(resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: 'false', BUNNYFY_CONVERSATION_MODE: 'exclusive' }), 'off');
+  assert.equal(resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_CONVERSATION_MODE: 'primary' }), 'primary');
+  assert.equal(resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: '1', BUNNYFY_CONVERSATION_MODE: 'exclusive' }), 'exclusive');
   assert.throws(
-    () => resolveBunnyFyAiMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_AI_MODE: 'typo' }),
+    () => resolveBunnyFyConversationMode({ BUNNYFY_ENABLED: 'true', BUNNYFY_CONVERSATION_MODE: 'typo' }),
     error => error.code === 'BUNNYFY_CONFIG_INVALID'
   );
 });
 
-test('quarentena NVIDIA é explícita e desliga somente o caminho de IA', () => {
+test('quarentena NVIDIA é explícita e desliga somente o caminho de conversa', () => {
   assert.equal(isNvidiaIsolated({}), false);
   assert.equal(isNvidiaIsolated({ BUNNYFY_NVIDIA_ISOLATED: 'false' }), false);
   assert.equal(isNvidiaIsolated({ BUNNYFY_NVIDIA_ISOLATED: 'true' }), true);
   assert.equal(isNvidiaIsolated({ BUNNYFY_NVIDIA_ISOLATED: '1' }), true);
 });
 
-test('quarentena NVIDIA impede BunnyFy-AI e fallback direto sem tocar em outros modos', async () => {
+test('quarentena NVIDIA impede BunnyFy-conversa e fallback direto sem tocar em outros modos', async () => {
   let bunnyCalls = 0;
   let directCalls = 0;
-  const client = createBunnyFyAiClient(
+  const client = createBunnyFyConversationClient(
     {
       BUNNYFY_ENABLED: 'true',
-      BUNNYFY_AI_MODE: 'primary',
+      BUNNYFY_CONVERSATION_MODE: 'primary',
       BUNNYFY_NVIDIA_ISOLATED: 'true',
       BUNNYFY_BASE_URL: 'https://bunnyfy.example',
       BUNNYFY_API_TOKEN: 'token-bunnyfy-1234567890',
@@ -49,7 +49,7 @@ test('quarentena NVIDIA impede BunnyFy-AI e fallback direto sem tocar em outros 
       bunnyFyClient: {
         async createChatCompletion() {
           bunnyCalls += 1;
-          throw new Error('não deveria chamar BunnyFy-AI');
+          throw new Error('não deveria chamar BunnyFy-conversa');
         }
       },
       directRequest: async () => {
@@ -68,21 +68,21 @@ test('quarentena NVIDIA impede BunnyFy-AI e fallback direto sem tocar em outros 
 });
 
 test('fallback direto aceita somente indisponibilidade transitória da BunnyFy', () => {
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_TOOL_UNAVAILABLE', status: 503 }), true);
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_TIMEOUT', status: 504 }), true);
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_NETWORK_ERROR' }), true);
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_BAD_REQUEST', status: 400 }), false);
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_AUTH_FAILED', status: 401 }), false);
-  assert.equal(shouldFallbackDirectAi({ code: 'BUNNYFY_RATE_LIMITED', status: 429 }), false);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_TOOL_UNAVAILABLE', status: 503 }), true);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_TIMEOUT', status: 504 }), true);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_NETWORK_ERROR' }), true);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_BAD_REQUEST', status: 400 }), false);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_AUTH_FAILED', status: 401 }), false);
+  assert.equal(shouldFallbackDirectConversation({ code: 'BUNNYFY_RATE_LIMITED', status: 429 }), false);
 });
 
 test('off usa NVIDIA direta sem encostar na BunnyFy', async () => {
   let bunnyCalls = 0;
   let directCalls = 0;
-  const client = createBunnyFyAiClient(
+  const client = createBunnyFyConversationClient(
     {
       BUNNYFY_ENABLED: 'false',
-      BUNNYFY_AI_MODE: 'exclusive',
+      BUNNYFY_CONVERSATION_MODE: 'exclusive',
       NVIDIA_API_KEY: 'chave-local-de-teste-1234567890'
     },
     {
@@ -118,10 +118,10 @@ test('off usa NVIDIA direta sem encostar na BunnyFy', async () => {
 test('primary cai para NVIDIA direta em 503 da BunnyFy', async () => {
   let bunnyCalls = 0;
   let directCalls = 0;
-  const client = createBunnyFyAiClient(
+  const client = createBunnyFyConversationClient(
     {
       BUNNYFY_ENABLED: 'true',
-      BUNNYFY_AI_MODE: 'primary',
+      BUNNYFY_CONVERSATION_MODE: 'primary',
       BUNNYFY_BASE_URL: 'https://bunnyfy.example',
       BUNNYFY_API_TOKEN: 'token-bunnyfy-1234567890',
       NVIDIA_API_KEY: 'chave-local-de-teste-1234567890'
@@ -160,10 +160,10 @@ test('exclusive nunca cai para NVIDIA direta', async () => {
     code: 'BUNNYFY_TOOL_UNAVAILABLE',
     status: 503
   });
-  const client = createBunnyFyAiClient(
+  const client = createBunnyFyConversationClient(
     {
       BUNNYFY_ENABLED: 'true',
-      BUNNYFY_AI_MODE: 'exclusive',
+      BUNNYFY_CONVERSATION_MODE: 'exclusive',
       BUNNYFY_BASE_URL: 'https://bunnyfy.example',
       BUNNYFY_API_TOKEN: 'token-bunnyfy-1234567890',
       NVIDIA_API_KEY: 'chave-local-de-teste-1234567890'

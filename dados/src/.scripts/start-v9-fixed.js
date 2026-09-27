@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'path';
+import { bootstrapInstance } from '../../../scripts/bootstrap-instance.mjs';
 
 import { loadLocalEnv } from './envLoader.js';
 import { adquirirTravaDeSessao } from './sessionLock.js';
@@ -9,6 +10,7 @@ import { finalizeShogunRuntime } from './finalizeShogunRuntime.js';
 import { applyCriticalRuntimeFixes } from './applyCriticalRuntimeFixes.js';
 
 try {
+  await bootstrapInstance();
   const envResult = loadLocalEnv();
   if (envResult.exists && envResult.loaded.length > 0) {
     console.log(`🔐 Ambiente local carregado (${envResult.loaded.length} variável(is)).`);

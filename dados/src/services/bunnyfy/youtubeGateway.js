@@ -1,6 +1,7 @@
 import { BunnyFyClient } from './BunnyFyClient.js';
 import { BunnyFyError } from './BunnyFyError.js';
 import { resolveBunnyFyRuntimeEnv } from './runtimeConfig.js';
+import { automaticInstanceToken } from './instanceAccess.js';
 
 const YOUTUBE_MODES = new Set(['off', 'primary', 'exclusive']);
 const YOUTUBE_HOSTS = new Set([
@@ -390,6 +391,7 @@ function createBunnyFyYoutubeClient(env = resolveBunnyFyRuntimeEnv()) {
   return new BunnyFyClient({
     baseUrl: env.BUNNYFY_BASE_URL,
     token: env.BUNNYFY_API_TOKEN,
+    tokenProvider: automaticInstanceToken,
     allowInsecureHttp: ['true', '1'].includes(
       String(env.BUNNYFY_ALLOW_INSECURE_HTTP || '').trim().toLowerCase()
     ),

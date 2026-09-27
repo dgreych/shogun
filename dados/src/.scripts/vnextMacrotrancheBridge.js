@@ -406,9 +406,9 @@ export function buildMacrotrancheLegacyBridge(source) {
     .join('');
 
   const bridge = `${MACROTRANCHE_BRIDGE_MARKER}\n`
-    + `    const __gyomeiMacrotrancheOwnedCommands = new Set(${tokenLiteral});\n`
-    + '    const __gyomeiExecuteMacrotrancheLegacy = async (__gyomeiCommand) => {\n'
-    + `      switch (__gyomeiCommand) {${compatibilityBody}\n      }\n`
+    + `    const __shogunMacrotrancheOwnedCommands = new Set(${tokenLiteral});\n`
+    + '    const __shogunExecuteMacrotrancheLegacy = async (__shogunCommand) => {\n'
+    + `      switch (__shogunCommand) {${compatibilityBody}\n      }\n`
     + '    };\n\n';
 
   return source.slice(0, mainSwitch.anchorIndex) + bridge + source.slice(mainSwitch.anchorIndex);

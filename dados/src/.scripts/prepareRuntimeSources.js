@@ -12,7 +12,7 @@ function replaceRequired(source, search, replacement, description) {
   return updated;
 }
 
-function patchIaSource(source) {
+function patchAssistantSource(source) {
   let output = source;
 
   if (!output.includes(`import * as automacoesV9 from '../../utils/shogunRuntime.js';`)) {
@@ -20,18 +20,18 @@ function patchIaSource(source) {
       output,
       `import userContextDB from '../../utils/userContextDB.js';`,
       `import userContextDB from '../../utils/userContextDB.js';\nimport * as automacoesV9 from '../../utils/shogunRuntime.js';`,
-      'import das configurações do Gyomei na IA'
+      'import das configurações do Shogun na conversa'
     );
   }
 
   if (output.includes('moonshotai/kimi-k2-instruct')) {
-    throw new Error('Modelo descontinuado encontrado diretamente na fonte da IA.');
+    throw new Error('Modelo descontinuado encontrado diretamente na fonte da conversa.');
   }
   if (output.includes('requestNvidiaChat') || output.includes('resolveEmbeddedNvidiaKey') || output.includes('getNvidiaApiKey')) {
-    throw new Error('Transporte NVIDIA direto encontrado na fonte da IA; use BunnyFy.');
+    throw new Error('Transporte NVIDIA direto encontrado na fonte da conversa; use BunnyFy.');
   }
-  if (!output.includes('createBunnyFyAiClient')) {
-    throw new Error('Cliente BunnyFy AI não encontrado na fonte da IA.');
+  if (!output.includes('createBunnyFyConversationClient')) {
+    throw new Error('Cliente BunnyFy conversa não encontrado na fonte da conversa.');
   }
 
   return output;
@@ -46,9 +46,9 @@ function patchIndexSource(source) {
 
   output = replaceRequired(
     output,
-    `import * as ia from './funcs/private/ia.js';`,
-    `import * as ia from './funcs/private/.runtime-ia.js';\nimport * as automacoesV9 from './utils/shogunRuntime.js';\nimport { createShogunMenuTheme } from './menus/theme.js';`,
-    'imports de execução da IA e das automações'
+    `import * as assistant from './funcs/private/assistant.js';`,
+    `import * as assistant from './funcs/private/.runtime-assistant.js';\nimport * as automacoesV9 from './utils/shogunRuntime.js';\nimport { createShogunMenuTheme } from './menus/theme.js';`,
+    'imports de execução da conversa e das automações'
   );
 
   output = replaceRequired(
@@ -81,9 +81,9 @@ function patchIndexSource(source) {
   }
 
   const automationHook = `
-    // ===== AUTOMAÇÕES GYOMEI =====
+    // ===== AUTOMAÇÕES SHOGUN =====
     if (isCmd) {
-      automacoesV9.prepareCommandMediaContext(nazu, from, command);
+      automacoesV9.prepareCommandMediaContext(socket, from, command, info);
     }
 
     const _directAudioSource = automacoesV9.getDirectAudioSource(info.message);
@@ -106,7 +106,7 @@ function patchIndexSource(source) {
 
 `;
 
-  const botShortLine = "    const _botShort = (nazu && nazu.user && (nazu.user.id || nazu.user.lid)) ? String((nazu.user.id || nazu.user.lid).split(':')[0]) : '';";
+  const botShortLine = "    const _botShort = (socket && socket.user && (socket.user.id || socket.user.lid)) ? String((socket.user.id || socket.user.lid).split(':')[0]) : '';";
   output = replaceRequired(
     output,
     botShortLine,
@@ -114,14 +114,14 @@ function patchIndexSource(source) {
     'gancho principal das automações'
   );
 
-  const oldIaCondition = `if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {`;
-  const newIaCondition = `const _quotedParticipantRaw = getQuotedContextInfo(info.message)?.participant || info.message?.extendedTextMessage?.contextInfo?.participant || '';
+  const oldAssistantCondition = `if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {`;
+  const newAssistantCondition = `const _quotedParticipantRaw = getQuotedContextInfo(info.message)?.participant || info.message?.extendedTextMessage?.contextInfo?.participant || '';
     const _quotedParticipant = String(_quotedParticipantRaw).split(':')[0].split('@')[0];
 
     const _replyBotIds = [
       _botShort,
-      String(nazu.user?.id || '').split(':')[0].split('@')[0],
-      String(nazu.user?.lid || '').split(':')[0].split('@')[0],
+      String(socket.user?.id || '').split(':')[0].split('@')[0],
+      String(socket.user?.lid || '').split(':')[0].split('@')[0],
       String(botNumber || '').split(':')[0].split('@')[0]
     ].filter(Boolean);
 
@@ -167,20 +167,20 @@ function patchIndexSource(source) {
 
     if (_assistantTriggered) {`;
 
-  output = replaceRequired(output, oldIaCondition, newIaCondition, 'gatilho da IA por resposta');
+  output = replaceRequired(output, oldAssistantCondition, newAssistantCondition, 'gatilho da conversa por resposta');
 
   output = replaceRequired(
     output,
     `if (budy2.replaceAll('@' + _botShort, '').length > 2) {`,
-    `if (_replyToBot || _personaTriggered || budy2.replaceAll('@' + _botShort, '').length > 2) {\n    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ENTROU_BLOCO_IA_INDEX' }) + '\\n'); } catch {}`,
-    'liberação de respostas curtas à IA'
+    `if (_replyToBot || _personaTriggered || budy2.replaceAll('@' + _botShort, '').length > 2) {\n    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ENTROU_BLOCO_ASSISTANT_INDEX' }) + '\\n'); } catch {}`,
+    'liberação de respostas curtas à conversa'
   );
 
   output = replaceRequired(
     output,
-    `    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
-    `    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA', personality, tipoDaFuncao: typeof ia.makeAssistentRequest, nomeDaFuncao: ia.makeAssistentRequest && ia.makeAssistentRequest.name, previewDaFuncao: ia.makeAssistentRequest ? String(ia.makeAssistentRequest).slice(0, 200) : null, iaKeys: ia ? Object.keys(ia).slice(0, 30) : null }) + '\\n'); } catch (__diagErr) { try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA_ERRO', erro: String(__diagErr && __diagErr.stack || __diagErr) }) + '\\n'); } catch {} }\n    ia.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.aiModel) ? groupData.aiModel : undefined\n    }, nazu, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
-    'checkpoint antes da chamada da IA'
+    `    assistant.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined\n    }, socket, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
+    `    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_ASSISTANT', personality, tipoDaFuncao: typeof assistant.makeAssistentRequest, nomeDaFuncao: assistant.makeAssistentRequest && assistant.makeAssistentRequest.name, previewDaFuncao: assistant.makeAssistentRequest ? String(assistant.makeAssistentRequest).slice(0, 200) : null, assistantKeys: assistant ? Object.keys(assistant).slice(0, 30) : null }) + '\\n'); } catch (__diagErr) { try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA_ERRO', erro: String(__diagErr && __diagErr.stack || __diagErr) }) + '\\n'); } catch {} }\n    assistant.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined\n    }, socket, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
+    'checkpoint antes da chamada da conversa'
   );
 
   const commandCases = `case 't':
@@ -220,7 +220,7 @@ case 'prompts':
 case 'menuprompt':
 case 'promptmenu':
   if (!isOwner) return reply('Somente donos podem configurar a conversa.');
-  await reply(\`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+  await reply(\`╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━
 ┃
 ┃  *ORIENTAÇÕES DE CONVERSA*
 ┃  Ver › \${prefix}verprompt
@@ -370,7 +370,7 @@ case 'identidadepadrao':
     writeJsonFile(CONFIG_FILE, defaultConfig);
     saveMenuDesign(createShogunMenuTheme());
     try {
-      await nazu.updateProfileName(defaultDisplayName);
+      await socket.updateProfileName(defaultDisplayName);
     } catch (e) {
       console.error('[IDENTIDADE] Não foi possível atualizar o nome:', e.message);
     }
@@ -387,7 +387,7 @@ case 'listmidias':
     if (!isOwner) return reply('Somente donos podem consultar as mídias configuradas.');
     const configuredMedia = automacoesV9.listCommandMedia();
     const mediaLines = configuredMedia.map(item => \`┃  \${prefix}\${item.command} › \${item.gifPlayback ? 'GIF' : item.type}\`).join('\\n') || '┃  Nenhuma mídia personalizada.';
-    await reply(\`╭━━━─〔 ⛩ SHOGUN 〕─━━━
+    await reply(\`╭━━━─〔 🐈‍⬛ SHOGUN 〕─━━━
 ┃
 ┃  *MÍDIAS DOS COMANDOS*
 ┃  Responda a uma foto, GIF ou vídeo:
@@ -429,7 +429,7 @@ case 'return5':
     const returnPosition = command === 'return'
       ? Number(String(q || '').trim().match(/^[1-5]/)?.[0])
       : Number(command.replace('return', ''));
-    const returnedMessage = await automacoesV9.returnDeletedMessage(nazu, from, returnPosition, info);
+    const returnedMessage = await automacoesV9.returnDeletedMessage(socket, from, returnPosition, info);
     if (!returnedMessage.ok) await reply(\`❌ \${returnedMessage.msg}\`);
   } catch (e) {
     console.error('[RETURN] Erro:', e);
@@ -439,7 +439,7 @@ case 'return5':
 
 `;
 
-  output = replaceRequired(output, `case 'criador':`, `${commandCases}case 'criador':`, 'novos comandos do Gyomei');
+  output = replaceRequired(output, `case 'criador':`, `${commandCases}case 'criador':`, 'novos comandos do Shogun');
 
   output = replaceRequired(
     output,
@@ -448,7 +448,8 @@ case 'return5':
   try {
     const TextinCriadorInfo = \`╭━━━⊱ ⚔️ *CRIADOR* ⚔️ ⊱━━━╮
 │
-│ *Alaska dev* (Maurício)
+│ *Maurício Almeida*
+│ Criador e mantenedor do SHOGUN
 │
 │ 🌐 github.com/dgreych/shogun
 │ 📱 wa.me/5522997028553
@@ -482,8 +483,8 @@ function patchConnectSource(source) {
   );
   output = replaceRequired(
     output,
-    `NazunaSock.ev.on('creds.update', saveCreds);`,
-    `NazunaSock.ev.on('creds.update', saveCreds);\n    automacoesV9.installDeletedMessageTracker(NazunaSock, () => messagesCache);`,
+    `ShogunSock.ev.on('creds.update', saveCreds);`,
+    `ShogunSock.ev.on('creds.update', saveCreds);\n    automacoesV9.installDeletedMessageTracker(ShogunSock, () => messagesCache);`,
     'rastreador de mensagens apagadas'
   );
   return output;
@@ -516,13 +517,6 @@ function patchStartSource(source) {
     `const CONNECT_FILE = path.join(process.cwd(), 'dados', 'src', '.runtime-connect.js');`,
     'arquivo de conexão de execução'
   );
-  output = replaceRequired(
-    output,
-    `    \`\${colors.bold}⛩️ SHOGUN — Conexão WhatsApp\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
-    `    \`\${colors.bold}⛩️ 𝖘𝖍𝖔𝖌𝖚𝖓 online\${colors.reset}\`,\n    \`\${colors.bold}🛡️ Moderação, mídia, jogos e economia prontos\${colors.reset}\`,\n    \`\${colors.bold}📦 Versão: \${version}\${colors.reset}\`,`,
-    'cabeçalho de inicialização do SHOGUN'
-  );
-  output = output.replace('🛑 Encerrando o SHOGUN. Até a próxima patrulha!', '🛑 SHOGUN encerra a patrulha com segurança.');
   return output;
 }
 
@@ -530,14 +524,14 @@ export function prepareRuntimeSources() {
   const readSource = (...parts) => fs.readFileSync(path.join(...parts), 'utf8').replace(/\r\n?/g, '\n');
   const indexSource = readSource(SRC_DIR, 'index.js');
   const connectSource = readSource(SRC_DIR, 'connect.js');
-  const iaSource = readSource(SRC_DIR, 'funcs', 'private', 'ia.js');
+  const assistantSource = readSource(SRC_DIR, 'funcs', 'private', 'assistant.js');
   const menusIndexSource = readSource(SRC_DIR, 'menus', 'index.js');
   const menubnSource = readSource(SRC_DIR, 'menus', 'menubn.js');
   const startSource = readSource(SCRIPTS_DIR, 'start.js');
 
   fs.writeFileSync(path.join(SRC_DIR, '.runtime-index.js'), patchIndexSource(indexSource));
   fs.writeFileSync(path.join(SRC_DIR, '.runtime-connect.js'), patchConnectSource(connectSource));
-  fs.writeFileSync(path.join(SRC_DIR, 'funcs', 'private', '.runtime-ia.js'), patchIaSource(iaSource));
+  fs.writeFileSync(path.join(SRC_DIR, 'funcs', 'private', '.runtime-assistant.js'), patchAssistantSource(assistantSource));
   fs.writeFileSync(path.join(SRC_DIR, 'menus', '.runtime-index.js'), patchMenusIndexSource(menusIndexSource));
   fs.writeFileSync(path.join(SRC_DIR, 'menus', '.runtime-menubn.js'), patchMenubnSource(menubnSource));
   fs.writeFileSync(path.join(SCRIPTS_DIR, '.runtime-start.js'), patchStartSource(startSource));

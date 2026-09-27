@@ -41,6 +41,7 @@ interface MenuDatabasePort {
 
 interface ShogunMenuRuntimePort {
   highlightMenuCommands(text: unknown, prefix: string): string;
+  resolveCommandMedia?: (command: string) => { path: string; brand?: boolean } | null;
 }
 
 interface MenuRuntimeModules {
@@ -167,6 +168,7 @@ function resolveShogunRuntime(moduleValue: unknown): ShogunMenuRuntimePort {
   const record = recordOf(moduleValue, 'Runtime do bot');
   return Object.freeze({
     highlightMenuCommands: functionOf(record, 'highlightMenuCommands', 'Runtime bot') as ShogunMenuRuntimePort['highlightMenuCommands'],
+    ...(typeof record.resolveCommandMedia === 'function' ? { resolveCommandMedia: record.resolveCommandMedia as NonNullable<ShogunMenuRuntimePort['resolveCommandMedia']> } : {}),
   });
 }
 
@@ -291,7 +293,10 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
 
     let mediaPath: string;
     let useVideo = false;
-    if (customMediaPath) {
+    const brandMedia = modules.runtime.resolveCommandMedia?.(descriptor.tokens[0] ?? '');
+    if (brandMedia?.brand === true && this.#fs.existsSync(brandMedia.path)) {
+      mediaPath = brandMedia.path;
+    } else if (customMediaPath) {
       mediaPath = customMediaPath;
     } else {
       const categoryVideo = path.join(this.#mediaRoot, `menu-${descriptor.presentationKey}.mp4`);
@@ -321,7 +326,7 @@ export class LegacyMenuPresentationAdapter implements MenuPresentationPort {
       const resolved = resolveCommandInput(command, context.rawAliases);
       const parameters = [resolved.matchedAlias?.fixedParams, entry?.arguments].filter(Boolean).join(' ');
       return evaluateCommandAccess(
-        findCommandAccessPolicy(resolved.command, { domain: descriptor.id === 'menunexo' ? 'nexo' : 'legacy', arguments: parameters }),
+        findCommandAccessPolicy(resolved.command, { domain: descriptor.id === 'nexo' ? 'nexo' : 'legacy', arguments: parameters }),
         context.access || UNRESOLVED_COMMAND_ACCESS,
       );
     } };

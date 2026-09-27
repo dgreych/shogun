@@ -67,7 +67,7 @@ function saveJidLidCache(force = false) {
 }
 
 // Busca LID do cache ou via onWhatsApp
-async function getLidFromJidCached(nazu, jid) {
+async function getLidFromJidCached(socket, jid) {
   if (!isValidJid(jid)) {
     return jid; // Já é LID ou outro formato
   }
@@ -81,7 +81,7 @@ async function getLidFromJidCached(nazu, jid) {
   
   // 2. Se não está no cache, busca via API
   try {
-    const result = await nazu.onWhatsApp(jid);
+    const result = await socket.onWhatsApp(jid);
     if (result && result[0] && result[0].lid) {
       let lid = result[0].lid;
       
@@ -107,7 +107,7 @@ async function getLidFromJidCached(nazu, jid) {
 }
 
 // Converte um array de IDs (JID/LID) para LID em batch
-async function convertIdsToLid(nazu, ids) {
+async function convertIdsToLid(socket, ids) {
   if (!Array.isArray(ids) || ids.length === 0) return [];
   
   const converted = [];
@@ -116,7 +116,7 @@ async function convertIdsToLid(nazu, ids) {
   const batchSize = 5;
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize);
-    const batchPromises = batch.map(id => getLidFromJidCached(nazu, id));
+    const batchPromises = batch.map(id => getLidFromJidCached(socket, id));
     const batchResults = await Promise.all(batchPromises);
     converted.push(...batchResults);
   }
@@ -156,7 +156,7 @@ function idInArray(id, array) {
 }
 
 // Converte qualquer ID (JID ou LID) para o formato unificado (preferencialmente LID)
-async function normalizeUserId(nazu, userId) {
+async function normalizeUserId(socket, userId) {
   if (!userId || typeof userId !== 'string') return userId;
   
   // Se já é LID, retorna direto
@@ -166,7 +166,7 @@ async function normalizeUserId(nazu, userId) {
   
   // Se é JID, busca o LID
   if (isValidJid(userId)) {
-    return await getLidFromJidCached(nazu, userId);
+    return await getLidFromJidCached(socket, userId);
   }
   
   // Outros formatos retornam como estão
@@ -412,10 +412,10 @@ const getUserName = (userId) => {
 };
 
 // Função para obter LID a partir de JID (quando necessário para compatibilidade)
-const getLidFromJid = async (nazu, jid) => {
+const getLidFromJid = async (socket, jid) => {
   if (!isValidJid(jid)) return jid; // Já é LID ou outro formato
   try {
-    const result = await nazu.onWhatsApp(jid);
+    const result = await socket.onWhatsApp(jid);
     if (result && result[0] && result[0].lid) {
       return result[0].lid;
     }
@@ -434,8 +434,8 @@ const buildUserId = (numberString, config) => {
 };
 
 // Função para obter o ID do bot
-const getBotId = (nazu) => {
-  const botId = nazu.user.id.split(':')[0];
+const getBotId = (socket) => {
+  const botId = socket.user.id.split(':')[0];
   return botId.includes('@lid') ? botId : botId + '@s.whatsapp.net';
 };
 

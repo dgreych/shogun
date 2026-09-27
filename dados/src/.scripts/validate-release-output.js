@@ -5,7 +5,7 @@ import path from 'path';
 import { ROOT_DIR } from './envLoader.js';
 
 const runtimeIndexPath = path.join(ROOT_DIR, 'dados', 'src', '.runtime-index.js');
-const runtimeIaPath = path.join(ROOT_DIR, 'dados', 'src', 'funcs', 'private', '.runtime-ia.js');
+const runtimeAssistantPath = path.join(ROOT_DIR, 'dados', 'src', 'funcs', 'private', '.runtime-assistant.js');
 const runtimeStartPath = path.join(ROOT_DIR, 'dados', 'src', '.scripts', '.runtime-start.js');
 const storePath = path.join(ROOT_DIR, 'dados', 'src', 'utils', 'shogunStore.js');
 const packagePath = path.join(ROOT_DIR, 'package.json');
@@ -28,7 +28,7 @@ function assert(condition, message) {
 console.log('\n⛩️ Validando a entrega SHOGUN 2.0\n');
 
 assert(fs.existsSync(runtimeIndexPath), 'runtime principal foi gerado');
-assert(fs.existsSync(runtimeIaPath), 'runtime de voz foi gerado');
+assert(fs.existsSync(runtimeAssistantPath), 'runtime de voz foi gerado');
 assert(fs.existsSync(runtimeStartPath), 'runtime de inicialização foi gerado');
 assert(fs.existsSync(bannerPath) && fs.statSync(bannerPath).size > 1000, 'banner SHOGUN presente');
 assert(fs.existsSync(markPath) && fs.statSync(markPath).size > 1000, 'marca SHOGUN presente');
@@ -46,10 +46,10 @@ if (fs.existsSync(runtimeIndexPath)) {
   assert(runtimeIndex.includes("case 'return5'"), 'return1 a return5 presentes');
 }
 
-if (fs.existsSync(runtimeIaPath)) {
-  const runtimeIa = fs.readFileSync(runtimeIaPath, 'utf8');
-  assert(runtimeIa.includes('buildAssistantSystemPrompt'), 'composição de voz preservada');
-  assert(!/const IA_API_KEY = ['"]nvapi-/.test(runtimeIa), 'runtime não contém credencial embutida');
+if (fs.existsSync(runtimeAssistantPath)) {
+  const runtimeAssistant = fs.readFileSync(runtimeAssistantPath, 'utf8');
+  assert(runtimeAssistant.includes('buildAssistantSystemPrompt'), 'composição de voz preservada');
+  assert(!/const IA_API_KEY = ['"]nvapi-/.test(runtimeAssistant), 'runtime não contém credencial embutida');
 }
 
 if (fs.existsSync(runtimeStartPath)) {
