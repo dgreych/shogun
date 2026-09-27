@@ -25,7 +25,7 @@ function assert(condition, message) {
   }
 }
 
-console.log('\n⛩️ Validando a entrega SHOGUN 2.0\n');
+console.log('\n🐈‍⬛ Validando a entrega SHOGUN 2.0\n');
 
 assert(fs.existsSync(runtimeIndexPath), 'runtime principal foi gerado');
 assert(fs.existsSync(runtimeAssistantPath), 'runtime de voz foi gerado');
@@ -54,7 +54,7 @@ if (fs.existsSync(runtimeAssistantPath)) {
 
 if (fs.existsSync(runtimeStartPath)) {
   const runtimeStart = fs.readFileSync(runtimeStartPath, 'utf8');
-  assert(runtimeStart.includes('\u{1D598}\u{1D58D}\u{1D594}\u{1D58C}\u{1D59A}\u{1D593} online'), 'inicialização usa a grafia canônica');
+  assert(runtimeStart.includes('🐈‍⬛ SHOGUN — Conexão WhatsApp'), 'inicialização usa a identidade atual');
 }
 
 if (fs.existsSync(storePath)) {
@@ -67,7 +67,7 @@ if (fs.existsSync(packagePath)) {
   const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
   assert(packageData.name === 'shogun-whatsapp', 'pacote identificado como SHOGUN');
   assert(packageData.version === '2.0.0', 'versão principal definida como 2.0.0');
-  assert(String(packageData.description || '').startsWith('SHOGUN é seu sentinela'), 'descrição independente presente');
+  assert(String(packageData.description || '') === 'Bot para WhatsApp com moderação de grupos, mídia, figurinhas, jogos e ferramentas.', 'descrição independente presente');
   assert(packageData.engines?.node === '>=20.19.0', 'piso real do Node.js declarado');
   assert(Boolean(packageData.scripts?.preflight), 'inspeção multiplataforma disponível');
 }
