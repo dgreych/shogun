@@ -118,7 +118,7 @@ export class PromotionQueue {
         campaign.results[target] = error?.code === 'PROMO_UNCERTAIN' ? 'uncertain' : 'failed';
       }
       campaign.inFlight = null;
-      const processed = Object.keys(campaign.results).length;
+      const processed = campaign.targets.filter(id => Object.hasOwn(campaign.results, id)).length;
       campaign.nextSendAt = this.now() + 120_000 + Math.floor(this.random() * 60_000) + (processed % 10 === 0 ? 600_000 : 0);
       if (processed === campaign.targets.length) { campaign.status = 'completed'; campaign.completedAt = this.now(); }
       this.save(this.state);
