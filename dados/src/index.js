@@ -57,7 +57,6 @@ import {
   removeBackgroundWithBunnyFy,
   resolveBunnyFyAccountUrl,
   socialCardWithBunnyFy,
-  stickerWithBunnyFy,
   tryAcquireYoutubePlaySlot,
   upscaleImageWithBunnyFy,
   youtubePlayErrorMessage
@@ -4029,19 +4028,12 @@ Código: *${roleCode}*`,
     }
     const buffer = await getFileBuffer(isVideo ? mediaVideo : mediaImage, isVideo ? 'video' : 'image');
     const shouldForceSquare = global.autoStickerMode === 'square';
-    const processedSticker = await stickerWithBunnyFy(buffer, {
-      kind: isVideo ? 'animated' : 'static',
-      mime: (isVideo ? mediaVideo : mediaImage).mimetype || (isVideo ? 'video/mp4' : 'image/jpeg'),
-      fit: shouldForceSquare ? 'cover' : 'contain',
-      legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
-    });
-    if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
     await sendSticker(socket, from, {
-      sticker: processedSticker.buffer,
+      sticker: buffer,
       author: `『${pushname}』\n『${nomebot}』\n『${nomedono}』\n『cognima.com.br』`,
       packname: '👤 Usuario(a)ᮀ۟❁’￫\n🤖 Botᮀ۟❁’￫\n👑 Donoᮀ۟❁’￫\n🌐 Siteᮀ۟❁’￫',
-      type: processedSticker.source === 'bunnyfy' ? 'image' : isVideo ? 'video' : 'image',
-      forceSquare: processedSticker.source !== 'bunnyfy' && shouldForceSquare
+      type: isVideo ? 'video' : 'image',
+      forceSquare: shouldForceSquare
     }, {
       quoted: info
     });
@@ -23978,19 +23970,12 @@ case 's':
     var isVideo2 = !!boij;
       if  (isVideo2 && boij.seconds > 9.9) return reply(`O vídeo precisa ter no máximo 9.9 segundos para ser convertido em figurinha.`);
     var buffer = await getFileBuffer(isVideo2 ? boij : boij2, isVideo2 ? 'video' : 'image');
-    const processedSticker = await stickerWithBunnyFy(buffer, {
-      kind: isVideo2 ? 'animated' : 'static',
-      mime: (isVideo2 ? boij : boij2).mimetype || (isVideo2 ? 'video/mp4' : 'image/jpeg'),
-      fit: 'cover',
-      legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
-    });
-    if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
     await sendSticker(socket, from, {
-      sticker: processedSticker.buffer,
+      sticker: buffer,
       author: `${pushname}`,
       packname: `${nomebot}`, 
-      type: processedSticker.source === 'bunnyfy' ? 'image' : isVideo2 ? 'video' : 'image',
-      forceSquare: processedSticker.source !== 'bunnyfy'
+      type: isVideo2 ? 'video' : 'image',
+      forceSquare: true
     }, {
       quoted: info
     });
@@ -24012,17 +23997,11 @@ case 's2':
     var isVideo2 = !!boij;
       if  (isVideo2 && boij.seconds > 9.9) return reply(`O vídeo precisa ter no máximo 9.9 segundos para ser convertido em figurinha.`);
     var buffer = await getFileBuffer(isVideo2 ? boij : boij2, isVideo2 ? 'video' : 'image');
-    const processedSticker = await stickerWithBunnyFy(buffer, {
-      kind: isVideo2 ? 'animated' : 'static',
-      mime: (isVideo2 ? boij : boij2).mimetype || (isVideo2 ? 'video/mp4' : 'image/jpeg'),
-      legacyFallback: async () => ({ ok: true, source: 'legacy', buffer })
-    });
-    if (!processedSticker?.ok || !Buffer.isBuffer(processedSticker.buffer)) throw new Error('STICKER_PROCESS_FAILED');
     await sendSticker(socket, from, {
-      sticker: processedSticker.buffer,
+      sticker: buffer,
       author: `${pushname}`,
       packname: `${nomebot}`, 
-      type: processedSticker.source === 'bunnyfy' ? 'image' : isVideo2 ? 'video' : 'image'
+      type: isVideo2 ? 'video' : 'image'
     }, {
       quoted: info
     });

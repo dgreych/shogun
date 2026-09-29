@@ -228,7 +228,7 @@ await test('rollout do YouTube permanece isolado e sem segredo no código', () =
   assert.ok(gatewaySource.includes("retries: 0"));
   assert.ok(gatewaySource.includes('BUNNYFY_API_TOKEN'));
   assert.ok(!/bf_(?:test|live)_[A-Za-z0-9_-]{20,}/.test(gatewaySource));
-  assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MODE=off'));
+  assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MODE=exclusive'));
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_TIMEOUT_MS='));
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_BYTES=52428800'));
   assert.ok(envExample.includes('BUNNYFY_YOUTUBE_MAX_CONCURRENCY=4'));
