@@ -274,14 +274,18 @@ class OptimizedCacheManager {
      * Inicia monitoramento de memória
      */
     startMemoryMonitoring() {
-        setInterval(async () => {
+        clearInterval(this.memoryMonitorId);
+        clearTimeout(this.initialMemoryCheckId);
+        this.memoryMonitorId = setInterval(async () => {
             await this.checkMemoryUsage();
         }, this.cleanupInterval);
+        this.memoryMonitorId.unref?.();
 
         // Verifica imediatamente
-        setTimeout(() => {
+        this.initialMemoryCheckId = setTimeout(() => {
             this.checkMemoryUsage();
         }, 10000);
+        this.initialMemoryCheckId.unref?.();
     }
 
     /**
@@ -296,7 +300,7 @@ class OptimizedCacheManager {
             
             const memoryPercentage = memUsage.heapUsed / memUsage.heapTotal;
 
-            if (memoryPercentage > 1024) {
+            if (memoryPercentage > this.memoryThreshold) {
                 await this.optimizeMemory('high_memory_usage');
             } else if (usedMB > 300) {
                 await this.optimizeMemory('moderate_memory_usage');
@@ -458,6 +462,11 @@ class OptimizedCacheManager {
      * Para o monitoramento (para shutdown gracioso)
      */
     stopMonitoring() {
+        clearInterval(this.memoryMonitorId);
+        clearTimeout(this.initialMemoryCheckId);
+        this.memoryMonitorId = null;
+        this.initialMemoryCheckId = null;
+        for (const cache of this.caches.values()) cache.close();
         this.isOptimizing = false;
     }
 }

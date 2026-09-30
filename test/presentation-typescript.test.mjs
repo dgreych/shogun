@@ -34,3 +34,9 @@ test('fila ativa usa núcleo tipado único', async () => {
   assert.equal(legacy.MessageQueue,typed.MessageQueue);
   assert.equal(legacy.chavesDeJustica,typed.chavesDeJustica);
 });
+
+test('cache de reenvio ativo usa implementação TypeScript única', async () => {
+  const legacy = await import('../dados/src/utils/outboundRetryStore.js');
+  const typed = await import('../dist-vnext/core/outbound-retry-store.js');
+  assert.equal(legacy.OutboundRetryStore, typed.OutboundRetryStore);
+});

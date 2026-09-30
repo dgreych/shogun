@@ -34,7 +34,7 @@ jobs:
       - name: Inspecionar plataforma
         run: npm run preflight
       - name: Validar onboarding público
-        run: node --test test/public-onboarding.test.mjs
+        run: node --test test/public-onboarding.test.mjs test/cache-lifecycle.test.mjs test/outbound-retry-store.test.mjs test/presentation-typescript.test.mjs test/output-presentation.test.mjs test/command-presentation.test.mjs test/menu-design-customization.test.mjs test/menu-presentation.test.mjs test/menu-theme.test.mjs test/instagram-command.test.mjs test/reaction-presentation.test.mjs
       - name: Validar arquitetura modular
         run: |
           npm run typecheck:vnext
@@ -87,3 +87,6 @@ jobs:
         run: node -e "const c=require('./dados/src/config.example.json'); if(c.nomebot!=='SHOGUN'||c.numerodono!=='55DDDNUMERO') process.exit(1)"
       - name: Construir arquitetura modular
         run: npm run build:vnext
+
+      - name: Verificar núcleo e apresentação em cada plataforma
+        run: node --test test/cache-lifecycle.test.mjs test/outbound-retry-store.test.mjs test/presentation-typescript.test.mjs test/output-presentation.test.mjs test/command-presentation.test.mjs test/menu-design-customization.test.mjs test/menu-presentation.test.mjs test/menu-theme.test.mjs test/instagram-command.test.mjs test/reaction-presentation.test.mjs

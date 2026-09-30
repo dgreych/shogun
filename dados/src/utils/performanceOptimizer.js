@@ -516,7 +516,9 @@ class PerformanceOptimizer {
     // Limpa intervalos se houver
     if (this.cleanupIntervalId) {
       clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
     }
+    this.cache.stopMonitoring();
   }
 }
 
