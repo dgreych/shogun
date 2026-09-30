@@ -61,3 +61,5 @@ O tema SHOGUN v3 aplica a mesma identidade aos menus, respostas e legendas. Os c
 O bot usa ⏳ durante a execução, ✅ após o envio confirmado e ⚠️ quando não consegue concluir. Reações específicas dos comandos são preservadas.
 
 `!instagram <URL>` aceita publicações, Reels e carrosséis, com até 20 itens enviados em ordem. Reels usam MP4 com áudio e vídeo. `!igstory https://www.instagram.com/stories/usuario/` usa a mesma integração; a disponibilidade depende dos stories ativos e da sessão configurada no servidor BunnyFy. As credenciais e cookies do Instagram ficam no servidor da API.
+
+O tema, o cache de renderização, a validação de reações e o executor Instagram já têm implementação única em TypeScript estrito (`src/presentation` e `src/downloads`). Os compilados correspondentes acompanham o pacote. A migração de todos os domínios continua: 131 famílias/709 tokens são nativos; 395 famílias/894 tokens ainda usam compatibilidade. A portagem desses módulos compartilhados não aumenta artificialmente a contagem de comandos nativos.

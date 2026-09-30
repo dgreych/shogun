@@ -77,3 +77,6 @@ Thumbs.db
 .worktrees/
 .checkpoint-state/
 .superpowers/
+
+# Relações dos usuários pertencem à instância.
+dados/database/relationships.json

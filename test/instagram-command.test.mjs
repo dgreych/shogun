@@ -42,3 +42,18 @@ test('sem link dá exemplos de post, reel e story sem iniciar download', async (
   assert.match(f.events[0].reply, /post.*reel.*story/i);
   assert.match(f.events[0].reply, /!igstory/);
 });
+
+test('contrato rejeita mídia vazia, inesperada e lotes fora do limite sem entregar parcialmente', async () => {
+  for (const data of [null, [], [null], [{type:'audio',buff:Buffer.from('a')}], [{type:'image',buff:Buffer.alloc(0)}], Array.from({length:21},()=>({type:'image',buff:Buffer.from('a')}))]) {
+    const f = fixture();
+    assert.equal(await executeInstagramDownload({...f,url:'url',download:async()=>({ok:true,data})}), false);
+    assert.equal(f.events.some(event=>event.content?.image || event.content?.video), false);
+    assert.equal(f.events.at(-1).content.react.text,'⚠️');
+  }
+});
+test('erro de reação opcional não interrompe envio de mídia', async () => {
+  const f = fixture(); const send=f.socket.sendMessage;
+  f.socket.sendMessage=async(...args)=>{if(args[1].react)throw new Error('reaction unavailable');return send(...args);};
+  assert.equal(await executeInstagramDownload({...f,url:'url'}),true);
+  assert.equal(f.events.filter(event=>event.content?.image || event.content?.video).length,2);
+});

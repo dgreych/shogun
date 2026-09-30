@@ -63,6 +63,7 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
             filter: file => !path.basename(file).startsWith('.runtime-'),
         });
         fs.cpSync(path.join(root, 'dados/src/menus'), path.join(temp, 'dados/src/menus'), { recursive: true });
+        fs.cpSync(path.join(root, 'dist-vnext/presentation'), path.join(temp, 'dist-vnext/presentation'), { recursive: true });
         if (process.env.SHOGUN_BOOT_BASELINE) {
             for (const file of ['vnextMacrotrancheBridge.js', 'vnextDomainOwnershipOverlay.js', 'vnextMacrotrancheSeeds.json', 'vnextDomainCutoverPlan.json']) {
                 fs.copyFileSync(path.join(sourceRoot, 'dados/src/.scripts', file), path.join(scripts, file));
