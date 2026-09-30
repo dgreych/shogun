@@ -14,7 +14,7 @@ if (!bunnyfyToken || !bunnyfyBase) {
   process.exit(1);
 }
 process.env.BUNNYFY_ENABLED = 'true';
-process.env.BUNNYFY_AI_MODE = 'exclusive';
+process.env.BUNNYFY_CONVERSATION_MODE = 'exclusive';
 
 const contextFile = path.join(ROOT_DIR, 'dados', 'database', 'userContext.json');
 const contextExisted = fs.existsSync(contextFile);
@@ -35,13 +35,13 @@ function restoreContext() {
 }
 
 try {
-  const { makeAssistentRequest } = await import('../funcs/private/ia.js');
-  console.log('🔎 Testando o fluxo completo da assistente via BunnyFy AI...');
+  const { makeAssistentRequest } = await import('../funcs/private/assistant.js');
+  console.log('🔎 Testando o fluxo completo da assistente via BunnyFy conversa...');
 
   const result = await makeAssistentRequest(
     {
       mensagens: [{
-        texto: 'Siga seu formato JSON obrigatório. Na primeira resposta, escreva exatamente: FLUXO NAZUNA OK',
+        texto: 'Siga seu formato JSON obrigatório. Na primeira resposta, escreva exatamente: FLUXO SHOGUN OK',
         id_enviou: testUser,
         nome_enviou: 'Teste Local',
         id_grupo: 'teste-local@g.us',
@@ -55,7 +55,7 @@ try {
     },
     null,
     null,
-    'nazuna'
+    'shogun'
   );
 
   if (!result || !Array.isArray(result.resp) || result.resp.length === 0) {
@@ -66,7 +66,7 @@ try {
     .map(item => typeof item === 'string' ? item : item?.resp)
     .filter(value => typeof value === 'string' && value.trim());
 
-  if (!texts.some(text => text.includes('FLUXO NAZUNA OK'))) {
+  if (!texts.some(text => text.includes('FLUXO SHOGUN OK'))) {
     throw new Error(`A resposta não confirmou o fluxo: ${JSON.stringify(result)}`);
   }
 

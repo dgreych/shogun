@@ -126,7 +126,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     result.injectedFamilyCount !== 14
     || result.injectedTokenCount !== 30
     || result.prepared.familyCount !== 526
-    || result.prepared.uniqueTokenCount !== 1602
+    || result.prepared.uniqueTokenCount !== 1603
     || !baseline.ok
   ) process.exitCode = 2;
 }

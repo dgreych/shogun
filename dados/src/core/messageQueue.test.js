@@ -155,7 +155,8 @@ test('mensagem sem chave utilizável responde só ao teto global', async () => {
   assert.equal(emVoo.length, 6);
 });
 
-test('shutdown drena o que está em voo antes de encerrar', async () => {
+test('shutdown drena o que está em voo antes de encerrar', async (t) => {
+  const log = t.mock.method(console, 'log', () => {});
   const fila = new MessageQueue(20, 4, 4);
   const { processor, emVoo } = processadorControlado();
 
@@ -170,4 +171,5 @@ test('shutdown drena o que está em voo antes de encerrar', async () => {
   emVoo[0].resolve('ok');
   await encerrando;
   assert.equal(fila.ativosGlobais, 0);
+  assert.ok(log.mock.calls.some(call => String(call.arguments[0]).includes('MessageQueue finalizado')));
 });

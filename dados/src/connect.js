@@ -22,7 +22,8 @@ import RentalExpirationManager from './utils/rentalExpirationManager.js';
 import { setPromotionConnection } from './utils/promotionRuntime.js';
 import { OutboundRetryStore } from './utils/outboundRetryStore.js';
 import { createWhatsAppDeliveryLogger } from './utils/whatsappDeliveryLogger.js';
-import { loadMsgBotOn } from './utils/database.js';
+import { loadMsgBotOn, loadMenuDesign } from './utils/database.js';
+import { installBotPresentation } from './utils/commandPresentation.js';
 import { buildUserId } from './utils/helpers.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
 import { gerarWelcomeCard } from './funcs/downloads/canvas.js';
@@ -890,6 +891,7 @@ async function createBotSocket(authDir) {
       outboundRetryStore.put(sent);
       return sent;
     };
+    installBotPresentation(ShogunSock, { getTheme: loadMenuDesign });
     ShogunSock.ev.on('messages.upsert', ({ messages }) => {
       for (const message of messages || []) if (message.key?.fromMe) outboundRetryStore.put(message);
     });

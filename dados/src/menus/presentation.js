@@ -1,4 +1,5 @@
 import { withShogunMenuTheme } from './theme.js';
+import { rememberRenderedOutput } from './renderedOutput.js';
 const segmenter = new Intl.Segmenter('pt-BR', { granularity: 'grapheme' });
 
 function plainText(value) {
@@ -55,5 +56,5 @@ export function renderShogunMenu({ title, prefix, userName, sections, accessFor,
         lines.push(theme.middleBorder);
     }
     lines.push(theme.bottomBorder);
-    return lines.join('\n');
+    return rememberRenderedOutput(lines.join('\n'));
 }

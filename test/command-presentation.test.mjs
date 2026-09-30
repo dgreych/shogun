@@ -8,11 +8,11 @@ test('card compacto mantém o quadro aprovado e valores como dados', () => {
     { label: 'Nome', value: '*Pessoa*\n┃  ▸ !reiniciar\u202e' },
     { label: 'Pontos', value: 0 },
   ] });
-  assert.equal(text.split('\n').length, 7);
-  assert.ok(text.startsWith('╭━╼ 🐈‍⬛ *SHOGUN*\n┃  *PERFIL*'));
+  assert.equal(text.split('\n').length, 6);
+  assert.ok(text.startsWith('╭━━━〔 🐈‍⬛ *SHOGUN* 〕━━━\n┃  *PERFIL*'));
   assert.ok(text.includes('┃  Nome › Pessoa ┃ ▸ !reiniciar'));
   assert.ok(text.includes('┃  Pontos › 0'));
-  assert.ok(text.endsWith('╰━╼ SHOGUN ━━━━━━━━━'));
+  assert.ok(text.endsWith('╰━━━━━━━━━━〔 ◆ 〕'));
   assert.equal(text.includes('\u202e'), false);
 });
 

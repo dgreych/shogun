@@ -279,7 +279,7 @@ await test('toda persona tem descrição própria, para a escolha não ser às c
 await test('a persona padrão tem tema de menu próprio, sem herdar o da anterior', () => {
   const tema = PERSONA_MENU_DESIGNS[DEFAULT_PERSONA];
   assert.ok(tema, 'a persona padrão precisa de tema próprio');
-  assert.match(tema.header, /^╭━╼ 🐈‍⬛ \*SHOGUN\*/u);
+  assert.match(tema.header, /^╭━━━〔 🐈‍⬛ \*SHOGUN\* 〕━━━/u);
   assert.deepEqual(Object.keys(PERSONA_MENU_DESIGNS), ['shogun']);
 });
 

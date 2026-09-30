@@ -80,9 +80,9 @@ const downloadVideoEntries: readonly MenuEntry[] = Object.freeze([
 
 const downloadEntries: readonly MenuEntry[] = Object.freeze([
   { command: 'tiktok' },
-  { command: 'instagram' },
+  { command: 'instagram', arguments: '<link>', description: 'Fotos, Reels e carrosséis.' },
   { command: 'kwai' },
-  { command: 'igstory' },
+  { command: 'igstory', arguments: '<link>', description: 'Stories disponíveis no Instagram.' },
   { command: 'facebook' },
   { command: 'gdrive' },
   { command: 'mediafire' },

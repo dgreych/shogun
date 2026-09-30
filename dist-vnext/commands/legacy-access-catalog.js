@@ -273,7 +273,7 @@ export const LEGACY_COMMAND_ACCESS_POLICIES = [
     { "tokens": ["settitleicon", "seticonetitulo", "settitulo"], "ownerOnly": true },
     { "tokens": ["setheader", "setcabecalho", "setheadermenu"], "ownerOnly": true },
     { "tokens": ["resetdesign", "resetarmenu", "resetdesignmenu"], "ownerOnly": true },
-    { "tokens": ["designmenu", "verdesign", "configmenu"], "ownerOnly": true },
+    { "tokens": ["designmenu", "menudesign", "verdesign", "configmenu"], "ownerOnly": true },
     { "tokens": ["listagp", "listgp"], "ownerOnly": true },
     { "tokens": ["listbangp"], "ownerOnly": true },
     { "tokens": ["bangp", "unbangp", "desbangp"], "groupOnly": true, "ownerOnly": true },

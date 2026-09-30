@@ -9,7 +9,7 @@ test('tema padrão usa identidade SHOGUN sem ornamentação legada', () => {
 
     assert.match(theme.header, /SHOGUN/);
     assert.doesNotMatch(theme.header, /MeuBot|🫟|🍧|❁/u);
-    assert.equal(theme.menuItemIcon, '  ↳ ');
+    assert.equal(theme.menuItemIcon, '  › ');
     assert.equal(theme.middleBorder, '┃');
 });
 
@@ -26,7 +26,7 @@ test('configuração antiga não substitui a moldura aprovada', () => {
     }, { botName: 'SHOGUN' });
 
     assert.match(themed.header, /🐈‍⬛ \*SHOGUN\*/);
-    assert.equal(themed.menuItemIcon, '  ↳ ');
+    assert.equal(themed.menuItemIcon, '  › ');
     assert.equal(themed.middleBorder, '┃');
 });
 

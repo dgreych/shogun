@@ -1,3 +1,5 @@
+import { executeInstagramDownload } from './utils/instagramCommand.js';
+import { isValidReaction } from './utils/reactionPresentation.js';
 import { downloadContentFromMessage, generateWAMessageFromContent, generateWAMessage, getContentType } from 'baileys';
 
 import { exec, execSync, spawn } from 'child_process';
@@ -2136,7 +2138,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     // acesso/moderação. Isso impede o padrão enganoso "reagiu e sumiu" em
     // comandos que seriam deliberadamente ignorados antes do dispatcher.
     const pendingCommandReaction = isCmd && command && getValidCommandSet().has(command)
-      ? pickCommandEmoji(command)
+      ? '⏳'
       : null;
 
     const isPremium = premiumListaZinha[sender] || premiumListaZinha[from] || isOwner;
@@ -2780,7 +2782,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     }
     if (isCmd) installCommandPresentation(socket, info, command);
     async function reply(text, options = {}) {
-      if (isCmd) text = formatCommandResponse(text, command);
+      if (isCmd) text = formatCommandResponse(text, command, loadMenuDesign());
     const {
     mentions = [],
     noForward = false,
@@ -2863,7 +2865,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     return false;
     }
     if  (typeof emj === 'string') {
-      if  (emj.length < 1 || emj.length > 5) {
+      if  (!isValidReaction(emj)) {
       console.warn("Emoji inválido para reação:", emj);
       return false;
     }
@@ -2876,7 +2878,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     return true;
     } else if (Array.isArray(emj) && emj.length > 0) {
     for (const emoji of emj) {
-    if  (typeof emoji !== 'string' || emoji.length < 1 || emoji.length > 5) {
+    if  (!isValidReaction(emoji)) {
     console.warn("Emoji inválido na sequência:", emoji);
     continue;
       }
@@ -18840,33 +18842,8 @@ case 'igdl':
 case 'ig':
 case 'instavideo':
 case 'igstory':
-  try  {
-      if  (!q) return reply(`Digite um link do Instagram.\n> Ex: ${prefix}${command} https://www.instagram.com/reel/DFaq_X7uoiT/?igsh=M3Q3N2ZyMWU1M3Bo`);
-
-
-    reply(pickLoadingMessage(command, q));
-    igdl.dl(q)
-      .then(async (datinha) => {
-    if  (!datinha.ok) return reply(datinha.msg);
-
-    for (const item of datinha.data) {
-      await socket.sendMessage(from, {
-    [item.type]: item.buff
-      }, {
-    quoted: info
-      });
-    }
-      })
-      .catch(async (e) => {
-    console.error('Erro no comando Instagram (promise):', e);
-    reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-      });
-    return;
-    } catch (e) {
-    console.error('Erro no comando Instagram:', e);
-    reply("❌ Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.");
-    }
-       break;
+  await executeInstagramDownload({ url: q, prefix, command, chatId: from, message: info, socket, reply, download: igdl.dl });
+  return;
 case 'kwai':
   try  {
       if  (!q) return reply(`Digite um link do kwai.\n> Ex: ${prefix}${command} https://kwai-video.com/p/q0fr2CRm`);
@@ -20485,7 +20462,7 @@ case 'menufig':
     }
 case 'antipv3':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     antipvData.mode = antipvData.mode === 'antipv3' ? null : 'antipv3';
     writeJsonFile(ANTIPV_FILE, antipvData);
     await reply(`✅ Antipv3 ${antipvData.mode ? 'ativado' : 'desativado'}! O bot agora ${antipvData.mode ? 'bloqueia usuários que usam comandos no privado' : 'responde normalmente no privado'}.`);
@@ -20496,7 +20473,7 @@ case 'antipv3':
        break;
 case 'antipv2':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     antipvData.mode = antipvData.mode === 'antipv2' ? null : 'antipv2';
     writeJsonFile(ANTIPV_FILE, antipvData);
     await reply(`✅ Antipv2 ${antipvData.mode ? 'ativado' : 'desativado'}! O bot agora ${antipvData.mode ? 'avisa que comandos só funcionam em grupos no privado' : 'responde normalmente no privado'}.`);
@@ -20507,7 +20484,7 @@ case 'antipv2':
        break;
 case 'antipv4':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     antipvData.mode = antipvData.mode === 'antipv4' ? null : 'antipv4';
     writeJsonFile(ANTIPV_FILE, antipvData);
     await reply(`✅ Antipv4 ${antipvData.mode ? 'ativado' : 'desativado'}! O bot agora ${antipvData.mode ? 'avisa que o bot so funciona em grupos' : 'responde normalmente no privado'}.`);
@@ -20536,7 +20513,7 @@ case 'antipvmsg':
        break;
 case 'antipv':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     antipvData.mode = antipvData.mode === 'antipv' ? null : 'antipv';
     writeJsonFile(ANTIPV_FILE, antipvData);
     await reply(`✅ Antipv ${antipvData.mode ? 'ativado' : 'desativado'}! O bot agora ${antipvData.mode ? 'ignora mensagens no privado' : 'responde normalmente no privado'}.`);
@@ -20547,7 +20524,7 @@ case 'antipv':
        break;
 case 'entrar':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
       if  (!q || !q.includes('chat.whatsapp.com')) return reply('Digite um link de convite válido! Exemplo: ' + prefix + 'entrar https://chat.whatsapp.com/...');
     const code = q.split('https://chat.whatsapp.com/')[1];
     await socket.groupAcceptInvite(code).then(res => {
@@ -20562,7 +20539,7 @@ case 'entrar':
        break;
 case 'sairgp':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     
     let groupId = null;
     
@@ -20608,7 +20585,7 @@ case 'sairgp':
        break;
 case 'tm':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
       if  (!q && !isImage && !isVideo && !isQuotedImage && !isQuotedVideo) return reply('Digite uma mensagem ou marque uma imagem/vídeo! Exemplo: ' + prefix + 'tm Olá a todos!');
     
     const cabecalho = `╔══════════════════════\n║  📡 *TRANSMISSÃO DA BOT* 📡\n╚══════════════════════\n\n`;
@@ -20743,7 +20720,7 @@ case 'cancelartm':
       
 case 'tm2':
   try  {
-      if  (!isOwner) return reply("🚫 Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("🚫 Este ajuste está disponível somente para o dono do Shogun. 💔");
       if  (!q && !isImage && !isVideo && !isQuotedImage && !isQuotedVideo) return reply('Digite uma mensagem ou marque uma imagem/vídeo! Exemplo: ' + prefix + 'tm2 Olá inscritos!');
     
     // Obtém lista de inscritos
@@ -20856,7 +20833,7 @@ case 'tm2':
 case 'statustm':
 case 'statustm2':
   try  {
-      if  (!isOwner) return reply("🚫 Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("🚫 Este ajuste está disponível somente para o dono do Shogun. 💔");
     
     const stats = transmissao.getStats();
     const subscribers = transmissao.getSubscribers();
@@ -20930,7 +20907,7 @@ case 'reviverqr':
     }
        break;
 case 'cases':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
     const indexContent = fs.readFileSync(__dirname + '/index.js', 'utf-8');
     const caseRegex = /case\s+'([^']+)'\s*:/g;
@@ -20952,7 +20929,7 @@ case 'cases':
     }
        break;
 case 'getcase':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
       if  (!q) return reply('❌ Digite o nome do comando. Exemplo: ' + prefix + 'getcase menu');
     var caseCode;
@@ -20971,7 +20948,7 @@ case 'getcase':
        break;
 case 'boton':
 case 'botoff':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
     const botStateFile = pathz.join(DATABASE_DIR, 'botState.json');
     const isOn = botState.status === 'on';
@@ -20991,7 +20968,7 @@ case 'botoff':
     }
        break;
 case 'blockcmdg':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
     const cmdToBlock = q?.toLowerCase().split(' ')[0];
     const reason = q?.split(' ').slice(1).join(' ') || 'Sem motivo informado';
@@ -21010,7 +20987,7 @@ case 'blockcmdg':
     }
        break;
 case 'unblockcmdg':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
     const cmdToUnblock = q?.toLowerCase().split(' ')[0];
       if  (!cmdToUnblock) return reply('❌ Informe o comando a desbloquear! Ex.: ' + prefix + 'unblockcmd sticker');
@@ -21027,7 +21004,7 @@ case 'unblockcmdg':
     }
        break;
 case 'blockuserg':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
       if  (!menc_os2) return reply("Marque alguém 🙄");
     var reason = q ? (q.includes('@') || !menc_os2) ? (q.includes(' ') ? q.split(' ').slice(1).join(' ') : "Não informado") : q.trim() : 'Não informado';
@@ -21050,7 +21027,7 @@ case 'blockuserg':
     }
        break;
 case 'unblockuserg':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
       if  (!menc_os2) return reply("Marque alguém 🙄");
     const blockFile = pathz.join(DATABASE_DIR, 'globalBlocks.json');
@@ -21075,7 +21052,7 @@ case 'unblockuserg':
     }
        break;
 case 'listblocks':
-    if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+    if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
   try  {
     const blockFile = pathz.join(DATABASE_DIR, 'globalBlocks.json');
     const blockedCommands = globalBlocks.commands ? Object.entries(globalBlocks.commands).map(([cmd, data]) => `🔧 *${cmd}* - Motivo: ${data.reason}`).join('\n') : 'Nenhum comando bloqueado.';
@@ -21105,7 +21082,7 @@ case 'defmsgpromo': {
   if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
   try {
     const message = getPromotionQueue().define(q);
-    await reply(renderCommandCard({ title: 'PROMOÇÃO SALVA', fields: [{ label: 'ID', value: message.id }], lines: ['Para enviar aos grupos: ' + prefix + 'sendmsgpromo ' + message.id] }));
+    await reply(renderCommandCard({ theme: loadMenuDesign(), title: 'PROMOÇÃO SALVA', fields: [{ label: 'ID', value: message.id }], lines: ['Para enviar aos grupos: ' + prefix + 'sendmsgpromo ' + message.id] }));
   } catch (error) { await reply(error.message); }
   break;
 }
@@ -21113,7 +21090,7 @@ case 'sendmsgpromo': {
   if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
   try {
     const progress = await startPromotion(socket, q);
-    await reply(renderCommandCard({ title: 'ENVIO AGENDADO', fields: [{ label: 'Mensagem', value: progress.id }, { label: 'Grupos', value: progress.total }], lines: ['A fila envia um grupo por vez, com intervalos e pausas entre lotes.', 'Acompanhe com ' + prefix + 'listmsgpromo.'] }));
+    await reply(renderCommandCard({ theme: loadMenuDesign(), title: 'ENVIO AGENDADO', fields: [{ label: 'Mensagem', value: progress.id }, { label: 'Grupos', value: progress.total }], lines: ['A fila envia um grupo por vez, com intervalos e pausas entre lotes.', 'Acompanhe com ' + prefix + 'listmsgpromo.'] }));
   } catch (error) { await reply(error.message); }
   break;
 }
@@ -21121,7 +21098,7 @@ case 'listmsgpromo': {
   if (!isOwner) return reply('Este comando é exclusivo dos donos do Shogun.');
   const messages = getPromotionQueue().list();
   const progress = getPromotionQueue().progress();
-  await reply(renderCommandCard({ title: 'PROMOÇÕES', fields: progress ? [{ label: 'Último envio', value: progress.id }, { label: 'Estado', value: progress.status === 'running' ? 'Em andamento' : 'Concluído' }, { label: 'Enviados', value: progress.sent + '/' + progress.total }, { label: 'Pendentes', value: progress.pending }, { label: 'Falhas', value: progress.failed }, { label: 'Sem confirmação', value: progress.uncertain }] : [], lines: messages.length ? messages.map(message => 'ID ' + message.id + ' · ' + message.text.replace(/\s+/g, ' ').slice(0,100)) : ['Nenhuma mensagem salva. Use ' + prefix + 'defmsgpromo <mensagem>.'] }));
+  await reply(renderCommandCard({ theme: loadMenuDesign(), title: 'PROMOÇÕES', fields: progress ? [{ label: 'Último envio', value: progress.id }, { label: 'Estado', value: progress.status === 'running' ? 'Em andamento' : 'Concluído' }, { label: 'Enviados', value: progress.sent + '/' + progress.total }, { label: 'Pendentes', value: progress.pending }, { label: 'Falhas', value: progress.failed }, { label: 'Sem confirmação', value: progress.uncertain }] : [], lines: messages.length ? messages.map(message => 'ID ' + message.id + ' · ' + message.text.replace(/\s+/g, ' ').slice(0,100)) : ['Nenhuma mensagem salva. Use ' + prefix + 'defmsgpromo <mensagem>.'] }));
   break;
 }
 case 'prefixo':
@@ -21243,7 +21220,7 @@ case 'videomenu':
 case 'mediamenu':
 case 'midiamenu':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
     var RSM = info.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     var boij2 = RSM?.imageMessage || info.message?.imageMessage || RSM?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessageV2?.message?.imageMessage || info.message?.viewOnceMessage?.message?.imageMessage || RSM?.viewOnceMessage?.message?.imageMessage;
     var boij = RSM?.videoMessage || info.message?.videoMessage || RSM?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessageV2?.message?.videoMessage || info.message?.viewOnceMessage?.message?.videoMessage || RSM?.viewOnceMessage?.message?.videoMessage;
@@ -21263,7 +21240,7 @@ case 'audiomenu':
 case 'menuaudio':
 case 'setmenuaudio':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     
     // Verifica se é para remover
       if  (q && (q.toLowerCase() === 'off' || q.toLowerCase() === 'del' || q.toLowerCase() === 'delete' || q.toLowerCase() === 'remover')) {
@@ -21317,7 +21294,7 @@ case 'lermais':
 case 'lermaismenus':
 case 'menulermais':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     
     const currentState = isMenuLerMaisEnabled();
     const newState = setMenuLerMais(!currentState);
@@ -21343,7 +21320,7 @@ case 'setppbot':
 case 'perfilbot':
 case 'avatarbot':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
       if  (!isQuotedImage && !isImage) return reply('❌ Envie ou marque uma imagem para definir como foto de perfil do bot.\n\n📝 *Uso:* Envie uma imagem com o comando ou responda uma imagem com ' + prefix + 'fotobot');
     
     const messageToUse = isQuotedImage ? quotedMessageContent : info.message;
@@ -21371,7 +21348,7 @@ case 'avatarbot':
 case 'personalizargrupo':
 case 'ativarperso':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     
     const currentState = isGroupCustomizationEnabled();
     const newState = setGroupCustomizationEnabled(!currentState);
@@ -21555,8 +21532,8 @@ case 'setborda':
 case 'setbordatopo':
 case 'settopborder':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ╭─⊰`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ┣━`);
     
     const currentDesign = loadMenuDesign();
     currentDesign.menuTopBorder = q;
@@ -21568,7 +21545,7 @@ case 'settopborder':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21576,8 +21553,8 @@ case 'setbordafim':
 case 'setbottomborder':
 case 'setbordabaixo':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ╰━━━━━━━━━━〔 ◆ 〕`);
     
     const currentDesign = loadMenuDesign();
     currentDesign.bottomBorder = q;
@@ -21589,7 +21566,7 @@ case 'setbordabaixo':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21597,7 +21574,7 @@ case 'setbordameio':
 case 'setmiddleborder':
 case 'setbordamiddle':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
       if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ┊`);
     
     const currentDesign = loadMenuDesign();
@@ -21610,7 +21587,7 @@ case 'setbordamiddle':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21618,8 +21595,8 @@ case 'setitemicon':
 case 'seticoneitem':
 case 'setitem':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} •.̇𖥨֗🍓⭟`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ›`);
     
     const currentDesign = loadMenuDesign();
     currentDesign.menuItemIcon = q;
@@ -21631,7 +21608,7 @@ case 'setitem':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21639,8 +21616,8 @@ case 'setseparador':
 case 'setseparatoricon':
 case 'seticoneseparador':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ❁`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ◆`);
     
     const currentDesign = loadMenuDesign();
     currentDesign.separatorIcon = q;
@@ -21652,7 +21629,7 @@ case 'seticoneseparador':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21660,8 +21637,8 @@ case 'settitleicon':
 case 'seticonetitulo':
 case 'settitulo':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} 🍧ฺꕸ▸`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <emoji/texto>\n\nExemplo: ${prefix + command} ◆`);
     
     const currentDesign = loadMenuDesign();
     currentDesign.menuTitleIcon = q;
@@ -21673,7 +21650,7 @@ case 'settitulo':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21681,8 +21658,8 @@ case 'setheader':
 case 'setcabecalho':
 case 'setheadermenu':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
-      if  (!q) return reply(`Uso: ${prefix + command} <texto>\n\nExemplo: ${prefix + command} ╭━╼ 🐈‍⬛ *SHOGUN*\\n┃  *#title#*\\n┃  #nome# ┆ prefixo #prefix#\\n┃\n\n*Campos disponíveis:*\n#title# — título do menu\n#nome# — nome da pessoa\n#prefix# — prefixo da conversa\n{botName} — nome do bot\n{userName} — nome da pessoa`);
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
+      if  (!q) return reply(`Uso: ${prefix + command} <texto>\n\nExemplo: ${prefix + command} ╭━━━〔 🐈‍⬛ *SHOGUN* 〕━━━\\n┃  *#title#*\\n┃  #nome# · prefixo #prefix#\\n┣━━━━━━━━━━━━━━━━━━━━\n\n*Campos disponíveis:*\n#title# — título do menu\n#nome# — nome da pessoa\n#prefix# — prefixo da conversa\n{botName} — nome do bot\n{userName} — nome da pessoa`);
     
     const currentDesign = loadMenuDesign();
     // Processa quebras de linha explícitas
@@ -21697,7 +21674,7 @@ case 'setheadermenu':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21705,7 +21682,7 @@ case 'resetdesign':
 case 'resetarmenu':
 case 'resetdesignmenu':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
     
     const { createShogunMenuTheme } = await import('./menus/theme.js');
     const defaultDesign = createShogunMenuTheme();
@@ -21717,15 +21694,16 @@ case 'resetdesignmenu':
     }
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
 case 'designmenu':
+case 'menudesign':
 case 'verdesign':
 case 'configmenu':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
     
     const currentDesign = loadMenuDesign();
     const { renderShogunMenu } = await import('./menus/presentation.js');
@@ -21746,7 +21724,7 @@ case 'configmenu':
     await reply(designText);
     } catch (e) {
     console.error(e);
-    await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes! 🥺");
+    await reply("Não consegui concluir esse comando. Tente novamente em instantes.");
     }
        break;
 
@@ -21806,7 +21784,7 @@ case 'unbangp':
 case 'desbangp':
   try  {
       if  (!isGroup) return reply("isso so pode ser usado em grupo 💔");
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun.");
     banGpIds[from] = !banGpIds[from];
       if  (banGpIds[from]) {
       await reply('🚫 Grupo banido, apenas usuarios premium ou meu dono podem utilizar o bot aqui agora.');
@@ -27292,7 +27270,7 @@ case 'litemode':
        break;
 case 'modoliteglobal':
   try  {
-      if  (!isOwner) return reply("Este comando é apenas para o meu dono 💔");
+      if  (!isOwner) return reply("Este ajuste está disponível somente para o dono do Shogun. 💔");
     const modoLiteFile = MODO_LITE_FILE;
     modoLiteGlobal.status = !modoLiteGlobal.status;
       if  (!modoLiteGlobal.status) {

@@ -53,3 +53,11 @@ Você pode rodar por conta própria ou [conversar sobre serviços opcionais](htt
 ## Licença e créditos
 
 Distribuído sob a [licença ISC](LICENSE). Direção e manutenção: Maurício Almeida. Os créditos e avisos de autoria estão em [NOTICE](NOTICE); preserve-os ao redistribuir o projeto.
+
+## Apresentação e Instagram
+
+O tema SHOGUN v3 aplica a mesma identidade aos menus, respostas e legendas. Os campos personalizados do tema anterior são preservados. Donos podem ajustar o desenho pelo comando `menudesign` (também disponível como `design`). Texto, menções, mídia e código mantêm seu conteúdo.
+
+O bot usa ⏳ durante a execução, ✅ após o envio confirmado e ⚠️ quando não consegue concluir. Reações específicas dos comandos são preservadas.
+
+`!instagram <URL>` aceita publicações, Reels e carrosséis, com até 20 itens enviados em ordem. Reels usam MP4 com áudio e vídeo. `!igstory https://www.instagram.com/stories/usuario/` usa a mesma integração; a disponibilidade depende dos stories ativos e da sessão configurada no servidor BunnyFy. As credenciais e cookies do Instagram ficam no servidor da API.

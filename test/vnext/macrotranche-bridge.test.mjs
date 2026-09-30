@@ -43,13 +43,13 @@ test('planner e bridge compartilham ownership derivado e fecham a superfície in
   assert.deepEqual(planner.unresolved, []);
   assert.deepEqual(planner.crossBoundaryDuplicates, []);
   assert.equal(planner.rawLegacyFamilies, 512);
-  assert.equal(planner.rawLegacyTokens, 1572);
+  assert.equal(planner.rawLegacyTokens, 1573);
   assert.equal(planner.runtimeInjectedFamilies, 14);
   assert.equal(planner.runtimeInjectedTokens, 30);
   assert.equal(planner.legacyFamilies, 526);
-  assert.equal(planner.legacyTokens, 1602);
+  assert.equal(planner.legacyTokens, 1603);
   assert.equal(planner.nativeFamilies + planner.selectedFamilies, 526);
-  assert.equal(planner.nativeTokens + planner.selectedTokens, 1602);
+  assert.equal(planner.nativeTokens + planner.selectedTokens, 1603);
   assert.equal(planner.fallbackFamiliesAfterMacrotranche, 0);
   assert.equal(planner.fallbackTokensAfterMacrotranche, 0);
 
@@ -63,7 +63,7 @@ test('planner e bridge compartilham ownership derivado e fecham a superfície in
     assert.equal(planner.nativeFamilies, 131);
     assert.equal(planner.nativeTokens, 709);
     assert.equal(planner.selectedFamilies, 395);
-    assert.equal(planner.selectedTokens, 893);
+    assert.equal(planner.selectedTokens, 894);
   }
   for (const command of ['defmsgpromo', 'sendmsgpromo', 'listmsgpromo']) {
     assert.ok(planner.tokens.includes(command), `${command} precisa estar na superfície executável`);
