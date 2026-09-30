@@ -15,3 +15,22 @@ test('fachadas usam os mesmos executores TypeScript sem implementação duplicad
     assert.match(fs.readFileSync(file,'utf8'), /^export \{/);
   }
 });
+
+test('transporte e renderer de respostas também têm implementação única tipada', async () => {
+  const legacy = await import('../dados/src/utils/commandPresentation.js');
+  const typed = await import('../dist-vnext/presentation/command-presentation.js');
+  for (const name of ['renderCommandCard','formatCommandResponse','installBotPresentation','installCommandPresentation']) assert.equal(legacy[name], typed[name]);
+});
+
+test('catálogo de menus também usa renderer tipado único', async () => {
+  const legacy = await import('../dados/src/menus/presentation.js');
+  const typed = await import('../dist-vnext/presentation/menu.js');
+  for (const name of ['renderShogunMenu','selectMenuEntries','prepareMenuSections','sanitizeMenuDisplayName']) assert.equal(legacy[name],typed[name]);
+});
+
+test('fila ativa usa núcleo tipado único', async () => {
+  const legacy=await import('../dados/src/core/messageQueue.js');
+  const typed=await import('../dist-vnext/core/message-queue.js');
+  assert.equal(legacy.MessageQueue,typed.MessageQueue);
+  assert.equal(legacy.chavesDeJustica,typed.chavesDeJustica);
+});

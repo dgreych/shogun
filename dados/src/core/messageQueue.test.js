@@ -173,3 +173,39 @@ test('shutdown drena o que está em voo antes de encerrar', async (t) => {
   assert.equal(fila.ativosGlobais, 0);
   assert.ok(log.mock.calls.some(call => String(call.arguments[0]).includes('MessageQueue finalizado')));
 });
+
+test('shutdown recusa novas mensagens sem executar nem deixar promise pendente', async t => {
+  t.mock.method(console,'log',()=>{});
+  const fila=new MessageQueue(); const {processor,emVoo}=processadorControlado();
+  const active=fila.add(msgPrivado(PESSOA_A),processor);await respiro();
+  const stopping=fila.shutdown();
+  let called=false;
+  await assert.rejects(fila.add(msgPrivado(PESSOA_B),async()=>{called=true;}),/shutting down/i);
+  assert.equal(called,false);assert.equal(fila.queue.length,0);
+  emVoo[0].resolve('ok');await active;await stopping;
+});
+test('rejeição que não é Error ainda encerra promise, libera slot e chama handler', async t => {
+  t.mock.method(console,'error',()=>{});
+  for(const reason of [null,'falha externa',{message:'objeto externo'}]) {
+    const fila=new MessageQueue();let observed;
+    fila.setErrorHandler((_item,error)=>{observed=error;});
+    await assert.rejects(fila.add(msgPrivado(PESSOA_A),async()=>{throw reason;}),Error);
+    await respiro();assert.ok(observed instanceof Error);assert.equal(fila.ativosGlobais,0);assert.equal(fila.stats.totalErrors,1);
+    assert.equal(await fila.add(msgPrivado(PESSOA_B),async()=> 'ok'),'ok');
+  }
+});
+test('limites inválidos da fila são recusados antes de aceitar trabalho', () => {
+  for(const limit of [0,-1,NaN,Infinity,1.5]) {
+    assert.throws(()=>new MessageQueue(limit),/limite/i);
+    assert.throws(()=>new MessageQueue(20,limit),/limite/i);
+    assert.throws(()=>new MessageQueue(20,4,limit),/limite/i);
+  }
+});
+
+test('participante vazio na chave usa fallback e mantém teto por pessoa entre grupos', async () => {
+  const message={key:{remoteJid:GRUPO_1,participant:''},message:{participant:PESSOA_A}};
+  assert.equal(chavesDeJustica(message).pessoa,PESSOA_A);
+  const fila=new MessageQueue();const {processor,emVoo}=processadorControlado();
+  for(let i=0;i<6;i++)fila.add({key:{remoteJid:`group-${i}@g.us`,participant:''},message:{participant:PESSOA_A}},processor);
+  await respiro();assert.equal(emVoo.length,4);assert.equal(fila.queue.length,2);
+});
