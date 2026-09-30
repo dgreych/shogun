@@ -1,7 +1,7 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "PERFIL & STATUS", optionKey: "profileMenuTitle", entries: [
+    { title: "PERFIL & STATUS", icon: "👤", optionKey: "profileMenuTitle", entries: [
         {"command":"perfilrpg"},
         {"command":"carteira"},
         {"command":"toprpg"},
@@ -11,14 +11,14 @@ const sections = [
         {"command":"equipamentos"},
         {"command":"conquistas"},
     ] },
-    { title: "EVOLUÇÃO & PRESTÍGIO", optionKey: "evolutionMenuTitle", entries: [
+    { title: "EVOLUÇÃO & PRESTÍGIO", icon: "⚔️", optionKey: "evolutionMenuTitle", entries: [
         {"command":"evoluir"},
         {"command":"prestige"},
         {"command":"streak"},
         {"command":"reivindicar"},
         {"command":"speedup"},
     ] },
-    { title: "ECONOMIA & FINANÇAS", optionKey: "economyMenuTitle", entries: [
+    { title: "ECONOMIA & FINANÇAS", icon: "🪙", optionKey: "economyMenuTitle", entries: [
         {"command":"dep","arguments":"<valor|all>"},
         {"command":"sacar","arguments":"<valor|all>"},
         {"command":"pix","arguments":"@user <valor>"},
@@ -32,12 +32,12 @@ const sections = [
         {"command":"desafiosemanal"},
         {"command":"desafiomensal"},
     ] },
-    { title: "INVESTIMENTOS & BOLSA", optionKey: "investmentMenuTitle", entries: [
+    { title: "INVESTIMENTOS & BOLSA", icon: "🪙", optionKey: "investmentMenuTitle", entries: [
         {"command":"investir"},
         {"command":"investir","arguments":"<ação> <qtd>"},
         {"command":"sell","arguments":"<ação> <qtd>"},
     ] },
-    { title: "CASSINO & APOSTAS", optionKey: "gamblingMenuTitle", entries: [
+    { title: "CASSINO & APOSTAS", icon: "🪙", optionKey: "gamblingMenuTitle", entries: [
         {"command":"dados","arguments":"<valor>"},
         {"command":"coinflip","arguments":"<cara|coroa> <valor>"},
         {"command":"crash","arguments":"<valor>"},
@@ -51,7 +51,7 @@ const sections = [
         {"command":"leilao"},
         {"command":"topriqueza"},
     ] },
-    { title: "ATIVIDADES DIÁRIAS", optionKey: "activitiesMenuTitle", entries: [
+    { title: "ATIVIDADES DIÁRIAS", icon: "📝", optionKey: "activitiesMenuTitle", entries: [
         {"command":"diario"},
         {"command":"work"},
         {"command":"mine"},
@@ -69,44 +69,44 @@ const sections = [
         {"command":"vendercomida","arguments":"<item>"},
         {"command":"sementes"},
     ] },
-    { title: "AVENTURA & EXPLORAÇÃO", optionKey: "adventureMenuTitle", entries: [
+    { title: "AVENTURA & EXPLORAÇÃO", icon: "⚔️", optionKey: "adventureMenuTitle", entries: [
         {"command":"explore"},
         {"command":"masmorra"},
         {"command":"bossrpg"},
         {"command":"eventos"},
     ] },
-    { title: "DUNGEONS & RAIDS", entries: [
+    { title: "DUNGEONS & RAIDS", icon: "⚔️", entries: [
         {"command":"dungeon","description":"Listar dungeons"},
         {"command":"dungeon","arguments":"criar <tipo>"},
         {"command":"dungeon","arguments":"entrar <id>"},
         {"command":"dungeon","arguments":"iniciar"},
         {"command":"dungeon","arguments":"sair"},
     ] },
-    { title: "CLASSES & PROFISSÕES", entries: [
+    { title: "CLASSES & PROFISSÕES", icon: "⚔️", entries: [
         {"command":"class","description":"Ver classes"},
         {"command":"class","arguments":"<nome>","description":"Escolher uma classe."},
     ] },
-    { title: "CASA", entries: [
+    { title: "CASA", icon: "🏡", entries: [
         {"command":"casa","description":"Ver sua casa"},
         {"command":"casa","arguments":"comprar <tipo>"},
         {"command":"casa","arguments":"coletar"},
         {"command":"casa","arguments":"decorar <item>"},
     ] },
-    { title: "MERCADO DE JOGADORES", entries: [
+    { title: "MERCADO DE JOGADORES", icon: "🪙", entries: [
         {"command":"auction","description":"Ver itens"},
         {"command":"auction","arguments":"vender <item> <preço>"},
         {"command":"auction","arguments":"comprar <nº>"},
         {"command":"auction","arguments":"meus"},
         {"command":"auction","arguments":"cancelar <nº>"},
     ] },
-    { title: "MERCADO GERAL", entries: [
+    { title: "MERCADO GERAL", icon: "🪙", entries: [
         {"command":"mercado"},
         {"command":"listar","arguments":"<item> <preço>"},
         {"command":"cmerc","arguments":"<nº>"},
         {"command":"meusan"},
         {"command":"cancelar","arguments":"<nº>"},
     ] },
-    { title: "COMBATE & BATALHAS", optionKey: "combatMenuTitle", entries: [
+    { title: "COMBATE & BATALHAS", icon: "⚔️", optionKey: "combatMenuTitle", entries: [
         {"command":"duelrpg","arguments":"@user"},
         {"command":"arena"},
         {"command":"torneio"},
@@ -115,7 +115,7 @@ const sections = [
         {"command":"guerra"},
         {"command":"desafio"},
     ] },
-    { title: "CRIAÇÃO & EQUIPAMENTOS", optionKey: "craftingMenuTitle", entries: [
+    { title: "CRIAÇÃO & EQUIPAMENTOS", icon: "✨", optionKey: "craftingMenuTitle", entries: [
         {"command":"forge","arguments":"<item>"},
         {"command":"enchant"},
         {"command":"dismantle","arguments":"<item>"},
@@ -123,7 +123,7 @@ const sections = [
         {"command":"materiais"},
         {"command":"precos"},
     ] },
-    { title: "SOCIAL & INTERAÇÕES", optionKey: "socialMenuTitle", entries: [
+    { title: "SOCIAL & INTERAÇÕES", icon: "🎲", optionKey: "socialMenuTitle", entries: [
         {"command":"casar","arguments":"@user"},
         {"command":"divorciar"},
         {"command":"namorar","arguments":"@user"},
@@ -135,13 +135,13 @@ const sections = [
         {"command":"baterrpg","arguments":"@user"},
         {"command":"proteger","arguments":"@user"},
     ] },
-    { title: "FAMÍLIA & ADOÇÃO", optionKey: "familyMenuTitle", entries: [
+    { title: "FAMÍLIA & ADOÇÃO", icon: "🫶", optionKey: "familyMenuTitle", entries: [
         {"command":"familia"},
         {"command":"adotaruser","arguments":"@user"},
         {"command":"deserdar","arguments":"@user"},
         {"command":"arvore"},
     ] },
-    { title: "CLÃ & COMUNIDADE", optionKey: "guildMenuTitle", entries: [
+    { title: "CLÃ & COMUNIDADE", icon: "✨", optionKey: "guildMenuTitle", entries: [
         {"command":"criarcla","arguments":"<nome>"},
         {"command":"cla"},
         {"command":"convidar","arguments":"@user"},
@@ -151,11 +151,11 @@ const sections = [
         {"command":"expulsar","arguments":"@user"},
         {"command":"rmconvite","arguments":"@user"},
     ] },
-    { title: "MISSÕES & CONQUISTAS", optionKey: "questMenuTitle", entries: [
+    { title: "MISSÕES & CONQUISTAS", icon: "🏆", optionKey: "questMenuTitle", entries: [
         {"command":"missoes"},
         {"command":"conquistas"},
     ] },
-    { title: "PETS & COMPANHEIROS", optionKey: "petsMenuTitle", entries: [
+    { title: "PETS & COMPANHEIROS", icon: "🐾", optionKey: "petsMenuTitle", entries: [
         {"command":"pets"},
         {"command":"adotar","arguments":"<pet>"},
         {"command":"feed","arguments":"<nº>"},
@@ -167,14 +167,14 @@ const sections = [
         {"command":"equippet","arguments":"<nº> <nome do item>"},
         {"command":"unequippet","arguments":"<nº> <slot?>"},
     ] },
-    { title: "REPUTAÇÃO & FAMA", optionKey: "reputationMenuTitle", entries: [
+    { title: "REPUTAÇÃO & FAMA", icon: "✨", optionKey: "reputationMenuTitle", entries: [
         {"command":"rep"},
         {"command":"vote","arguments":"@user"},
     ] },
-    { title: "EVENTOS", optionKey: "eventsMenuTitle", entries: [
+    { title: "EVENTOS", icon: "✨", optionKey: "eventsMenuTitle", entries: [
         {"command":"eventos"},
     ] },
-    { title: "LOJA PREMIUM", optionKey: "premiumMenuTitle", entries: [
+    { title: "LOJA PREMIUM", icon: "🪙", optionKey: "premiumMenuTitle", entries: [
         {"command":"lojapremium"},
         {"command":"comprarpremium","arguments":"<item>"},
         {"command":"boost"},
@@ -186,7 +186,7 @@ const sections = [
         {"command":"doar","arguments":"<valor>"},
         {"command":"presente","arguments":"@user <item>"},
     ] },
-    { title: "GESTÃO DO RPG", optionKey: "adminMenuTitle", entries: [
+    { title: "GESTÃO DO RPG", icon: "⚔️", optionKey: "adminMenuTitle", entries: [
         {"command":"rpgadd","arguments":"@user <valor>"},
         {"command":"rpgremove","arguments":"@user <valor>"},
         {"command":"rpgsetlevel","arguments":"@user <nivel>"},
@@ -200,6 +200,8 @@ const sections = [
 
 export default async function menuRPG(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "Sua história ainda tem muito mapa pela frente.",
+        footer: "Consulte sua ficha com #prefix#perfilrpg antes da aventura.",
         options,
         title: "RPG", prefix, userName,
         sections: prepareMenuSections(sections, options),

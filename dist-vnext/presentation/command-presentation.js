@@ -1,4 +1,4 @@
-import { SHOGUN_SIGNATURE, withShogunMenuTheme } from './theme.js';
+import { SHOGUN_SIGNATURE, createShogunMenuTheme, withShogunMenuTheme } from './theme.js';
 import { rememberRenderedOutput, isRenderedOutput, renderedOutputBody } from './rendered-output.js';
 const contexts = new WeakMap();
 const TTL = 300_000;
@@ -10,6 +10,33 @@ const titles = {
     ajuda: 'AJUDA', help: 'AJUDA', play: 'MÚSICA', play2: 'MÚSICA', playvid: 'VÍDEO',
     gpt: 'SHOGUN RESPONDE', assistente: 'SHOGUN RESPONDE', imagem: 'CRIAÇÃO DE IMAGEM',
     welcome: 'BOAS-VINDAS', bemvindo: 'BOAS-VINDAS', aluguel: 'ALUGUEL',
+    sticker: 'ATELIÊ DE FIGURINHAS', figu: 'ATELIÊ DE FIGURINHAS', brat: 'ATELIÊ DE FIGURINHAS',
+    tiktok: 'TIKTOK', twitter: 'X / TWITTER', facebook: 'FACEBOOK', kwai: 'KWAI',
+    spotify: 'SPOTIFY', soundcloud: 'SOUNDCLOUD', yt: 'YOUTUBE', ytmp3: 'YOUTUBE · ÁUDIO',
+    mediafire: 'ARQUIVOS', gdrive: 'GOOGLE DRIVE', pinterest: 'PINTEREST', letra: 'LETRA DA MÚSICA',
+    clima: 'PREVISÃO DO TEMPO', calc: 'CALCULADORA', tradutor: 'TRADUTOR', ssweb: 'CAPTURA DO SITE',
+    perfilrpg: 'FICHA DE AVENTUREIRO', carteira: 'CARTEIRA', diario: 'RECOMPENSA DIÁRIA',
+    topcmd: 'EM ALTA', rankativo: 'QUEM MOVIMENTA O GRUPO', regras: 'ACORDOS DO GRUPO',
+    nomegp: 'IDENTIDADE DO GRUPO', setname: 'IDENTIDADE DO GRUPO', descgrupo: 'DESCRIÇÃO DO GRUPO',
+    linkgp: 'CONVITE DO GRUPO', hidetag: 'CHAMADA DO GRUPO', marcar: 'CHAMADA DO GRUPO',
+    grupo: 'PORTAS DO GRUPO', gp: 'PORTAS DO GRUPO', setprefix: 'PREFIXO DO GRUPO',
+    menudesign: 'ATELIÊ DO SHOGUN', designmenu: 'ATELIÊ DO SHOGUN', resetdesign: 'ATELIÊ DO SHOGUN',
+    afk: 'PAUSA ATIVADA', voltei: 'DE VOLTA AO GRUPO', conquistas: 'GALERIA DE CONQUISTAS',
+    resumir: 'RESUMO', explicar: 'VAMOS DESCOMPLICAR', corrigir: 'REVISÃO DO TEXTO', ideias: 'LABORATÓRIO DE IDEIAS',
+    historia: 'UMA HISTÓRIA PARA VOCÊ', recomendar: 'ESCOLHAS DO SHOGUN', resumirurl: 'RESUMO DO LINK',
+    resumirchat: 'O QUE ROLOU NO GRUPO', regrasgp: 'ACORDOS DO GRUPO',
+};
+const titleIcons = {
+    'CONEXÃO': '📡', 'STATUS DO BOT': '📡', 'SOBRE O SHOGUN': '🐈‍⬛', 'PERFIL': '👤',
+    'MÚSICA': '🎧', 'SPOTIFY': '🎧', 'SOUNDCLOUD': '🎧', 'LETRA DA MÚSICA': '🎼',
+    'INSTAGRAM': '📸', 'STORIES DO INSTAGRAM': '📸', 'VÍDEO': '🎬', 'TIKTOK': '🎬',
+    'MODERAÇÃO': '🛡️', 'ADVERTÊNCIA': '🛡️', 'ACORDOS DO GRUPO': '📜',
+    'FICHA DE AVENTUREIRO': '⚔️', 'CARTEIRA': '🪙', 'RECOMPENSA DIÁRIA': '🎁',
+    'ATELIÊ DE FIGURINHAS': '🪄', 'ATELIÊ DO SHOGUN': '🎨', 'EM ALTA': '🏆',
+    'PREVISÃO DO TEMPO': '🌤️', 'CRIAÇÃO DE IMAGEM': '🎨', 'TRADUTOR': '🌍',
+    'BOAS-VINDAS': '👋', 'PAUSA ATIVADA': '🌙', 'DE VOLTA AO GRUPO': '🐾',
+    'SHOGUN RESPONDE': '💭', 'RESUMO': '💭', 'VAMOS DESCOMPLICAR': '💡',
+    'REVISÃO DO TEXTO': '✍️', 'LABORATÓRIO DE IDEIAS': '💡', 'AVISO': '🐾',
 };
 function clean(value) {
     return String(value ?? '').replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u200b\u200e\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '').replace(/\r\n?/g, '\n');
@@ -36,17 +63,23 @@ function bodyLines(lines, side) {
     }
     return result;
 }
-export function renderCommandCard({ title, fields = [], lines = [], theme: options = {} }) {
+export function renderCommandCard({ title, fields = [], lines = [], theme: options = {}, icon, state }) {
     const theme = withShogunMenuTheme(options);
-    const header = theme.header.split('\n').filter(line => !/#nome#|#prefix#|\{userName\}|\{prefix\}/.test(line) || /#title#|#titulo#|\{botName\}/.test(line))
-        .join('\n').replaceAll('#title#', singleLine(title)).replaceAll('#titulo#', singleLine(title))
-        .replaceAll('{botName}', 'SHOGUN').replaceAll('#separator#', theme.separator)
-        .replaceAll('#nome#', 'SHOGUN').replaceAll('{userName}', 'SHOGUN').replaceAll('#prefix#', '').replaceAll('{prefix}', '');
+    const displayTitle = singleLine(title);
+    const mark = state === 'pending' ? '⏳' : state === 'error' ? '⚠️' : icon || titleIcons[displayTitle] || '✦';
+    const headline = `${mark} *${displayTitle}*${state === 'pending' ? ' · EM ANDAMENTO' : state === 'error' ? ' · NÃO FOI DESSA VEZ' : ''}`;
+    const header = theme.header === createShogunMenuTheme().header
+        ? `${SHOGUN_SIGNATURE}\n${theme.menuTopBorder} ${headline}\n${theme.middleBorder}`
+        : theme.header.split('\n').filter(line => !/#nome#|#prefix#|#intro#|\{userName\}|\{prefix\}/.test(line) || /#title#|#titulo#|\{botName\}/.test(line))
+            .join('\n').replaceAll('#title#', singleLine(title)).replaceAll('#titulo#', singleLine(title))
+            .replaceAll('{botName}', 'SHOGUN').replaceAll('#separator#', theme.separator)
+            .replaceAll('#nome#', 'SHOGUN').replaceAll('{userName}', 'SHOGUN').replaceAll('#prefix#', '').replaceAll('{prefix}', '')
+            .replaceAll('#intro#', '').replaceAll('#footer#', '');
     const content = fields.flatMap(({ label, value, literal = false }) => {
         if (value === null || value === undefined || value === '')
             return [];
         const text = singleLine(value, literal);
-        return text ? [`${singleLine(label)} › ${text}`] : [];
+        return text ? [`*${singleLine(label)}*  ${text}`] : [];
     });
     if (content.length && lines.length)
         content.push('');
@@ -70,7 +103,9 @@ function unframe(value) {
 export function formatCommandResponse(value, command, theme = {}) {
     if (typeof value !== 'string' || !value.trim() || isRendered(value))
         return value;
-    return renderCommandCard({ title: (command ? titles[command] : undefined) || singleLine(command || 'AVISO').replace(/[_-]/g, ' ').toUpperCase(), lines: unframe(value), theme });
+    const status = outputStatus({ text: value });
+    const state = status === '⚠️' ? 'error' : status === null ? 'pending' : undefined;
+    return renderCommandCard({ title: (command ? titles[command] : undefined) || singleLine(command || 'AVISO').replace(/[_-]/g, ' ').toUpperCase(), lines: unframe(value), theme, ...(state ? { state } : {}) });
 }
 function outputStatus(content) {
     const value = content.text ?? content.caption ?? '';

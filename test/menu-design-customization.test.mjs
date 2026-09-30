@@ -8,12 +8,12 @@ test('designmenu controla cabeçalho, bordas, itens, títulos e separadores em t
   const args=name==='menubn'?['!','SHOGUN','Fulano',false,options]:name==='menuTopCmd'?['!','SHOGUN','Fulano',[],options]:['!','SHOGUN','Fulano',options];
   const output=await render(...args);
   assert.match(output,/^SHOGUN TÍTULO /,name);assert.ok(output.includes('Fulano · !'),name);
-  assert.ok(output.includes('TOPO 01 SEÇÃO'),name);assert.ok(output.includes('MEIO ITEM !'),name);assert.ok(output.endsWith('FIM'),name);
+  assert.ok(output.includes('TOPO 01 SEÇÃO'),name);assert.ok(output.includes('MEIO ITEM *!'),name);assert.ok(output.endsWith('FIM'),name);
  }
 });
 test('desenho personalizado preserva filtro de permissões e categorias vazias não aparecem',async()=>{
  const options={...createShogunMenuTheme(),menuItemIcon:' -> ',accessFor:command=>({visible:command==='menudown',executable:true})};
  const output=await menus.menu('!','SHOGUN','Fulano',options);
- assert.ok(output.includes('┃ -> !menudown'));assert.equal(output.includes('!menudono'),false);
+ assert.ok(output.includes('│ -> *!menudown*'));assert.equal(output.includes('!menudono'),false);
  assert.equal(output.includes('ADMINISTRAÇÃO'),false);assert.equal(output.includes('JOGOS'),false);
 });

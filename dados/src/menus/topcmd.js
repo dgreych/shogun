@@ -7,11 +7,13 @@ export default async function menuTopCmd(prefix, _botName = 'SHOGUN', userName =
         description: `${index + 1}º · ${entry.count} usos por ${entry.uniqueUsers} usuários`,
     }));
     return renderShogunMenu({
+        intro: "Os comandos que estão movimentando a conversa.",
+        footer: "Cada comando conta uma parte da história do grupo.",
         options,
         title: 'RANKING DE COMANDOS', prefix, userName, accessFor: options.accessFor,
         sections: [
-            { title: 'MAIS USADOS', entries: ranking },
-            { title: 'CONSULTA', entries: ranking.length
+            { title: 'MAIS USADOS', icon: "🏆", entries: ranking },
+            { title: 'CONSULTA', icon: "💭", entries: ranking.length
                 ? [{ command: 'cmdinfo', arguments: '[comando]', description: 'Ver estatísticas do comando.' }]
                 : [{ command: 'menu', description: 'Nenhum comando foi registrado ainda.' }],
             },

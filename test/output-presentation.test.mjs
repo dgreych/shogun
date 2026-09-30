@@ -3,7 +3,7 @@ import test from 'node:test';
 import { formatCommandResponse, installBotPresentation, installCommandPresentation, renderCommandCard } from '../dados/src/utils/commandPresentation.js';
 import { createShogunMenuTheme, withShogunMenuTheme } from '../dados/src/menus/theme.js';
 
-const signature = '╭━━━〔 🐈‍⬛ *SHOGUN* 〕━━━';
+const signature = '⟡━━〔 🐈‍⬛ *SHOGUN* 〕━━⟡';
 test('respostas mantêm conteúdo, listas, código e primeira linha de moldura antiga', () => {
   const text = '╭── *PERFIL* ──╮\n│ Nome: @123\n│\n│ ```js\n│ const a = 1;\n│ ```\n╰─────────╯';
   const out = formatCommandResponse(text, 'perfil');
@@ -16,7 +16,7 @@ test('respostas mantêm conteúdo, listas, código e primeira linha de moldura a
 });
 test('tema migra defaults v2 preservando campos personalizados', () => {
   const result = withShogunMenuTheme({ styleVersion: 2, header: 'Meu #title#', menuItemIcon: '  ↳ ', bottomBorder: 'FIM' });
-  assert.equal(result.styleVersion, 3);
+  assert.equal(result.styleVersion, 4);
   assert.equal(result.header, 'Meu #title#');
   assert.equal(result.menuItemIcon, createShogunMenuTheme().menuItemIcon);
   assert.equal(result.bottomBorder, 'FIM');
@@ -66,7 +66,7 @@ test('campos do card são dados, corpo conserva quebras e tema nunca perde conte
   const out = renderCommandCard({ title: 'Resultado', fields: [{ label: 'Nome', value: '*Fulano*\nFake\u202e' }], lines: ['Texto *rico*\nSegunda linha', '```\nkey=value\n```'] });
   assert.ok(out.startsWith(signature));
   assert.match(out, /Nome.*Fulano Fake/);
-  assert.match(out, /Texto \*rico\*\n┃  Segunda linha/);
+  assert.match(out, /Texto \*rico\*\n│  Segunda linha/);
   assert.match(out, /```\nkey=value\n```/);
   assert.equal(out.includes('\u202e'), false);
 });

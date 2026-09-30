@@ -1,7 +1,7 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "LOGOTIPOS 1TXT", entries: [
+    { title: "LOGOTIPOS 1TXT", icon: "🎨", entries: [
         {"command":"darkgreen"},
         {"command":"glitch"},
         {"command":"write"},
@@ -13,7 +13,7 @@ const sections = [
         {"command":"americanflag"},
         {"command":"deleting"},
     ] },
-    { title: "LOGOTIPOS 2TXT", entries: [
+    { title: "LOGOTIPOS 2TXT", icon: "🎨", entries: [
         {"command":"pornhub"},
         {"command":"avengers"},
         {"command":"graffiti"},
@@ -29,6 +29,8 @@ const sections = [
 
 export default async function menuLogos(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "Uma palavra, outra identidade. Bora criar?",
+        footer: "Escolha um efeito e envie seu texto.",
         options,
         title: "LOGOS", prefix, userName,
         sections: prepareMenuSections(sections, options),

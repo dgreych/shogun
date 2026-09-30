@@ -9,10 +9,14 @@ export async function renderDownloadMenu(prefix, _botName = 'SHOGUN', userName =
     if (!sections || sections.length !== 6)
         throw new Error('Definição de downloads incompleta.');
     return renderShogunMenu({
+        options: { ...options },
+        intro: "Busque pelo nome ou mande o link. Eu trago a mídia.",
+        footer: "Achou algo bom? Mande o link e deixe comigo.",
         title: 'DOWNLOADS', prefix, userName,
         ...(options.accessFor ? { accessFor: options.accessFor } : {}),
         sections: sections.map(section => ({
             title: options[titleKeys[section.id]] || section.title,
+            ...(section.icon ? { icon: section.icon } : {}),
             entries: section.entries,
         })),
     });

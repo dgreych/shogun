@@ -6,10 +6,14 @@ export async function renderStickerMenu(prefix, _botName = 'SHOGUN', userName = 
     if (!sections || sections.length !== 2)
         throw new Error('Definição de figurinhas incompleta.');
     return renderShogunMenu({
+        options: { ...options },
+        intro: "Sua próxima figurinha começa aqui.",
+        footer: "Responda uma foto ou um vídeo com #prefix#sticker.",
         title: 'FIGURINHAS', prefix, userName,
         ...(options.accessFor ? { accessFor: options.accessFor } : {}),
         sections: sections.map((section, index) => ({
             title: titles[index] || section.title,
+            ...(section.icon ? { icon: section.icon } : {}),
             entries: section.entries,
         })),
     });

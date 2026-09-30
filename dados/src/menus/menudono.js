@@ -1,10 +1,10 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "INÍCIO", entries: [
+    { title: "INÍCIO", icon: "✨", entries: [
         {"command":"tutorial"},
     ] },
-    { title: "CONFIGURAÇÕES DO BOT", optionKey: "botConfigMenuTitle", entries: [
+    { title: "CONFIGURAÇÕES DO BOT", icon: "🪄", optionKey: "botConfigMenuTitle", entries: [
         {"command":"prefixo"},
         {"command":"numerodono"},
         {"command":"nomedono"},
@@ -18,7 +18,7 @@ const sections = [
         {"command":"lermais"},
         {"command":"personalizargrupo"},
     ] },
-    { title: "DESIGN & APARÊNCIA", optionKey: "menuDesignMenuTitle", entries: [
+    { title: "DESIGN & APARÊNCIA", icon: "🎨", optionKey: "menuDesignMenuTitle", entries: [
         {"command":"designmenu"},
         {"command":"setborda"},
         {"command":"setbordafim"},
@@ -29,12 +29,12 @@ const sections = [
         {"command":"setheader"},
         {"command":"resetdesign"},
     ] },
-    { title: "PROMOÇÕES", entries: [
+    { title: "PROMOÇÕES", icon: "✨", entries: [
         { command: "defmsgpromo", arguments: "<mensagem>", description: "Salva um texto e recebe um ID." },
         { command: "listmsgpromo", description: "Consulta textos e progresso do envio." },
         { command: "sendmsgpromo", arguments: "<id>", description: "Agenda o envio gradual aos grupos." },
     ] },
-    { title: "SISTEMA & AUTOMAÇÃO", optionKey: "automationMenuTitle", entries: [
+    { title: "SISTEMA & AUTOMAÇÃO", icon: "⚙️", optionKey: "automationMenuTitle", entries: [
         {"command":"addauto"},
         {"command":"addautomidia"},
         {"command":"listauto"},
@@ -46,7 +46,7 @@ const sections = [
         {"command":"listnopref"},
         {"command":"delnopref"},
     ] },
-    { title: "PERSONALIZAÇÃO DE COMANDOS", optionKey: "commandCustomMenuTitle", entries: [
+    { title: "PERSONALIZAÇÃO DE COMANDOS", icon: "✨", optionKey: "commandCustomMenuTitle", entries: [
         {"command":"addcmd"},
         {"command":"addcmdmidia"},
         {"command":"listcmd"},
@@ -59,12 +59,12 @@ const sections = [
         {"command":"listblackglobal"},
         {"command":"rmblackglobal"},
     ] },
-    { title: "LIMITAÇÃO DE COMANDOS", optionKey: "commandLimitingMenuTitle", entries: [
+    { title: "LIMITAÇÃO DE COMANDOS", icon: "✨", optionKey: "commandLimitingMenuTitle", entries: [
         {"command":"cmdlimitar"},
         {"command":"cmddeslimitar"},
         {"command":"cmdlimites"},
     ] },
-    { title: "GERENCIAMENTO DE USUÁRIOS", optionKey: "userManagementMenuTitle", entries: [
+    { title: "GERENCIAMENTO DE USUÁRIOS", icon: "⚙️", optionKey: "userManagementMenuTitle", entries: [
         {"command":"addsubdono"},
         {"command":"delsubdono"},
         {"command":"listasubdonos"},
@@ -73,7 +73,7 @@ const sections = [
         {"command":"listprem"},
         {"command":"resetgold"},
     ] },
-    { title: "INDICAÇÕES", entries: [
+    { title: "INDICAÇÕES", icon: "✨", entries: [
         {"command":"addindicacao"},
         {"command":"topindica"},
         {"command":"delindicacao"},
@@ -81,7 +81,7 @@ const sections = [
         {"command":"unbangp"},
         {"command":"listbangp"},
     ] },
-    { title: "SISTEMA DE ALUGUEL", optionKey: "rentalSystemMenuTitle", entries: [
+    { title: "SISTEMA DE ALUGUEL", icon: "🪙", optionKey: "rentalSystemMenuTitle", entries: [
         {"command":"modoaluguel"},
         {"command":"addaluguel"},
         {"command":"gerarcod"},
@@ -95,13 +95,13 @@ const sections = [
         {"command":"setdiv"},
         {"command":"divulgar"},
     ] },
-    { title: "GERENCIAMENTO DE SUB-BOTS", optionKey: "subBotsMenuTitle", entries: [
+    { title: "GERENCIAMENTO DE SUB-BOTS", icon: "⚙️", optionKey: "subBotsMenuTitle", entries: [
         {"command":"addsubbot"},
         {"command":"removesubbot"},
         {"command":"listarsubbots"},
         {"command":"conectarsubbot"},
     ], notes: ["No sub-bot, use #prefix#gerarcodigo."] },
-    { title: "CONTROLE & MANUTENÇÃO", optionKey: "botControlMenuTitle", entries: [
+    { title: "CONTROLE & MANUTENÇÃO", icon: "🛡️", optionKey: "botControlMenuTitle", entries: [
         {"command":"atualizar"},
         {"command":"reiniciar"},
         {"command":"entrar"},
@@ -116,7 +116,7 @@ const sections = [
         {"command":"antibanmarcar"},
         {"command":"imagem"},
     ] },
-    { title: "MONITORAMENTO & ANÁLISE", optionKey: "monitoringMenuTitle", entries: [
+    { title: "MONITORAMENTO & ANÁLISE", icon: "✨", optionKey: "monitoringMenuTitle", entries: [
         {"command":"listagp"},
         {"command":"antipv"},
         {"command":"antipv2"},
@@ -135,14 +135,14 @@ const sections = [
         {"command":"nuke"},
         {"command":"msgprefix"},
     ] },
-    { title: "TRANSMISSÃO EM GRUPOS", entries: [
+    { title: "TRANSMISSÃO EM GRUPOS", icon: "✨", entries: [
         {"command":"tm"},
     ] },
-    { title: "TRANSMISSÃO NO PRIVADO", entries: [
+    { title: "TRANSMISSÃO NO PRIVADO", icon: "✨", entries: [
         {"command":"tm2"},
         {"command":"statustm"},
     ], notes: ["Inscrição pelo privado: #prefix#inscrevertm."] },
-    { title: "DIVULGAÇÃO DO DONO", entries: [
+    { title: "DIVULGAÇÃO DO DONO", icon: "✨", entries: [
         {"command":"divdono","arguments":"add"},
         {"command":"divdono","arguments":"rem"},
         {"command":"divdono","arguments":"list"},
@@ -155,6 +155,8 @@ const sections = [
 
 export default async function menuDono(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "O Shogun também tem bastidores. Aqui, você dá o tom.",
+        footer: "Seu bot, sua identidade. Personalize com #prefix#menudesign.",
         options,
         title: "GESTÃO DO BOT", prefix, userName,
         sections: prepareMenuSections(sections, options),

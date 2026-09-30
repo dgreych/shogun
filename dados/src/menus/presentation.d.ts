@@ -11,6 +11,7 @@ export interface MenuTextEntry {
 
 export interface MenuTextSection {
     readonly title: string;
+    readonly icon?: string;
     readonly entries: readonly MenuTextEntry[];
     readonly notes?: readonly string[];
     readonly optionKey?: string;
@@ -28,5 +29,8 @@ export function renderShogunMenu(input: {
     readonly prefix: string;
     readonly userName: string;
     readonly sections: readonly MenuTextSection[];
+    readonly intro?: string;
+    readonly footer?: string;
+    readonly options?: Readonly<Record<string, unknown>>;
     readonly accessFor?: MenuAccessResolver;
 }): string;

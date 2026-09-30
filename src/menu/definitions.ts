@@ -1,6 +1,7 @@
 export interface MenuEntry {
   readonly command: string;
   readonly aliases?: readonly string[];
+  readonly arguments?: string;
   readonly description?: string;
   readonly ownerOnly?: boolean;
   readonly adminOnly?: boolean;
@@ -10,6 +11,7 @@ export interface MenuEntry {
 export interface MenuSection {
   readonly id: string;
   readonly title: string;
+  readonly icon?: string;
   readonly entries: readonly MenuEntry[];
 }
 
@@ -43,19 +45,87 @@ const stickerManagementEntries: readonly MenuEntry[] = Object.freeze([
 ]);
 
 export const STICKER_MENU_DEFINITION: MenuDefinition = Object.freeze({
-  id: 'menuSticker',
-  sections: Object.freeze([
-    Object.freeze({
-      id: 'create',
-      title: 'CRIAÇÃO DE FIGURINHAS',
-      entries: stickerCreationEntries,
-    }),
-    Object.freeze({
-      id: 'management',
-      title: 'GERENCIAMENTO',
-      entries: stickerManagementEntries,
-    }),
-  ]),
+  "id": "menuSticker",
+  "sections": [
+    {
+      "id": "create",
+      "title": "CRIAÇÃO DE FIGURINHAS",
+      "icon": "🪄",
+      "entries": [
+        {
+          "command": "emojimix",
+          "description": "Dois emojis, uma combinação."
+        },
+        {
+          "command": "ttp",
+          "description": "Seu texto vira figurinha."
+        },
+        {
+          "command": "attp",
+          "description": "Texto com movimento."
+        },
+        {
+          "command": "sticker",
+          "description": "Foto ou vídeo viram figurinha."
+        },
+        {
+          "command": "sticker2",
+          "description": "Outra opção para criar sua figurinha."
+        },
+        {
+          "command": "sbg",
+          "description": "Uma figurinha sem fundo."
+        },
+        {
+          "command": "sfundo",
+          "description": "Remova o fundo da sua mídia."
+        },
+        {
+          "command": "qc",
+          "description": "Uma mensagem com cara de figurinha."
+        },
+        {
+          "command": "brat",
+          "description": "Seu texto no estilo brat."
+        },
+        {
+          "command": "bratvid",
+          "description": "Seu texto brat em movimento."
+        }
+      ]
+    },
+    {
+      "id": "management",
+      "title": "GERENCIAMENTO",
+      "icon": "⚙️",
+      "entries": [
+        {
+          "command": "figualeatoria",
+          "description": "Uma surpresa do acervo."
+        },
+        {
+          "command": "figurinhas",
+          "description": "Explore seu acervo."
+        },
+        {
+          "command": "rename",
+          "description": "Troque os créditos da figurinha."
+        },
+        {
+          "command": "rgtake",
+          "description": "Defina seus créditos preferidos."
+        },
+        {
+          "command": "take",
+          "description": "Assine uma figurinha."
+        },
+        {
+          "command": "toimg",
+          "description": "Volte da figurinha para a imagem."
+        }
+      ]
+    }
+  ]
 });
 
 const downloadSearchEntries: readonly MenuEntry[] = Object.freeze([
@@ -98,15 +168,156 @@ const downloadGamesEntries: readonly MenuEntry[] = Object.freeze([
 ]);
 
 export const DOWNLOAD_MENU_DEFINITION: MenuDefinition = Object.freeze({
-  id: 'menudown',
-  sections: Object.freeze([
-    Object.freeze({ id: 'search', title: 'PESQUISAS & CONSULTAS', entries: downloadSearchEntries }),
-    Object.freeze({ id: 'audio', title: 'MÚSICA & ÁUDIO', entries: downloadAudioEntries }),
-    Object.freeze({ id: 'video', title: 'VÍDEOS & STREAMING', entries: downloadVideoEntries }),
-    Object.freeze({ id: 'downloads', title: 'DOWNLOADS', entries: downloadEntries }),
-    Object.freeze({ id: 'media', title: 'MÍDIAS SOCIAIS', entries: downloadMediaEntries }),
-    Object.freeze({ id: 'games', title: 'GAMING & APPS', entries: downloadGamesEntries }),
-  ]),
+  "id": "menudown",
+  "sections": [
+    {
+      "id": "search",
+      "title": "PESQUISAS & CONSULTAS",
+      "icon": "💭",
+      "entries": [
+        {
+          "command": "google",
+          "arguments": "<pesquisa>",
+          "description": "Encontre o que você procura na web."
+        },
+        {
+          "command": "noticias",
+          "arguments": "[assunto]",
+          "description": "As notícias do tema que você escolher."
+        },
+        {
+          "command": "apps",
+          "arguments": "<nome>",
+          "description": "Busque um aplicativo."
+        },
+        {
+          "command": "dicionario",
+          "arguments": "<palavra>",
+          "description": "Uma palavra, seus significados."
+        },
+        {
+          "command": "wikipedia",
+          "arguments": "<assunto>",
+          "description": "Conheça o assunto sem sair do chat."
+        }
+      ]
+    },
+    {
+      "id": "audio",
+      "title": "MÚSICA & ÁUDIO",
+      "icon": "🎧",
+      "entries": [
+        {
+          "command": "letra",
+          "arguments": "<música>",
+          "description": "A letra para acompanhar o som."
+        },
+        {
+          "command": "play",
+          "arguments": "<nome ou link>",
+          "description": "Sua música em áudio."
+        },
+        {
+          "command": "play2",
+          "arguments": "<nome ou link>",
+          "description": "Outra opção para buscar sua música."
+        },
+        {
+          "command": "spotify",
+          "arguments": "<link>",
+          "description": "Traga uma faixa do Spotify."
+        },
+        {
+          "command": "soundcloud",
+          "arguments": "<link>",
+          "description": "Sua faixa do SoundCloud no chat."
+        }
+      ]
+    },
+    {
+      "id": "video",
+      "title": "VÍDEOS & STREAMING",
+      "icon": "🎬",
+      "entries": [
+        {
+          "command": "playvid",
+          "arguments": "<nome ou link>",
+          "description": "O vídeo da sua busca."
+        }
+      ]
+    },
+    {
+      "id": "downloads",
+      "title": "DOWNLOADS",
+      "icon": "📥",
+      "entries": [
+        {
+          "command": "tiktok",
+          "arguments": "<link>",
+          "description": "Traga o vídeo para a conversa."
+        },
+        {
+          "command": "instagram",
+          "arguments": "<link>",
+          "description": "Fotos, Reels e carrosséis."
+        },
+        {
+          "command": "kwai",
+          "arguments": "<link>",
+          "description": "Baixe o vídeo que você encontrou."
+        },
+        {
+          "command": "igstory",
+          "arguments": "<link>",
+          "description": "Stories disponíveis no Instagram."
+        },
+        {
+          "command": "facebook",
+          "arguments": "<link>",
+          "description": "Um vídeo do Facebook, aqui no chat."
+        },
+        {
+          "command": "gdrive",
+          "arguments": "<link>",
+          "description": "Receba um arquivo público do Drive."
+        },
+        {
+          "command": "mediafire",
+          "arguments": "<link>",
+          "description": "Receba um arquivo do MediaFire."
+        },
+        {
+          "command": "twitter",
+          "arguments": "<link>",
+          "description": "Traga a mídia de uma publicação."
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "title": "MÍDIAS SOCIAIS",
+      "icon": "🎨",
+      "entries": [
+        {
+          "command": "pinterest",
+          "arguments": "<pesquisa>",
+          "description": "Ideias visuais para sua busca."
+        }
+      ]
+    },
+    {
+      "id": "games",
+      "title": "GAMING & APPS",
+      "icon": "✨",
+      "entries": [
+        {
+          "command": "mcplugin",
+          "arguments": "<nome>",
+          "description": "Encontre plugins de Minecraft."
+        }
+      ]
+    }
+  ]
 });
 
 /**

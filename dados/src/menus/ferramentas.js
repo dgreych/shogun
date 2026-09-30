@@ -1,23 +1,23 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "GERADOR DE NOMES & IDENTIDADE", optionKey: "nicknameMenuTitle", entries: [
+    { title: "GERADOR DE NOMES & IDENTIDADE", icon: "👤", optionKey: "nicknameMenuTitle", entries: [
         {"command":"gerarnick"},
     ] },
-    { title: "CAPTURAS & VISUALIZAÇÃO", optionKey: "captureMenuTitle", entries: [
+    { title: "CAPTURAS & VISUALIZAÇÃO", icon: "✨", optionKey: "captureMenuTitle", entries: [
         {"command":"ssweb"},
         {"command":"qrcode","arguments":"<texto>"},
         {"command":"lerqr","description":"Responda à imagem com o código."},
     ] },
-    { title: "CALCULADORA", entries: [
+    { title: "CALCULADORA", icon: "✨", entries: [
         {"command":"calc","arguments":"<expressão>"},
         {"command":"calc","arguments":"converter <valor> <de> <para>"},
     ] },
-    { title: "HORÓSCOPO & MISTICISMO", entries: [
+    { title: "HORÓSCOPO & MISTICISMO", icon: "✨", entries: [
         {"command":"horoscopo","arguments":"<signo>"},
         {"command":"signos"},
     ] },
-    { title: "NOTAS PESSOAIS", entries: [
+    { title: "NOTAS PESSOAIS", icon: "👤", entries: [
         {"command":"nota","arguments":"add <texto>"},
         {"command":"notas"},
         {"command":"nota","arguments":"ver <id>"},
@@ -25,27 +25,27 @@ const sections = [
         {"command":"nota","arguments":"fixar <id>"},
         {"command":"nota","arguments":"buscar <termo>"},
     ] },
-    { title: "LINKS & UPLOADS", optionKey: "linkMenuTitle", entries: [
+    { title: "LINKS & UPLOADS", icon: "📥", optionKey: "linkMenuTitle", entries: [
         {"command":"encurtalink"},
         {"command":"upload"},
     ] },
-    { title: "SEGURANÇA", optionKey: "securityMenuTitle", entries: [
+    { title: "SEGURANÇA", icon: "🛡️", optionKey: "securityMenuTitle", entries: [
         {"command":"verificar","arguments":"<link>"},
     ] },
-    { title: "TEMPO & CLIMA", optionKey: "timeMenuTitle", entries: [
+    { title: "TEMPO & CLIMA", icon: "🌤️", optionKey: "timeMenuTitle", entries: [
         {"command":"hora","arguments":"<cidade/país>"},
         {"command":"clima","arguments":"<cidade>"},
     ] },
-    { title: "DICIONÁRIO & TRADUÇÃO", optionKey: "languageMenuTitle", entries: [
+    { title: "DICIONÁRIO & TRADUÇÃO", icon: "✨", optionKey: "languageMenuTitle", entries: [
         {"command":"dicionario"},
         {"command":"tradutor"},
     ] },
-    { title: "LEMBRETES & LISTAS", optionKey: "reminderMenuTitle", entries: [
+    { title: "LEMBRETES & LISTAS", icon: "📝", optionKey: "reminderMenuTitle", entries: [
         {"command":"lembrete"},
         {"command":"meuslembretes"},
         {"command":"apagalembrete"},
     ] },
-    { title: "OUTROS", entries: [
+    { title: "OUTROS", icon: "✨", entries: [
         {"command":"aniversario"},
         {"command":"estatisticas"},
     ] },
@@ -53,6 +53,8 @@ const sections = [
 
 export default async function menuFerramentas(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "As pequenas soluções que salvam o dia.",
+        footer: "Escolha uma ferramenta e me passe o que você precisa.",
         options,
         title: "FERRAMENTAS", prefix, userName,
         sections: prepareMenuSections(sections, options),

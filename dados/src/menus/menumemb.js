@@ -1,11 +1,11 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "PERFIL & ESTATÍSTICAS", optionKey: "perfilMenuTitle", entries: [
+    { title: "PERFIL & ESTATÍSTICAS", icon: "👤", optionKey: "perfilMenuTitle", entries: [
         {"command":"perfil"},
         {"command":"meustatus"},
     ] },
-    { title: "STATUS DO BOT", optionKey: "botStatusMenuTitle", entries: [
+    { title: "STATUS DO BOT", icon: "⚙️", optionKey: "botStatusMenuTitle", entries: [
         {"command":"ping"},
         {"command":"statusbot"},
         {"command":"statusgp"},
@@ -13,18 +13,18 @@ const sections = [
         {"command":"zipbot"},
         {"command":"gitbot"},
     ] },
-    { title: "CONFIGURAÇÕES PESSOAIS", optionKey: "personalMenuTitle", entries: [
+    { title: "CONFIGURAÇÕES PESSOAIS", icon: "🪄", optionKey: "personalMenuTitle", entries: [
         {"command":"mention"},
         {"command":"afk"},
         {"command":"voltei"},
     ] },
-    { title: "INTERAÇÃO SOCIAL", entries: [
+    { title: "INTERAÇÃO SOCIAL", icon: "🫶", entries: [
         {"command":"roles"},
         {"command":"role.vou"},
         {"command":"role.nvou"},
         {"command":"role.confirmados"},
     ] },
-    { title: "RANKINGS & GAMIFICAÇÃO", optionKey: "rankMenuTitle", entries: [
+    { title: "RANKINGS & GAMIFICAÇÃO", icon: "🏆", optionKey: "rankMenuTitle", entries: [
         {"command":"rankativo"},
         {"command":"rankinativo"},
         {"command":"rankativos"},
@@ -33,7 +33,7 @@ const sections = [
         {"command":"totalcmd"},
         {"command":"topcmd"},
     ] },
-    { title: "CONQUISTAS & PRESENTES", entries: [
+    { title: "CONQUISTAS & PRESENTES", icon: "🏆", entries: [
         {"command":"conquistas"},
         {"command":"caixa","arguments":"diaria"},
         {"command":"caixa","arguments":"rara"},
@@ -41,7 +41,7 @@ const sections = [
         {"command":"presente","arguments":"@user <tipo>"},
         {"command":"inv"},
     ] },
-    { title: "REPUTAÇÃO & DENÚNCIAS", entries: [
+    { title: "REPUTAÇÃO & DENÚNCIAS", icon: "✨", entries: [
         {"command":"repbn","arguments":"+ @user"},
         {"command":"repbn","arguments":"- @user"},
         {"command":"repbn","arguments":"@user"},
@@ -49,7 +49,7 @@ const sections = [
         {"command":"denunciar","arguments":"@user <motivo>"},
         {"command":"denuncias"},
     ] },
-    { title: "CONTEÚDO GAMER", optionKey: "gamingMenuTitle", entries: [
+    { title: "CONTEÚDO GAMER", icon: "✨", optionKey: "gamingMenuTitle", entries: [
         {"command":"likeff"},
         {"command":"infoff"},
     ] },
@@ -57,6 +57,8 @@ const sections = [
 
 export default async function menuMembros(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "Seu espaço no grupo: presença, conquistas e histórias.",
+        footer: "Veja seu perfil com #prefix#perfil.",
         options,
         title: "MEMBROS", prefix, userName,
         sections: prepareMenuSections(sections, options),

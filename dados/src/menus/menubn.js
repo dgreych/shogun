@@ -1,7 +1,7 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "JOGOS & DIVERSÃO", optionKey: "gamesMenuTitle", entries: [
+    { title: "JOGOS & DIVERSÃO", icon: "🎲", optionKey: "gamesMenuTitle", entries: [
         {"command":"tictactoe","arguments":"@user"},
         {"command":"connect4","arguments":"@user"},
         {"command":"uno","arguments":"criar"},
@@ -31,7 +31,7 @@ const sections = [
         {"command":"ppt"},
         {"command":"suicidio","liteExcluded":true},
     ] },
-    { title: "FRASES & TEXTOS", optionKey: "phrasesMenuTitle", entries: [
+    { title: "FRASES & TEXTOS", icon: "✨", optionKey: "phrasesMenuTitle", entries: [
         {"command":"conselho"},
         {"command":"conselhobiblico"},
         {"command":"cantada"},
@@ -42,7 +42,7 @@ const sections = [
         {"command":"reflexao"},
         {"command":"fato"},
     ] },
-    { title: "INTERAÇÕES SOCIAIS", optionKey: "interactionsMenuTitle", entries: [
+    { title: "INTERAÇÕES SOCIAIS", icon: "🎲", optionKey: "interactionsMenuTitle", entries: [
         {"command":"chute"},
         {"command":"chutar"},
         {"command":"tapa"},
@@ -62,7 +62,7 @@ const sections = [
         {"command":"matar"},
         {"command":"cafune"},
     ] },
-    { title: "INTERAÇÕES \"PICANTES\"", entries: [
+    { title: "INTERAÇÕES \"PICANTES\"", icon: "🎲", entries: [
         {"command":"surubao","liteExcluded":true},
         {"command":"sexo","liteExcluded":true},
         {"command":"beijob","liteExcluded":true},
@@ -73,7 +73,7 @@ const sections = [
         {"command":"mamar","liteExcluded":true},
         {"command":"mamada","liteExcluded":true},
     ] },
-    { title: "BRINCADEIRAS MASCULINAS", optionKey: "maleFunMenuTitle", entries: [
+    { title: "BRINCADEIRAS MASCULINAS", icon: "🎲", optionKey: "maleFunMenuTitle", entries: [
         {"command":"gay","liteExcluded":true},
         {"command":"burro"},
         {"command":"inteligente"},
@@ -192,7 +192,7 @@ const sections = [
         {"command":"vencedor"},
         {"command":"senhor"},
     ] },
-    { title: "RELACIONAMENTOS", optionKey: "relationshipMenuTitle", entries: [
+    { title: "RELACIONAMENTOS", icon: "🫶", optionKey: "relationshipMenuTitle", entries: [
         {"command":"brincadeira"},
         {"command":"namoro"},
         {"command":"casamento"},
@@ -201,7 +201,7 @@ const sections = [
         {"command":"trair"},
         {"command":"historicotraicao"},
     ] },
-    { title: "BRINCADEIRAS FEMININAS", optionKey: "femaleFunMenuTitle", entries: [
+    { title: "BRINCADEIRAS FEMININAS", icon: "🎲", optionKey: "femaleFunMenuTitle", entries: [
         {"command":"lesbica","liteExcluded":true},
         {"command":"burra"},
         {"command":"inteligente"},
@@ -343,7 +343,7 @@ const sections = [
         {"command":"vencedora"},
         {"command":"senhora"},
     ] },
-    { title: "RANKINGS MASCULINOS", optionKey: "maleRanksMenuTitle", entries: [
+    { title: "RANKINGS MASCULINOS", icon: "🏆", optionKey: "maleRanksMenuTitle", entries: [
         {"command":"rankgay"},
         {"command":"rankburro"},
         {"command":"rankinteligente"},
@@ -369,7 +369,7 @@ const sections = [
         {"command":"rankpoderoso"},
         {"command":"rankvencedor"},
     ] },
-    { title: "RANKINGS FEMININOS", optionKey: "femaleRanksMenuTitle", entries: [
+    { title: "RANKINGS FEMININOS", icon: "🏆", optionKey: "femaleRanksMenuTitle", entries: [
         {"command":"ranklesbica"},
         {"command":"rankburra"},
         {"command":"rankinteligente"},
@@ -398,6 +398,8 @@ const sections = [
 
 export default async function menubn(prefix, _botName = "SHOGUN", userName = "Usuário", isLiteMode = false, options = {}) {
     return renderShogunMenu({
+        intro: "A conversa merece um pouco de caos bom.",
+        footer: "Chame a turma. O próximo round é de vocês.",
         options,
         title: "JOGOS & INTERAÇÕES", prefix, userName,
         sections: prepareMenuSections(sections, options, { isLiteMode }),

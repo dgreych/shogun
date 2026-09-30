@@ -16,7 +16,10 @@ async function isolatedCore(t) {
   for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js', 'runtimeIdentity.js']) {
     fs.copyFileSync(path.resolve('dados/src/utils', file), path.join(root, 'src/utils', file));
   }
-  fs.copyFileSync('dados/src/menus/theme.js', path.join(root, 'src/menus/theme.js'));
+  for (const [facade, compiled] of [['theme.js', 'theme.js'], ['renderedOutput.js', 'rendered-output.js']]) {
+    const implementation = pathToFileURL(path.resolve('dist-vnext/presentation', compiled)).href;
+    fs.writeFileSync(path.join(root, 'src/menus', facade), `export * from ${JSON.stringify(implementation)};\n`);
+  }
   fs.writeFileSync(path.join(root, 'src/config.json'), JSON.stringify({ nomebot: 'SHOGUN' }));
   return {
     core: await import(pathToFileURL(path.join(root, 'src/utils/shogunCore.js'))),

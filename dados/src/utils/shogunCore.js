@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createShogunMenuTheme } from '../menus/theme.js';
+import { isRenderedOutput, rememberRenderedOutput, renderedOutputBody } from '../menus/renderedOutput.js';
 
 import {
   contextInfoFromContent,
@@ -18,16 +19,27 @@ const DEBUG_PERSONALITY_LOG = path.join(__dirnameDebug, '..', '..', 'logs', 'deb
 
 const MAX_PROMPT_LENGTH = 6000;
 
-// Destaca em negrito cada ocorrência de "prefixo+comando" no texto de um menu
-// já renderizado. Ponto único de formatação: em vez de editar item por item
-// nos ~14 arquivos de menu, isso aplica o destaque em cima do texto final,
-// então cobre qualquer menu que passe por aqui.
+// Acabamento idempotente para comandos e orientações já compostos.
 export function highlightMenuCommands(text, prefix) {
   const value = String(text || '');
   const prefixText = String(prefix || '').trim();
-  if (!value || !prefixText) return value;
+  if (!value || !prefixText || /[*_~`]/u.test(prefixText)) return value;
   const escapedPrefix = prefixText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return value.replace(new RegExp(`${escapedPrefix}[a-zA-Z0-9_-]+`, 'g'), match => `*${match}*`);
+  const command = new RegExp(`${escapedPrefix}[\\p{L}\\p{N}_-]+(?:\\.[\\p{L}\\p{N}_-]+)*`, 'gu');
+  let code = false;
+  const highlighted = value.split('\n').map(line => {
+    if (/^\s*```/u.test(line)) { code = !code; return line; }
+    if (code) return line;
+    return line.replace(command, (match, offset, source) => {
+      if (source[offset - 1] === '*' && source[offset + match.length] === '*') return match;
+      const before = source.slice(0, offset);
+      if ((before.match(/`/g) || []).length % 2) return match;
+      return `*${match}*`;
+    });
+  }).join('\n');
+  return isRenderedOutput(value)
+    ? rememberRenderedOutput(highlighted, { body: renderedOutputBody(value) })
+    : highlighted;
 }
 
 const SHOGUN_PERSONALITY = `

@@ -4,13 +4,13 @@ import test from 'node:test';
 import menus from '../dados/src/menus/index.js';
 import { createShogunMenuTheme, withShogunMenuTheme } from '../dados/src/menus/theme.js';
 
-test('tema padrão usa identidade SHOGUN sem ornamentação legada', () => {
+test('tema padrão usa assinatura ornamental própria do SHOGUN', () => {
     const theme = createShogunMenuTheme({ botName: 'SHOGUN' });
 
     assert.match(theme.header, /SHOGUN/);
     assert.doesNotMatch(theme.header, /MeuBot|🫟|🍧|❁/u);
-    assert.equal(theme.menuItemIcon, '  › ');
-    assert.equal(theme.middleBorder, '┃');
+    assert.equal(theme.menuItemIcon, '  ⤷ ');
+    assert.equal(theme.middleBorder, '│');
 });
 
 test('marca do menu permanece SHOGUN mesmo com nome customizado da instância', () => {
@@ -26,8 +26,8 @@ test('configuração antiga não substitui a moldura aprovada', () => {
     }, { botName: 'SHOGUN' });
 
     assert.match(themed.header, /🐈‍⬛ \*SHOGUN\*/);
-    assert.equal(themed.menuItemIcon, '  › ');
-    assert.equal(themed.middleBorder, '┃');
+    assert.equal(themed.menuItemIcon, '  ⤷ ');
+    assert.equal(themed.middleBorder, '│');
 });
 
 test('loader aplica tema SHOGUN ao menu principal', async () => {

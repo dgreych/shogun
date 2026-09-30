@@ -1,7 +1,7 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "GESTÃO DE USUÁRIOS", optionKey: "adminMenuTitle", entries: [
+    { title: "GESTÃO DE USUÁRIOS", icon: "✨", optionKey: "adminMenuTitle", entries: [
         {"command":"ban"},
         {"command":"ban2"},
         {"command":"bam","description":"Simular um banimento."},
@@ -21,7 +21,7 @@ const sections = [
         {"command":"atividade"},
         {"command":"checkativo"},
     ] },
-    { title: "CONTROLE DE ACESSO", entries: [
+    { title: "CONTROLE DE ACESSO", icon: "🛡️", entries: [
         {"command":"blockuser"},
         {"command":"unblockuser"},
         {"command":"listblocksgp"},
@@ -31,7 +31,7 @@ const sections = [
         {"command":"blockcmd"},
         {"command":"unblockcmd"},
     ] },
-    { title: "GESTÃO DO GRUPO", optionKey: "managementMenuTitle", entries: [
+    { title: "GESTÃO DO GRUPO", icon: "✨", optionKey: "managementMenuTitle", entries: [
         {"command":"del"},
         {"command":"limpar"},
         {"command":"marcar"},
@@ -46,7 +46,7 @@ const sections = [
         {"command":"role.alterar"},
         {"command":"role.excluir"},
     ] },
-    { title: "GRUPO & PERMISSÕES", entries: [
+    { title: "GRUPO & PERMISSÕES", icon: "📝", entries: [
         {"command":"linkgp"},
         {"command":"grupo","arguments":"A/F"},
         {"command":"opengp","arguments":"HH:MM|off"},
@@ -56,13 +56,13 @@ const sections = [
         {"command":"limitmessage"},
         {"command":"dellimitmessage"},
     ] },
-    { title: "SOLICITAÇÕES", entries: [
+    { title: "SOLICITAÇÕES", icon: "✨", entries: [
         {"command":"solicitacoes"},
         {"command":"aprovar"},
         {"command":"aprovar","arguments":"all"},
         {"command":"recusarsolic"},
     ] },
-    { title: "MODERADORES", optionKey: "moderatorsMenuTitle", entries: [
+    { title: "MODERADORES", icon: "🛡️", optionKey: "moderatorsMenuTitle", entries: [
         {"command":"addmod"},
         {"command":"delmod"},
         {"command":"listmods"},
@@ -70,17 +70,17 @@ const sections = [
         {"command":"revokemodcmd"},
         {"command":"listmodcmds"},
     ] },
-    { title: "EXCEÇÕES ÀS PROTEÇÕES", entries: [
+    { title: "EXCEÇÕES ÀS PROTEÇÕES", icon: "🛡️", entries: [
         {"command":"wladd"},
         {"command":"wl.remove"},
         {"command":"wl.lista"},
     ] },
-    { title: "PARCERIAS", optionKey: "partnershipsMenuTitle", entries: [
+    { title: "PARCERIAS", icon: "✨", optionKey: "partnershipsMenuTitle", entries: [
         {"command":"parcerias"},
         {"command":"addparceria"},
         {"command":"delparceria"},
     ] },
-    { title: "SEGURANÇA & PROTEÇÃO", entries: [
+    { title: "SEGURANÇA & PROTEÇÃO", icon: "🛡️", entries: [
         {"command":"antiflood"},
         {"command":"antidoc"},
         {"command":"antiloc"},
@@ -99,7 +99,7 @@ const sections = [
         {"command":"antitoxic","arguments":"sensibilidade <0-100>"},
         {"command":"antipalavra","arguments":"<on/off/add/del/list>"},
     ] },
-    { title: "CONFIGURAÇÕES", optionKey: "settingsMenuTitle", entries: [
+    { title: "CONFIGURAÇÕES", icon: "🪄", optionKey: "settingsMenuTitle", entries: [
         {"command":"legendasaiu"},
         {"command":"legendabv"},
         {"command":"fotobv"},
@@ -110,7 +110,7 @@ const sections = [
         {"command":"rmfotosaiu"},
         {"command":"setprefix"},
     ] },
-    { title: "RESPOSTAS AUTOMÁTICAS", entries: [
+    { title: "RESPOSTAS AUTOMÁTICAS", icon: "✨", entries: [
         {"command":"addautoadm"},
         {"command":"addautoadmidia"},
         {"command":"listautoadm"},
@@ -118,7 +118,7 @@ const sections = [
         {"command":"autorespostas"},
         {"command":"autorepo"},
     ] },
-    { title: "MODOS & ATIVAÇÕES", entries: [
+    { title: "MODOS & ATIVAÇÕES", icon: "✨", entries: [
         {"command":"autodl"},
         {"command":"minmessage"},
         {"command":"assistente"},
@@ -139,6 +139,8 @@ const sections = [
 
 export default async function menuadm(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
+        intro: "Cuide do grupo sem perder o clima da conversa.",
+        footer: "Ajuste com intenção. Um bom grupo começa no cuidado.",
         options,
         title: "ADMINISTRAÇÃO", prefix, userName,
         sections: prepareMenuSections(sections, options),

@@ -7,14 +7,14 @@ const presentation = await import('../dados/src/menus/presentation.js').catch(er
   throw error;
 });
 
-test('principal organiza os recursos nas categorias aprovadas sem descrições forçadas', async () => {
+test('principal organiza e explica as rotas nas categorias', async () => {
   const output = await menus.menu('!', 'SHOGUN', 'Maurício');
-  assert.match(output, /^╭━━━〔 🐈‍⬛ \*SHOGUN\* 〕━━━\n/u);
-  assert.match(output, /┃  \*MENU PRINCIPAL\*/u);
-  assert.match(output, /┣━ 01 ◆ \*MÍDIA & CRIAÇÃO\*[\s\S]*!menudown[\s\S]*!menufig/u);
-  assert.match(output, /┣━ 02 ◆ \*JOGOS & INTERAÇÕES\*[\s\S]*!menubn[\s\S]*!menumemb[\s\S]*!menurpg/u);
-  assert.match(output, /┣━ 03 ◆ \*RECURSOS\*[\s\S]*!ferramentas[\s\S]*!menunexo/u);
-  assert.match(output, /╰━━━━━━━━━━〔 ◆ 〕$/u);
+  assert.match(output, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡\n/u);
+  assert.match(output, /     \*MENU PRINCIPAL\*/u);
+  assert.match(output, /╭─ 01 ⟡ \*🎨 MÍDIA & CRIAÇÃO\*[\s\S]*!menudown[\s\S]*!menufig/u);
+  assert.match(output, /╭─ 02 ⟡ \*🎲 JOGOS & INTERAÇÕES\*[\s\S]*!menubn[\s\S]*!menumemb[\s\S]*!menurpg/u);
+  assert.match(output, /╭─ 03 ⟡ \*💭 RECURSOS\*[\s\S]*!ferramentas[\s\S]*!menunexo/u);
+  assert.match(output, /╰───────────── ⟡$/u);
 });
 
 test('nome vindo da mensagem não injeta comandos nem quebra a moldura', async () => {
@@ -28,11 +28,11 @@ test('nome vindo da mensagem não injeta comandos nem quebra a moldura', async (
 test('exemplos de comandos preservam prefixos reais e argumentos', async () => {
   for (const prefix of ['!', '/', '>>']) {
     const output = await menus.menubn(prefix, 'SHOGUN', 'Maurício', true);
-    assert.ok(output.includes(`${prefix}uno jogar <n°>`));
-    assert.ok(output.includes(`${prefix}quiz <categoria>`));
-    assert.ok(output.includes(`${prefix}tictactoe @user`));
+    assert.ok(output.includes(`*${prefix}uno* jogar <n°>`));
+    assert.ok(output.includes(`*${prefix}quiz* <categoria>`));
+    assert.ok(output.includes(`*${prefix}tictactoe* @user`));
     assert.equal(output.includes(`${prefix}sexo`), false);
-    assert.match(output, /^╭━━━〔 🐈‍⬛ \*SHOGUN\* 〕━━━/u);
+    assert.match(output, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡/u);
   }
 });
 
@@ -42,8 +42,8 @@ test('todos os submenus carregados usam o mesmo acabamento sem ornamentação an
     const output = key === 'menubn'
       ? await render('!', 'SHOGUN', 'Maurício', true)
       : await render('!', 'SHOGUN', 'Maurício');
-    assert.match(output, /^╭━━━〔 🐈‍⬛ \*SHOGUN\* 〕━━━/u, key);
-    assert.match(output, /╰━━━━━━━━━━〔 ◆ 〕$/u, key);
+    assert.match(output, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡/u, key);
+    assert.match(output, /╰───────────── ⟡$/u, key);
     assert.doesNotMatch(output, /🫟|🍧|❁|OPERADOR/u, key);
   }
 });
@@ -58,8 +58,8 @@ test('compositor omite categorias vazias e mantém argumentos numa entrada', () 
     ],
   });
   assert.equal(output.includes('VAZIO'), false);
-  assert.ok(output.includes('┃  › /instagram <link>'));
-  assert.ok(output.includes('┃    Baixar publicação'));
+  assert.ok(output.includes('│  ⤷ */instagram* <link>'));
+  assert.ok(output.includes('│     Baixar publicação'));
 });
 
 test('nome longo é limitado por grafemas sem separar sequências de emoji', () => {
@@ -75,7 +75,7 @@ test('ranking mantém estatísticas e exemplos de consulta com o prefixo escolhi
     { name: 'play', count: 19, uniqueUsers: 4 },
     { name: 'sticker', count: 12, uniqueUsers: 3 },
   ]);
-  assert.match(output, /^╭━━━〔 🐈‍⬛ \*SHOGUN\* 〕━━━/u);
+  assert.match(output, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡/u);
   assert.ok(output.includes('/play'));
   assert.ok(output.includes('19 usos'));
   assert.ok(output.includes('4 usuários'));
@@ -84,12 +84,12 @@ test('ranking mantém estatísticas e exemplos de consulta com o prefixo escolhi
 
 test('alteradores distinguem edição de vídeo, áudio e imagem', async () => {
   const output = await menus.menuAlterador('!', 'SHOGUN', 'Maurício');
-  assert.match(output, /┣━ \d{2} ◆ \*VÍDEO · EDIÇÃO BÁSICA\*[\s\S]*!cortarvideo/u);
-  assert.match(output, /┣━ \d{2} ◆ \*ÁUDIO · EDIÇÃO BÁSICA\*[\s\S]*!cortaraudio/u);
-  assert.match(output, /┣━ \d{2} ◆ \*IMAGENS\*[\s\S]*!rmbg/u);
+  assert.match(output, /╭─ \d{2} ⟡ \*🎬 VÍDEO · EDIÇÃO BÁSICA\*[\s\S]*!cortarvideo/u);
+  assert.match(output, /╭─ \d{2} ⟡ \*🎧 ÁUDIO · EDIÇÃO BÁSICA\*[\s\S]*!cortaraudio/u);
+  assert.match(output, /╭─ \d{2} ⟡ \*🎨 IMAGENS\*[\s\S]*!rmbg/u);
 });
 
 test('compositor preserva a exclusão aplicada pelo runtime anterior ao menu de brincadeiras', async () => {
   const output = await menus.menubn('!', 'SHOGUN', 'Maurício', false);
-  assert.equal(output.includes('┃  › !nazista\n'), false);
+  assert.equal(output.includes('│  ⤷ *!nazista*\n'), false);
 });
