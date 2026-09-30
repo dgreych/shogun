@@ -40,3 +40,9 @@ test('cache de reenvio ativo usa implementação TypeScript única', async () =>
   const typed = await import('../dist-vnext/core/outbound-retry-store.js');
   assert.equal(legacy.OutboundRetryStore, typed.OutboundRetryStore);
 });
+
+test('gerenciador de caches usa implementação TypeScript única', async () => {
+  const legacy = await import('../dados/src/utils/optimizedCache.js');
+  const typed = await import('../dist-vnext/core/optimized-cache.js');
+  assert.equal(legacy.default, typed.default);
+});

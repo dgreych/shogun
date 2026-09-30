@@ -5,7 +5,7 @@ import PerformanceOptimizer from '../dados/src/utils/performanceOptimizer.js';
 
 class TestCacheManager extends OptimizedCacheManager {
   initializeCaches() {
-    this.caches.set('media', { close() {}, flushAll() {}, keys: () => [] });
+    this.caches.set('media', { close() {}, flushAll() {}, keys: () => [], getStats: () => ({}) });
   }
 }
 
