@@ -10,12 +10,16 @@ test('todos os 14 menus têm abertura própria, categorias com ícone e orienta�
   for (const [name, render] of Object.entries(menus)) {
     const args = name === 'menubn' ? ['!', 'SHOGUN', 'Lua', true] : name === 'menuTopCmd' ? ['!', 'SHOGUN', 'Lua', []] : ['!', 'SHOGUN', 'Lua'];
     const text = await render(...args);
-    assert.match(text, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡/u, name);
-    assert.match(text, /☾ Salve, \*Lua\*\./u, name);
-    const introduction = text.split('\n').find(line => line.startsWith('│  ') && !line.includes('Prefixo') && !line.includes('Salve,'));
+    assert.match(text, /^⋆ · ⟡ 🐈‍⬛ ⟡ · ⋆\n   \*SHOGUN\*\n  ☾ ── ✧ ── ☽/u, name);
+    assert.match(text, /\*Lua\*, aqui estão os comandos\./u, name);
+    const lines = text.split('\n');
+    const greetingIndex = lines.indexOf('*Lua*, aqui estão os comandos.');
+    const introduction = lines[greetingIndex + 1];
     assert.ok(introduction, name);
     introductions.add(introduction);
-    assert.match(text, /╭─ 01 ⟡ \*\p{Extended_Pictographic}/u, name);
+    assert.match(text, /^☾ \*\p{Extended_Pictographic}/mu, name);
+    assert.doesNotMatch(text, /^[│┃╭╰┣]/mu, name);
+    assert.doesNotMatch(text, /nosso canto|sob a mesma lua|entre luas e ideias|o resto é comigo|escolha sua rota|seu próximo passo/iu, name);
     assert.match(text, /🐾 /u, name);
     assert.equal(text.includes('#intro#'), false, name);
     assert.equal(text.includes('#footer#'), false, name);
@@ -23,11 +27,14 @@ test('todos os 14 menus têm abertura própria, categorias com ícone e orienta�
   assert.equal(introductions.size, 14);
 });
 
-test('principal explica cada rota e downloads orientam busca e envio de link', async () => {
+test('principal descreve seus comandos e downloads orientam pesquisa e uso de links', async () => {
   const main = await menus.menu('!', 'SHOGUN', 'Lua');
-  for (const text of ['Seu atalho para', 'Músicas, vídeos e redes sociais', 'Transforme mídia em figurinha', 'Crônicas da Ruptura']) assert.ok(main.includes(text), text);
+  const commands = [...main.matchAll(/^  ✧ › \*!([^*]+)\*\n {5}(\S[^\n]+)/gmu)];
+  assert.equal(commands.length, 12);
+  assert.equal(new Set(commands.map(match => match[1])).size, 12);
+  assert.ok(commands.every(match => match[2].length > 20));
   const media = await menus.menudown('/', 'SHOGUN', 'Lua');
-  assert.ok(media.includes('Busque pelo nome ou mande o link'));
+  assert.match(media, /nome para pesquisar ou um link para baixar/u);
   assert.ok(media.includes('*/play* <nome ou link>'));
   assert.ok(media.includes('*/instagram* <link>'));
 });
@@ -35,7 +42,7 @@ test('principal explica cada rota e downloads orientam busca e envio de link', a
 test('migração v3 troca apenas defaults e conserva todos os campos personalizados', () => {
   const old = { styleVersion: 3, header: '╭━━━〔 🐈‍⬛ *SHOGUN* 〕━━━\n┃  *#title#*\n┃  #nome# #separator# prefixo #prefix#\n┣━━━━━━━━━━━━━━━━━━━━', menuItemIcon: '  › ', middleBorder: '┃', menuTopBorder: '┣━', bottomBorder: 'FIM ESCOLHIDO', menuTitleIcon: '⚡ ', separatorIcon: '◆', separator: '·' };
   const next = withShogunMenuTheme(old);
-  assert.equal(next.styleVersion, 4);
+  assert.equal(next.styleVersion, 5);
   assert.equal(next.header, createShogunMenuTheme().header);
   assert.equal(next.menuItemIcon, createShogunMenuTheme().menuItemIcon);
   assert.equal(next.bottomBorder, 'FIM ESCOLHIDO');

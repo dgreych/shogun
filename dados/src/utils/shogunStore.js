@@ -73,6 +73,7 @@ export function getConfig() {
   const stored = readJson(CONFIG_FILE, {});
   return {
     ...stored,
+    creatorNumber: process.env.SHOGUN_CREATOR_NUMBER || stored.creatorNumber || '',
     nvidia_model: isKnownNvidiaModel(stored.nvidia_model) ? stored.nvidia_model : DEFAULT_NVIDIA_MODEL,
     apikey_vex: process.env.VEX_API_KEY || stored.apikey_vex || '',
     site_vex: process.env.VEX_SITE || stored.site_vex || '',

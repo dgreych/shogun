@@ -3,25 +3,25 @@ import { prepareMenuSections, renderShogunMenu } from './presentation.js';
 
 export default async function menuShogun(prefix, _botName = 'SHOGUN', userName = 'Usuário', options = {}) {
     return renderShogunMenu({
-        intro: "Uma boa conversa pode abrir qualquer caminho.",
-        footer: "Traga uma ideia, uma dúvida ou um texto. Vamos trabalhar nisso.",
+        intro: "IA para resumir, explicar, revisar e criar textos.",
+        footer: "Envie o assunto ou texto após o comando; para resumir o chat, use #prefix#resumirchat.",
         options,
-        title: 'SHOGUN', prefix, userName,
+        title: 'IA DO SHOGUN', prefix, userName,
         sections: prepareMenuSections([
-            { title: 'CONVERSA & RECURSOS', icon: "💭", entries: [
-                { command: 'resumir', arguments: '[texto]', description: "Fique com o essencial do texto." },
-                { command: 'explicar', arguments: '[assunto]', description: "Vamos entender isso juntos." },
-                { command: 'corrigir', arguments: '[texto]', description: "Revise a escrita do seu texto." },
-                { command: 'ideias', arguments: '[tema]', description: "Encontre um caminho para começar." },
-                { command: 'historia', arguments: '[tema]', description: "Dê o tema. Eu construo a narrativa." },
-                { command: 'recomendar', arguments: '[pedido]', description: "Conte o que você procura." },
-                { command: 'resumirurl', arguments: '[link]', description: "O conteúdo do link, sem enrolação." },
-                { command: 'resumirchat', description: "Veja o que rolou na conversa." },
+            { title: 'ESCRITA & CONSULTAS', icon: "💭", entries: [
+                { command: 'resumir', arguments: '[texto]', description: "Resumir o texto informado." },
+                { command: 'explicar', arguments: '[assunto]', description: "Explicar o assunto informado." },
+                { command: 'corrigir', arguments: '[texto]', description: "Revisar ortografia e escrita do texto." },
+                { command: 'ideias', arguments: '[tema]', description: "Sugerir ideias para o tema informado." },
+                { command: 'historia', arguments: '[tema]', description: "Criar uma história a partir do tema." },
+                { command: 'recomendar', arguments: '[pedido]', description: "Sugerir opções conforme o pedido." },
+                { command: 'resumirurl', arguments: '[link]', description: "Resumir o conteúdo de um link." },
+                { command: 'resumirchat', description: "Resumir mensagens recentes do chat." },
             ] },
             { title: 'CONFIGURAÇÃO DE MODELO', icon: "🪄", entries: [
-                { command: 'modeloconversa', description: 'Consultar modelo ativo e opções.' },
-                { command: 'modeloconversa', arguments: '<número ou id>', description: 'Selecionar modelo.' },
-                { command: 'modeloshogun', arguments: '<número ou id>' },
+                { command: 'modeloconversa', description: "Consultar o modelo ativo e os modelos disponíveis." },
+                { command: 'modeloconversa', arguments: '<número ou id>', description: "Selecionar o modelo de conversa." },
+                { command: 'modeloshogun', arguments: '<número ou id>', description: "Selecionar o modelo de conversa; alias de modeloconversa."},
             ], notes: NVIDIA_MODEL_CATALOG.map((entry, index) =>
                 `${index + 1}. ${entry.label}${entry.id === DEFAULT_NVIDIA_MODEL ? ' · padrão' : ''} — ${entry.id}`),
             },

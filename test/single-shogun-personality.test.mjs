@@ -74,3 +74,44 @@ test('a mídia escolhida no perfil anterior continua disponível para Shogun', a
   store.saveAutomationData({ activePersona: 'perfil_antigo', commandMedia: { perfil_antigo_menu: media, shogun_menu: current } });
   assert.deepEqual(store.getAutomationData().commandMedia.shogun_menu, current);
 });
+
+test('a conversa recebe a autoria pública sem confundir criador com operador da instância', async t => {
+  const { core } = await isolatedCore(t);
+  const prompt = core.buildAssistantSystemPrompt('shogun', '');
+  assert.match(prompt, /Maurício Almeida/);
+  assert.match(prompt, /Alaska Dev/);
+  assert.match(prompt, /criador.*operador|operador.*criador/is);
+  assert.equal(core.isPrimaryOwner('123456789@lid', '5511987654321', null), false);
+});
+
+test('a autoria permanece explícita após orientações personalizadas da comunidade', async t => {
+  const { core } = await isolatedCore(t);
+  core.setAssistantPrompt('shogun', 'Prefira respostas curtas sobre programação.');
+  for (const modoAdulto of [false, true]) {
+    const prompt = core.buildAssistantSystemPrompt('shogun', '', { modoAdulto });
+    const afterCommunity = prompt.slice(prompt.indexOf('Prefira respostas curtas sobre programação.') + 47);
+    assert.match(afterCommunity, /Maurício Almeida/);
+    assert.match(afterCommunity, /Alaska Dev/);
+  }
+});
+
+test('o prompt reconhece o criador somente quando o transporte confirma sua conta', async t => {
+  const { core } = await isolatedCore(t);
+  const verified = core.buildAssistantSystemPrompt('shogun', '', { creatorVerified: true });
+  assert.match(verified, /INTERLOCUTOR VERIFICADO/);
+  assert.match(verified, /conversando com Maurício Almeida/);
+  assert.match(verified, /não concede|não muda/);
+  for (const value of [false, undefined, 'true', 1]) {
+    const other = core.buildAssistantSystemPrompt('shogun', '', { creatorVerified: value });
+    assert.doesNotMatch(other, /INTERLOCUTOR VERIFICADO/);
+  }
+});
+
+test('o cadastro de criador não altera os cargos usados pelos comandos', async t => {
+  const { core, store } = await isolatedCore(t);
+  fs.writeFileSync(store.CONFIG_FILE, JSON.stringify({ nomebot: 'SHOGUN', creatorNumber: '5521999990001' }));
+  assert.equal(store.getConfig().creatorNumber, '5521999990001');
+  assert.equal(core.isPrimaryOwner('5521999990001@s.whatsapp.net', '5521888880002', null, false), false);
+  assert.equal(core.isAdditionalOwner('5521999990001@s.whatsapp.net'), false);
+  assert.equal(core.isPrimaryOwner('5521888880002@s.whatsapp.net', '5521888880002', null, false), true);
+});

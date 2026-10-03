@@ -69,10 +69,10 @@ const makeCognimaRequest = makeNvidiaRequest;
 
 function cleanWhatsAppFormatting(texto) {
   if (!texto || typeof texto !== 'string') return texto;
-  return texto
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '*$1*')
+  // Código é conteúdo da resposta; preservar seu texto e sua indentação.
+  return texto.split(/(```[\s\S]*?```|`[^`\n]+`)/g).map(part => {
+    if (part.startsWith('`')) return part;
+    return part.replace(/\*\*([^*]+)\*\*/g, '*$1*')
     .replace(/\*\*\*([^*]+)\*\*\*/g, '*$1*')
     .replace(/_{2,}([^_]+)_{2,}/g, '_$1_')
     .replace(/^#{1,6}\s+/gm, '')
@@ -80,8 +80,8 @@ function cleanWhatsAppFormatting(texto) {
     .replace(/^\s*\d+\.\s+/gm, '')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$2')
     .replace(/\n{3,}/g, '\n\n')
-    .replace(/[ \t]{2,}/g, ' ')
-    .trim();
+    .replace(/[ \t]{2,}/g, ' ');
+  }).join('').trim();
 }
 
 function stripJsonComments(text) {
@@ -501,7 +501,10 @@ async function processUserMessages(data, socket = null, ownerNumber = null, pers
 
       let result;
       try {
-        const systemPrompt = automacoesV9.buildAssistantSystemPrompt('shogun', '', { modoAdulto });
+        const creatorVerified = await automacoesV9.recognizeCreator(
+          msgValidada.id_enviou, automacoesV9.getConfig()?.creatorNumber, socket
+        );
+        const systemPrompt = automacoesV9.buildAssistantSystemPrompt('shogun', '', { modoAdulto, creatorVerified });
         // Chamada única para processamento com contexto
         const response = (await makeNvidiaRequest(
           model || getBunnyFyConversationModelOverride(),

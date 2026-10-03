@@ -29,12 +29,12 @@ test('configuração antiga não prevalece sobre o tema nem injeta linhas pelo n
         menuItemIcon: 'FLORES',
         audioMenuTitle: 'MÚSICAS',
     });
-    assert.match(design.header, /^⟡━━〔 🐈‍⬛ \*SHOGUN\* 〕━━⟡/u);
+    assert.match(design.header, /^⋆ · ⟡ 🐈‍⬛ ⟡ · ⋆\n   \*SHOGUN\*\n  ☾ ── ✧ ── ☽/u);
     assert.equal(design.header.includes('\n!exec'), false);
     assert.equal(design.header.includes('*Fulano*'), false);
-    assert.equal(design.menuItemIcon, '  ⤷ ');
+    assert.equal(design.menuItemIcon, '  ✧ › ');
     assert.equal(design.audioMenuTitle, 'MÚSICAS');
-    assert.ok(design.header.includes('Prefixo */*'));
+    assert.ok(design.header.includes('Prefixo: */*'));
     `);
 });
 
@@ -84,6 +84,7 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
             const { prepareRuntimeSources } = await import(${JSON.stringify(prepareUrl)});
             const { finalizeShogunRuntime } = await import(${JSON.stringify(finalizeUrl)});
             const { applyCriticalRuntimeFixes } = await import(${JSON.stringify(criticalUrl)});
+            let previousOutput;
             for (let attempt = 0; attempt < 2; attempt++) {
                 prepareRuntimeSources();
                 finalizeShogunRuntime();
@@ -92,9 +93,11 @@ test('fontes CRLF geram runtime válido e o segundo preparo preserva o tema', ()
                 assert.ok(runtimeIndex.includes('*Maurício Almeida*'), 'o preparo deve preservar o cartão atual do criador');
                 const { default: menu } = await import(${JSON.stringify(menuUrl)} + '?pass=' + attempt);
                 const output = await menu('!', 'SHOGUN', 'Maurício', true);
-                assert.ok(output.startsWith('⟡━━〔 🐈‍⬛ *SHOGUN* 〕━━⟡'));
+                assert.ok(output.startsWith(${JSON.stringify('⋆ · ⟡ 🐈‍⬛ ⟡ · ⋆\n   *SHOGUN*\n  ☾ ── ✧ ── ☽')}));
                 assert.equal(output.includes('!nazista'), false);
                 assert.equal(output.includes('!sexo'), false);
+                if (attempt > 0) assert.equal(output, previousOutput, 'o segundo preparo mantém o menu intacto');
+                previousOutput = output;
             }
         `;
         execFileSync(process.execPath, ['--input-type=module', '-e', probe], { cwd: temp, encoding: 'utf8', timeout: 30000, stdio: 'pipe' });

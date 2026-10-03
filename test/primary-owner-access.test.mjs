@@ -13,10 +13,12 @@ test('donos principais privados recebem acesso original sem promover donos adici
     assert.ok(path.basename(root).startsWith('.owner-access-'));
     fs.rmSync(root, { recursive: true, force: true });
   });
-  const source = path.join(root, 'src');
+  const source = path.join(root, 'dados', 'src');
   fs.mkdirSync(path.join(source, 'utils'), { recursive: true });
   fs.mkdirSync(path.join(source, 'menus'), { recursive: true });
-  fs.copyFileSync(path.resolve('dados/src/menus/theme.js'), path.join(source, 'menus/theme.js'));
+  for (const file of ['theme.js', 'renderedOutput.js']) fs.copyFileSync(path.resolve('dados/src/menus', file), path.join(source, 'menus', file));
+  fs.mkdirSync(path.join(root, 'dist-vnext/presentation'), { recursive: true });
+  for (const file of ['theme.js', 'rendered-output.js']) fs.copyFileSync(path.resolve('dist-vnext/presentation', file), path.join(root, 'dist-vnext/presentation', file));
   for (const file of ['shogunCore.js', 'shogunStore.js', 'nvidiaApi.js', 'runtimeIdentity.js']) {
     fs.copyFileSync(path.resolve('dados/src/utils', file), path.join(source, 'utils', file));
   }

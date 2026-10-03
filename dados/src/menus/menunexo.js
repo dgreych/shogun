@@ -6,12 +6,12 @@ const sections = [
         {"command":"nexo","arguments":"confirmar <token>","description":"Confirmar a ativação."},
         {"command":"nexo","arguments":"desativar","description":"Pausar sem apagar os dados."},
     ] },
-    { title: "CONSULTAS & AJUDA", icon: "💭", entries: [
+    { title: "STATUS & AJUDA", icon: "💭", entries: [
         {"command":"nexo","arguments":"status","description":"Consultar o estado do Círculo."},
         {"command":"nexo","arguments":"versão","description":"Consultar a versão instalada."},
         {"command":"nexo","arguments":"ajuda [jogador|tutorial|combate|admin]","description":"Consultar a ajuda por categoria."},
     ] },
-    { title: "PERSONAGEM & JOGO", icon: "🎲", entries: [
+    { title: "PERSONAGEM & ESCOLHAS", icon: "🎲", entries: [
         {"command":"entrar","arguments":"[rápido]","description":"Criar personagem com Impulso e Cicatriz; origem automática."},
         {"command":"continuar","description":"Retomar uma escolha pendente."},
         {"command":"painel","description":"Ver o estado do Círculo com imagem."},
@@ -32,8 +32,8 @@ const sections = [
 
 export default async function menuNexo(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "Algo rompeu o silêncio. Seu círculo decide o que vem depois.",
-        footer: "Comece por #prefix#nexo ajuda. A história espera vocês.",
+        intro: "Comandos do Nexo para ativar o Círculo, criar personagem e jogar.",
+        footer: "Consulte #prefix#nexo ajuda jogador para começar.",
         options,
         title: "NEXO · CRÔNICAS DA RUPTURA", prefix, userName,
         sections: prepareMenuSections(sections, options),

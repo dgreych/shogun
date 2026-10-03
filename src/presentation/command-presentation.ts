@@ -18,13 +18,22 @@ export interface CommandCard { title: unknown; fields?: CardField[]; lines?: str
 
 const contexts = new WeakMap<PresentationSocket, PresentationState>();
 const TTL = 300_000;
+const conversationCommands = new Set([
+    'gpt', 'resumir', 'resumirurl', 'ideias', 'ideia', 'explicar', 'explique', 'corrigir', 'correcao',
+    'resumirchat', 'resumirgrupo', 'resumirconversa', 'historia', 'story', 'gerarhistoria',
+    'recomendar', 'recomendacao', 'recomendação', 'suggest',
+    'gemma', 'phi', 'phi3', 'qwen2', 'qwen', 'qwen3', 'llama', 'llama3', 'baichuan', 'baichuan2',
+    'marin', 'kimi', 'kimik2', 'mistral', 'magistral', 'rakutenai', 'rocket', 'yi', 'gemma2',
+    'swallow', 'falcon', 'qwencoder', 'codegemma', 'cog', 'tradutor', 'translator',
+    'debater', 'debate', 'historiainterativa', 'storyinteractive', 'aventura',
+]);
 const titles: Record<string, string> = {
     ping: 'CONEXÃO', statusbot: 'STATUS DO BOT', infobot: 'SOBRE O SHOGUN', botinfo: 'SOBRE O SHOGUN',
     criador: 'CRIADORES', prefix: 'PREFIXO', prefixo: 'PREFIXO', instagram: 'INSTAGRAM', ig: 'INSTAGRAM',
     igdl: 'INSTAGRAM', instavideo: 'INSTAGRAM', igstory: 'STORIES DO INSTAGRAM',
     perfil: 'PERFIL', ban: 'MODERAÇÃO', kick: 'MODERAÇÃO', advertir: 'ADVERTÊNCIA',
     ajuda: 'AJUDA', help: 'AJUDA', play: 'MÚSICA', play2: 'MÚSICA', playvid: 'VÍDEO',
-    gpt: 'SHOGUN RESPONDE', assistente: 'SHOGUN RESPONDE', imagem: 'CRIAÇÃO DE IMAGEM',
+    gpt: 'SHOGUN RESPONDE', assistente: 'ASSISTENTE DO GRUPO', assistent: 'ASSISTENTE DO GRUPO', imagem: 'CRIAÇÃO DE IMAGEM',
     welcome: 'BOAS-VINDAS', bemvindo: 'BOAS-VINDAS', aluguel: 'ALUGUEL',
     sticker: 'ATELIÊ DE FIGURINHAS', figu: 'ATELIÊ DE FIGURINHAS', brat: 'ATELIÊ DE FIGURINHAS',
     tiktok: 'TIKTOK', twitter: 'X / TWITTER', facebook: 'FACEBOOK', kwai: 'KWAI',
@@ -81,7 +90,7 @@ export function renderCommandCard({ title, fields = [], lines = [], theme: optio
     const mark = state === 'pending' ? '⏳' : state === 'error' ? '⚠️' : icon || titleIcons[displayTitle] || '✦';
     const headline = `${mark} *${displayTitle}*${state === 'pending' ? ' · EM ANDAMENTO' : state === 'error' ? ' · NÃO FOI DESSA VEZ' : ''}`;
     const header = theme.header === createShogunMenuTheme().header
-      ? `${SHOGUN_SIGNATURE}\n${theme.menuTopBorder} ${headline}\n${theme.middleBorder}`
+      ? `${SHOGUN_SIGNATURE}\n\n${theme.menuTopBorder} ${headline}\n`
       : theme.header.split('\n').filter(line => !/#nome#|#prefix#|#intro#|\{userName\}|\{prefix\}/.test(line) || /#title#|#titulo#|\{botName\}/.test(line))
         .join('\n').replaceAll('#title#', singleLine(title)).replaceAll('#titulo#', singleLine(title))
         .replaceAll('{botName}', 'SHOGUN').replaceAll('#separator#', theme.separator)
@@ -110,6 +119,7 @@ function unframe(value: string) {
 }
 export function formatCommandResponse<T>(value: T, command?: string, theme: unknown = {}): T | string {
     if (typeof value !== 'string' || !value.trim() || isRendered(value)) return value;
+    if (!command || conversationCommands.has(command)) return value;
     const status = outputStatus({ text: value });
     const state = status === '⚠️' ? 'error' : status === null ? 'pending' : undefined;
     return renderCommandCard({ title: (command ? titles[command] : undefined) || singleLine(command || 'AVISO').replace(/[_-]/g, ' ').toUpperCase(), lines: unframe(value), theme, ...(state ? { state } : {}) });

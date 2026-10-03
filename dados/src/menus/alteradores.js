@@ -2,8 +2,8 @@ import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
     { title: "VÍDEO · EDIÇÃO BÁSICA", icon: "🎬", entries: [
-        {"command":"cortarvideo","arguments":"<inicio> <fim>"},
-        {"command":"tomp3","description":"Converter para áudio"},
+        {"command":"cortarvideo","arguments":"<inicio> <fim>", "description":"Recortar o vídeo entre os tempos indicados."},
+        {"command":"tomp3","description":"Extrair o áudio do vídeo em MP3."},
     ] },
     { title: "VÍDEO · VELOCIDADE", icon: "🎬", entries: [
         {"command":"videorapido"},
@@ -22,14 +22,14 @@ const sections = [
         {"command":"rotacionar"},
     ] },
     { title: "IMAGENS", icon: "🎨", optionKey: "imageMenuTitle", entries: [
-        {"command":"rmbg"},
-        {"command":"upscale"},
+        {"command":"rmbg", "description":"Remover o fundo da imagem."},
+        {"command":"upscale", "description":"Aumentar a resolução da imagem."},
     ] },
     { title: "ÁUDIO · EDIÇÃO BÁSICA", icon: "🎧", entries: [
-        {"command":"cortaraudio","arguments":"<inicio> <fim>"},
-        {"command":"velocidade","arguments":"<0.5-3.0>"},
-        {"command":"speed","arguments":"<0.5-3.0>"},
-        {"command":"normalizar"},
+        {"command":"cortaraudio","arguments":"<inicio> <fim>", "description":"Recortar o áudio entre os tempos indicados."},
+        {"command":"velocidade","arguments":"<0.5-3.0>", "description":"Alterar a velocidade do áudio."},
+        {"command":"speed","arguments":"<0.5-3.0>", "description":"Alterar a velocidade do áudio."},
+        {"command":"normalizar", "description":"Normalizar o volume do áudio."},
     ] },
     { title: "ÁUDIO · MUDANÇA DE VOZ", icon: "🎧", entries: [
         {"command":"boyvoice"},
@@ -48,7 +48,7 @@ const sections = [
         {"command":"vozlenta"},
         {"command":"audiolento"},
     ] },
-    { title: "ÁUDIO · EFEITOS DE BASS & GRAVE", icon: "🎧", entries: [
+    { title: "ÁUDIO · GRAVES", icon: "🎧", entries: [
         {"command":"bass"},
         {"command":"bass2"},
         {"command":"bass3"},
@@ -83,10 +83,10 @@ const sections = [
 
 export default async function menuAlterador(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "Dê outro ritmo, outra cor, outra cara à sua mídia.",
-        footer: "Responda a mídia com o efeito que você escolheu.",
+        intro: "Cortes, conversões e efeitos para áudio, vídeo e imagem.",
+        footer: "Responda à mídia com o comando de edição e os parâmetros indicados.",
         options,
-        title: "ALTERADORES", prefix, userName,
+        title: "EDIÇÃO DE MÍDIA", prefix, userName,
         sections: prepareMenuSections(sections, options),
     });
 }

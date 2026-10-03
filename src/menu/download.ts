@@ -32,8 +32,8 @@ export async function renderDownloadMenu(
   if (!sections || sections.length !== 6) throw new Error('Definição de downloads incompleta.');
   return renderShogunMenu({
     options: { ...options },
-    intro: "Busque pelo nome ou mande o link. Eu trago a mídia.",
-    footer: "Achou algo bom? Mande o link e deixe comigo.",
+    intro: "Pesquisas e downloads de música, vídeo, imagens e arquivos.",
+    footer: "Informe um nome para pesquisar ou um link para baixar, conforme o comando.",
     title: 'DOWNLOADS', prefix, userName,
     ...(options.accessFor ? { accessFor: options.accessFor } : {}),
     sections: sections.map(section => ({

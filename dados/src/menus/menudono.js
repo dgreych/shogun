@@ -1,14 +1,14 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "INÍCIO", icon: "✨", entries: [
-        {"command":"tutorial"},
+    { title: "TUTORIAL DO BOT", icon: "✨", entries: [
+        {"command":"tutorial", "description":"Consultar as instruções de configuração do bot."},
     ] },
     { title: "CONFIGURAÇÕES DO BOT", icon: "🪄", optionKey: "botConfigMenuTitle", entries: [
-        {"command":"prefixo"},
-        {"command":"numerodono"},
+        {"command":"prefixo", "description":"Alterar o prefixo padrão do bot."},
+        {"command":"numerodono", "description":"Configurar o contato do dono da instância."},
         {"command":"nomedono"},
-        {"command":"nomebot"},
+        {"command":"nomebot", "description":"Alterar o nome de exibição do bot."},
         {"command":"configcmdnotfound"},
         {"command":"setcmdmsg"},
         {"command":"fotobot"},
@@ -18,8 +18,8 @@ const sections = [
         {"command":"lermais"},
         {"command":"personalizargrupo"},
     ] },
-    { title: "DESIGN & APARÊNCIA", icon: "🎨", optionKey: "menuDesignMenuTitle", entries: [
-        {"command":"designmenu"},
+    { title: "APARÊNCIA DOS MENUS", icon: "🎨", optionKey: "menuDesignMenuTitle", entries: [
+        {"command":"designmenu", "description":"Consultar e configurar a aparência dos menus."},
         {"command":"setborda"},
         {"command":"setbordafim"},
         {"command":"setbordameio"},
@@ -27,14 +27,14 @@ const sections = [
         {"command":"setseparador"},
         {"command":"settitulo"},
         {"command":"setheader"},
-        {"command":"resetdesign"},
+        {"command":"resetdesign", "description":"Restaurar o design padrão dos menus."},
     ] },
-    { title: "PROMOÇÕES", icon: "✨", entries: [
-        { command: "defmsgpromo", arguments: "<mensagem>", description: "Salva um texto e recebe um ID." },
-        { command: "listmsgpromo", description: "Consulta textos e progresso do envio." },
-        { command: "sendmsgpromo", arguments: "<id>", description: "Agenda o envio gradual aos grupos." },
+    { title: "MENSAGENS PROMOCIONAIS", icon: "✨", entries: [
+        { command: "defmsgpromo", arguments: "<mensagem>", description: "Salvar a mensagem promocional e obter seu ID." },
+        { command: "listmsgpromo", description: "Consultar mensagens promocionais e progresso dos envios." },
+        { command: "sendmsgpromo", arguments: "<id>", description: "Agendar o envio gradual da mensagem aos grupos." },
     ] },
-    { title: "SISTEMA & AUTOMAÇÃO", icon: "⚙️", optionKey: "automationMenuTitle", entries: [
+    { title: "AUTOMAÇÕES & REAÇÕES", icon: "⚙️", optionKey: "automationMenuTitle", entries: [
         {"command":"addauto"},
         {"command":"addautomidia"},
         {"command":"listauto"},
@@ -52,8 +52,8 @@ const sections = [
         {"command":"listcmd"},
         {"command":"delcmd"},
         {"command":"testcmd"},
-        {"command":"addalias"},
-        {"command":"listalias"},
+        {"command":"addalias", "description":"Cadastrar um nome alternativo para um comando."},
+        {"command":"listalias", "description":"Consultar os aliases cadastrados."},
         {"command":"delalias"},
         {"command":"addblackglobal"},
         {"command":"listblackglobal"},
@@ -62,18 +62,18 @@ const sections = [
     { title: "LIMITAÇÃO DE COMANDOS", icon: "✨", optionKey: "commandLimitingMenuTitle", entries: [
         {"command":"cmdlimitar"},
         {"command":"cmddeslimitar"},
-        {"command":"cmdlimites"},
+        {"command":"cmdlimites", "description":"Consultar os limites de uso dos comandos."},
     ] },
-    { title: "GERENCIAMENTO DE USUÁRIOS", icon: "⚙️", optionKey: "userManagementMenuTitle", entries: [
+    { title: "SUBDONOS & PREMIUM", icon: "⚙️", optionKey: "userManagementMenuTitle", entries: [
         {"command":"addsubdono"},
         {"command":"delsubdono"},
-        {"command":"listasubdonos"},
+        {"command":"listasubdonos", "description":"Listar subdonos da instância."},
         {"command":"addpremium"},
         {"command":"delpremium"},
-        {"command":"listprem"},
+        {"command":"listprem", "description":"Listar usuários premium."},
         {"command":"resetgold"},
     ] },
-    { title: "INDICAÇÕES", icon: "✨", entries: [
+    { title: "INDICAÇÕES & BLOQUEIO DE GRUPOS", icon: "✨", entries: [
         {"command":"addindicacao"},
         {"command":"topindica"},
         {"command":"delindicacao"},
@@ -98,7 +98,7 @@ const sections = [
     { title: "GERENCIAMENTO DE SUB-BOTS", icon: "⚙️", optionKey: "subBotsMenuTitle", entries: [
         {"command":"addsubbot"},
         {"command":"removesubbot"},
-        {"command":"listarsubbots"},
+        {"command":"listarsubbots", "description":"Consultar os sub-bots cadastrados."},
         {"command":"conectarsubbot"},
     ], notes: ["No sub-bot, use #prefix#gerarcodigo."] },
     { title: "CONTROLE & MANUTENÇÃO", icon: "🛡️", optionKey: "botControlMenuTitle", entries: [
@@ -112,12 +112,12 @@ const sections = [
         {"command":"unblockcmdg"},
         {"command":"blockuserg"},
         {"command":"unblockuserg"},
-        {"command":"listblocks"},
+        {"command":"listblocks", "description":"Consultar bloqueios globais."},
         {"command":"antibanmarcar"},
         {"command":"imagem"},
     ] },
-    { title: "MONITORAMENTO & ANÁLISE", icon: "✨", optionKey: "monitoringMenuTitle", entries: [
-        {"command":"listagp"},
+    { title: "CONSULTAS & CONTROLES GLOBAIS", icon: "✨", optionKey: "monitoringMenuTitle", entries: [
+        {"command":"listagp", "description":"Listar os grupos do bot."},
         {"command":"antipv"},
         {"command":"antipv2"},
         {"command":"antipv3"},
@@ -127,7 +127,7 @@ const sections = [
         {"command":"viewmsg"},
         {"command":"cases"},
         {"command":"getcase"},
-        {"command":"modoliteglobal"},
+        {"command":"modoliteglobal", "description":"Configurar o modo lite global."},
         {"command":"iaclear"},
         {"command":"limpardb"},
         {"command":"limparrankg"},
@@ -155,8 +155,8 @@ const sections = [
 
 export default async function menuDono(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "O Shogun também tem bastidores. Aqui, você dá o tom.",
-        footer: "Seu bot, sua identidade. Personalize com #prefix#menudesign.",
+        intro: "Configuração da instância, automações, acesso e manutenção.",
+        footer: "Para consultar o design dos menus, use #prefix#menudesign.",
         options,
         title: "GESTÃO DO BOT", prefix, userName,
         sections: prepareMenuSections(sections, options),

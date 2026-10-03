@@ -25,8 +25,8 @@ export async function renderStickerMenu(
   if (!sections || sections.length !== 2) throw new Error('Definição de figurinhas incompleta.');
   return renderShogunMenu({
     options: { ...options },
-    intro: "Sua próxima figurinha começa aqui.",
-    footer: "Responda uma foto ou um vídeo com #prefix#sticker.",
+    intro: "Criação de figurinhas a partir de texto, imagem ou vídeo.",
+    footer: "Responda à foto ou ao vídeo com #prefix#sticker; para texto, use #prefix#ttp seu texto.",
     title: 'FIGURINHAS', prefix, userName,
     ...(options.accessFor ? { accessFor: options.accessFor } : {}),
     sections: sections.map((section, index) => ({

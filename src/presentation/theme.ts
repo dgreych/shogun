@@ -1,4 +1,4 @@
-export const SHOGUN_SIGNATURE = '⟡━━〔 🐈‍⬛ *SHOGUN* 〕━━⟡';
+export const SHOGUN_SIGNATURE = '⋆ · ⟡ 🐈‍⬛ ⟡ · ⋆\n   *SHOGUN*\n  ☾ ── ✧ ── ☽';
 export interface ShogunMenuTheme {
  styleVersion: number;
  header: string;
@@ -20,20 +20,25 @@ const versionThree: Record<string, string> = {
     menuTopBorder: '┣━', bottomBorder: '╰━━━━━━━━━━〔 ◆ 〕',
     menuTitleIcon: '', menuItemIcon: '  › ', separatorIcon: '◆', middleBorder: '┃', separator: '·',
 };
+const versionFour: Record<string, string> = {
+    header: '⟡━━〔 🐈‍⬛ *SHOGUN* 〕━━⟡\n     *#title#*\n\n╭─ ☾ ─────────────\n│  ☾ Salve, *#nome#*.\n│  #intro#\n│  ⌘ Prefixo *#prefix#*\n╰───────────── ⟡\n',
+    menuTopBorder: '╭─', bottomBorder: '╰───────────── ⟡',
+    menuTitleIcon: '', menuItemIcon: '  ⤷ ', separatorIcon: '⟡', middleBorder: '│', separator: '·',
+};
 export function createShogunMenuTheme(): ShogunMenuTheme {
     return {
-        styleVersion: 4,
-        header: [SHOGUN_SIGNATURE, '     *#title#*', '', '╭─ ☾ ─────────────', '│  ☾ Salve, *#nome#*.', '│  #intro#', '│  ⌘ Prefixo *#prefix#*', '╰───────────── ⟡', ''].join('\n'),
-        menuTopBorder: '╭─', bottomBorder: '╰───────────── ⟡',
-        menuTitleIcon: '', menuItemIcon: '  ⤷ ', separatorIcon: '⟡', middleBorder: '│', separator: '·',
+        styleVersion: 5,
+        header: [SHOGUN_SIGNATURE, '', '*#title#*', '', '*#nome#*, aqui estão os comandos.', '#intro#', 'Prefixo: *#prefix#*', '', '♡ · ┈ 🐾 ┈ · ♡', ''].join('\n'),
+        menuTopBorder: '☾', bottomBorder: '♡ · ┈ 🐾 ┈ · ♡',
+        menuTitleIcon: '', menuItemIcon: '  ✧ › ', separatorIcon: '', middleBorder: '', separator: '·',
     };
 }
 export function withShogunMenuTheme(options: unknown = {}): ShogunMenuTheme {
     const saved: Record<string, unknown> = options && typeof options === 'object' && !Array.isArray(options) ? options as Record<string, unknown> : {};
     const defaults = createShogunMenuTheme();
     const result = { ...saved, ...defaults };
-    if ([2, 3, defaults.styleVersion].includes(Number(saved.styleVersion))) {
-        const previous = saved.styleVersion === 2 ? versionTwo : saved.styleVersion === 3 ? versionThree : undefined;
+    if ([2, 3, 4, defaults.styleVersion].includes(Number(saved.styleVersion))) {
+        const previous = Number(saved.styleVersion) === 2 ? versionTwo : Number(saved.styleVersion) === 3 ? versionThree : Number(saved.styleVersion) === 4 ? versionFour : undefined;
         for (const key of Object.keys(defaults) as Array<keyof ShogunMenuTheme>) {
             if (key === 'styleVersion' || typeof saved[key] !== 'string') continue;
             if (previous && saved[key] === previous[key]) continue;

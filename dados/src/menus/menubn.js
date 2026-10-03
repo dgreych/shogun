@@ -1,24 +1,24 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "JOGOS & DIVERSÃO", icon: "🎲", optionKey: "gamesMenuTitle", entries: [
-        {"command":"tictactoe","arguments":"@user"},
-        {"command":"connect4","arguments":"@user"},
+    { title: "JOGOS & DESAFIOS", icon: "🎲", optionKey: "gamesMenuTitle", entries: [
+        {"command":"tictactoe","arguments":"@user", "description":"Desafiar um membro para o jogo da velha."},
+        {"command":"connect4","arguments":"@user", "description":"Desafiar um membro para o jogo de quatro em linha."},
         {"command":"uno","arguments":"criar"},
         {"command":"uno","arguments":"entrar"},
         {"command":"uno","arguments":"jogar <n°>"},
         {"command":"uno","arguments":"cancelar"},
-        {"command":"memoria"},
-        {"command":"memoria","arguments":"ranking"},
-        {"command":"wordle"},
+        {"command":"memoria", "description":"Jogar ou consultar o ranking de memória."},
+        {"command":"memoria","arguments":"ranking", "description":"Jogar ou consultar o ranking de memória."},
+        {"command":"wordle", "description":"Tentar descobrir a palavra."},
         {"command":"quiz","arguments":"<categoria>"},
-        {"command":"forca"},
+        {"command":"forca", "description":"Jogar forca."},
         {"command":"digitar","arguments":"@usuario"},
-        {"command":"batalhanaval","arguments":"@usuario"},
+        {"command":"batalhanaval","arguments":"@usuario", "description":"Desafiar um membro para batalha naval."},
         {"command":"stop"},
         {"command":"anagrama"},
-        {"command":"dueloquiz","arguments":"@usuario [número]"},
-        {"command":"cacapalavras","arguments":"[dificuldade]"},
+        {"command":"dueloquiz","arguments":"@usuario [número]", "description":"Desafiar um membro para um duelo de perguntas."},
+        {"command":"cacapalavras","arguments":"[dificuldade]", "description":"Jogar caça-palavras na dificuldade escolhida."},
         {"command":"jogodavelha"},
         {"command":"eununca"},
         {"command":"vab"},
@@ -28,7 +28,7 @@ const sections = [
         {"command":"casal"},
         {"command":"shipo"},
         {"command":"sn"},
-        {"command":"ppt"},
+        {"command":"ppt", "description":"Jogar pedra, papel e tesoura."},
         {"command":"suicidio","liteExcluded":true},
     ] },
     { title: "FRASES & TEXTOS", icon: "✨", optionKey: "phrasesMenuTitle", entries: [
@@ -42,7 +42,7 @@ const sections = [
         {"command":"reflexao"},
         {"command":"fato"},
     ] },
-    { title: "INTERAÇÕES SOCIAIS", icon: "🎲", optionKey: "interactionsMenuTitle", entries: [
+    { title: "INTERAÇÕES COM MEMBROS", icon: "🎲", optionKey: "interactionsMenuTitle", entries: [
         {"command":"chute"},
         {"command":"chutar"},
         {"command":"tapa"},
@@ -62,7 +62,7 @@ const sections = [
         {"command":"matar"},
         {"command":"cafune"},
     ] },
-    { title: "INTERAÇÕES \"PICANTES\"", icon: "🎲", entries: [
+    { title: "INTERAÇÕES ADULTAS", icon: "🎲", entries: [
         {"command":"surubao","liteExcluded":true},
         {"command":"sexo","liteExcluded":true},
         {"command":"beijob","liteExcluded":true},
@@ -398,8 +398,8 @@ const sections = [
 
 export default async function menubn(prefix, _botName = "SHOGUN", userName = "Usuário", isLiteMode = false, options = {}) {
     return renderShogunMenu({
-        intro: "A conversa merece um pouco de caos bom.",
-        footer: "Chame a turma. O próximo round é de vocês.",
+        intro: "Jogos, frases, brincadeiras e interações entre membros.",
+        footer: "Nos desafios com outra pessoa, informe a menção indicada no comando.",
         options,
         title: "JOGOS & INTERAÇÕES", prefix, userName,
         sections: prepareMenuSections(sections, options, { isLiteMode }),

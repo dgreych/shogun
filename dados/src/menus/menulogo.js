@@ -1,7 +1,7 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "LOGOTIPOS 1TXT", icon: "🎨", entries: [
+    { title: "LOGOS COM UM TEXTO", icon: "🎨", entries: [
         {"command":"darkgreen"},
         {"command":"glitch"},
         {"command":"write"},
@@ -12,8 +12,8 @@ const sections = [
         {"command":"flag"},
         {"command":"americanflag"},
         {"command":"deleting"},
-    ] },
-    { title: "LOGOTIPOS 2TXT", icon: "🎨", entries: [
+    ], notes: ["Envie o texto depois do nome do efeito."] },
+    { title: "LOGOS COM DOIS TEXTOS", icon: "🎨", entries: [
         {"command":"pornhub"},
         {"command":"avengers"},
         {"command":"graffiti"},
@@ -24,13 +24,13 @@ const sections = [
         {"command":"amongus"},
         {"command":"deadpool"},
         {"command":"blackpink"},
-    ] },
+    ], notes: ["Separe as duas partes com /: texto 1/texto 2."] },
 ];
 
 export default async function menuLogos(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "Uma palavra, outra identidade. Bora criar?",
-        footer: "Escolha um efeito e envie seu texto.",
+        intro: "Efeitos de texto para logos com uma ou duas partes.",
+        footer: "Use #prefix#neon seu texto ou #prefix#avengers texto 1/texto 2.",
         options,
         title: "LOGOS", prefix, userName,
         sections: prepareMenuSections(sections, options),

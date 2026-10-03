@@ -1,14 +1,14 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "PERFIL & STATUS", icon: "👤", optionKey: "profileMenuTitle", entries: [
-        {"command":"perfilrpg"},
-        {"command":"carteira"},
+    { title: "PERSONAGEM & RANKINGS", icon: "👤", optionKey: "profileMenuTitle", entries: [
+        {"command":"perfilrpg", "description":"Consultar nível e atributos do personagem."},
+        {"command":"carteira", "description":"Consultar seu saldo no RPG."},
         {"command":"toprpg"},
         {"command":"rankglobal"},
         {"command":"ranklvl"},
-        {"command":"inv"},
-        {"command":"equipamentos"},
+        {"command":"inv", "description":"Consultar os itens do inventário."},
+        {"command":"equipamentos", "description":"Consultar seus equipamentos."},
         {"command":"conquistas"},
     ] },
     { title: "EVOLUÇÃO & PRESTÍGIO", icon: "⚔️", optionKey: "evolutionMenuTitle", entries: [
@@ -18,15 +18,15 @@ const sections = [
         {"command":"reivindicar"},
         {"command":"speedup"},
     ] },
-    { title: "ECONOMIA & FINANÇAS", icon: "🪙", optionKey: "economyMenuTitle", entries: [
-        {"command":"dep","arguments":"<valor|all>"},
-        {"command":"sacar","arguments":"<valor|all>"},
-        {"command":"pix","arguments":"@user <valor>"},
+    { title: "BANCO, LOJA & EMPREGO", icon: "🪙", optionKey: "economyMenuTitle", entries: [
+        {"command":"dep","arguments":"<valor|all>", "description":"Depositar moedas no banco do RPG."},
+        {"command":"sacar","arguments":"<valor|all>", "description":"Retirar moedas do banco do RPG."},
+        {"command":"pix","arguments":"@user <valor>", "description":"Transferir moedas para outro jogador."},
         {"command":"loja"},
         {"command":"comprar","arguments":"<item>"},
         {"command":"vender","arguments":"<item> <qtd>"},
-        {"command":"vagas"},
-        {"command":"emprego","arguments":"<vaga>"},
+        {"command":"vagas", "description":"Consultar vagas de emprego no RPG."},
+        {"command":"emprego","arguments":"<vaga>", "description":"Escolher uma vaga de emprego."},
         {"command":"demitir"},
         {"command":"habilidades"},
         {"command":"desafiosemanal"},
@@ -75,29 +75,29 @@ const sections = [
         {"command":"bossrpg"},
         {"command":"eventos"},
     ] },
-    { title: "DUNGEONS & RAIDS", icon: "⚔️", entries: [
-        {"command":"dungeon","description":"Listar dungeons"},
-        {"command":"dungeon","arguments":"criar <tipo>"},
-        {"command":"dungeon","arguments":"entrar <id>"},
-        {"command":"dungeon","arguments":"iniciar"},
-        {"command":"dungeon","arguments":"sair"},
+    { title: "MASMORRAS EM GRUPO", icon: "⚔️", entries: [
+        {"command":"dungeon","description":"Consultar as masmorras disponíveis."},
+        {"command":"dungeon","arguments":"criar <tipo>", "description":"Criar uma masmorra do tipo indicado."},
+        {"command":"dungeon","arguments":"entrar <id>", "description":"Entrar na masmorra pelo ID."},
+        {"command":"dungeon","arguments":"iniciar", "description":"Iniciar a masmorra com os participantes."},
+        {"command":"dungeon","arguments":"sair", "description":"Sair da masmorra atual."},
     ] },
-    { title: "CLASSES & PROFISSÕES", icon: "⚔️", entries: [
-        {"command":"class","description":"Ver classes"},
-        {"command":"class","arguments":"<nome>","description":"Escolher uma classe."},
+    { title: "CLASSES DO PERSONAGEM", icon: "⚔️", entries: [
+        {"command":"class","description":"Consultar as classes disponíveis."},
+        {"command":"class","arguments":"<nome>","description":"Escolher a classe do personagem."},
     ] },
-    { title: "CASA", icon: "🏡", entries: [
-        {"command":"casa","description":"Ver sua casa"},
-        {"command":"casa","arguments":"comprar <tipo>"},
-        {"command":"casa","arguments":"coletar"},
-        {"command":"casa","arguments":"decorar <item>"},
+    { title: "CASA & DECORAÇÃO", icon: "🏡", entries: [
+        {"command":"casa","description":"Consultar sua casa no RPG."},
+        {"command":"casa","arguments":"comprar <tipo>", "description":"Comprar uma casa do tipo indicado."},
+        {"command":"casa","arguments":"coletar", "description":"Coletar os rendimentos da casa."},
+        {"command":"casa","arguments":"decorar <item>", "description":"Decorar sua casa com o item indicado."},
     ] },
     { title: "MERCADO DE JOGADORES", icon: "🪙", entries: [
-        {"command":"auction","description":"Ver itens"},
-        {"command":"auction","arguments":"vender <item> <preço>"},
-        {"command":"auction","arguments":"comprar <nº>"},
-        {"command":"auction","arguments":"meus"},
-        {"command":"auction","arguments":"cancelar <nº>"},
+        {"command":"auction","description":"Consultar itens anunciados por jogadores."},
+        {"command":"auction","arguments":"vender <item> <preço>", "description":"Anunciar um item pelo preço indicado."},
+        {"command":"auction","arguments":"comprar <nº>", "description":"Comprar o item pelo número do anúncio."},
+        {"command":"auction","arguments":"meus", "description":"Consultar seus anúncios."},
+        {"command":"auction","arguments":"cancelar <nº>", "description":"Cancelar um dos seus anúncios."},
     ] },
     { title: "MERCADO GERAL", icon: "🪙", entries: [
         {"command":"mercado"},
@@ -107,7 +107,7 @@ const sections = [
         {"command":"cancelar","arguments":"<nº>"},
     ] },
     { title: "COMBATE & BATALHAS", icon: "⚔️", optionKey: "combatMenuTitle", entries: [
-        {"command":"duelrpg","arguments":"@user"},
+        {"command":"duelrpg","arguments":"@user", "description":"Desafiar outro jogador para um duelo."},
         {"command":"arena"},
         {"command":"torneio"},
         {"command":"assaltar","arguments":"@user"},
@@ -115,8 +115,8 @@ const sections = [
         {"command":"guerra"},
         {"command":"desafio"},
     ] },
-    { title: "CRIAÇÃO & EQUIPAMENTOS", icon: "✨", optionKey: "craftingMenuTitle", entries: [
-        {"command":"forge","arguments":"<item>"},
+    { title: "FORJA & EQUIPAMENTOS", icon: "✨", optionKey: "craftingMenuTitle", entries: [
+        {"command":"forge","arguments":"<item>", "description":"Forjar o item indicado."},
         {"command":"enchant"},
         {"command":"dismantle","arguments":"<item>"},
         {"command":"reparar","arguments":"<item>"},
@@ -141,8 +141,8 @@ const sections = [
         {"command":"deserdar","arguments":"@user"},
         {"command":"arvore"},
     ] },
-    { title: "CLÃ & COMUNIDADE", icon: "✨", optionKey: "guildMenuTitle", entries: [
-        {"command":"criarcla","arguments":"<nome>"},
+    { title: "CLÃS & CONVITES", icon: "✨", optionKey: "guildMenuTitle", entries: [
+        {"command":"criarcla","arguments":"<nome>", "description":"Criar um clã com o nome indicado."},
         {"command":"cla"},
         {"command":"convidar","arguments":"@user"},
         {"command":"sair"},
@@ -152,11 +152,11 @@ const sections = [
         {"command":"rmconvite","arguments":"@user"},
     ] },
     { title: "MISSÕES & CONQUISTAS", icon: "🏆", optionKey: "questMenuTitle", entries: [
-        {"command":"missoes"},
+        {"command":"missoes", "description":"Consultar suas missões."},
         {"command":"conquistas"},
     ] },
-    { title: "PETS & COMPANHEIROS", icon: "🐾", optionKey: "petsMenuTitle", entries: [
-        {"command":"pets"},
+    { title: "PETS, TREINO & BATALHAS", icon: "🐾", optionKey: "petsMenuTitle", entries: [
+        {"command":"pets", "description":"Consultar seus pets."},
         {"command":"adotar","arguments":"<pet>"},
         {"command":"feed","arguments":"<nº>"},
         {"command":"train","arguments":"<nº>"},
@@ -192,16 +192,16 @@ const sections = [
         {"command":"rpgsetlevel","arguments":"@user <nivel>"},
         {"command":"rpgadditem","arguments":"@user <item> <qtd>"},
         {"command":"rpgremoveitem","arguments":"@user <item> <qtd>"},
-        {"command":"rpgresetplayer","arguments":"@user"},
-        {"command":"rpgresetglobal","arguments":"confirmar"},
-        {"command":"rpgstats"},
+        {"command":"rpgresetplayer","arguments":"@user", "description":"Zerar os dados do jogador indicado."},
+        {"command":"rpgresetglobal","arguments":"confirmar", "description":"Zerar os dados globais do RPG após confirmação."},
+        {"command":"rpgstats", "description":"Consultar estatísticas do RPG."},
     ] },
 ];
 
 export default async function menuRPG(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "Sua história ainda tem muito mapa pela frente.",
-        footer: "Consulte sua ficha com #prefix#perfilrpg antes da aventura.",
+        intro: "Personagem, economia, missões, equipamentos e combate do RPG.",
+        footer: "Consulte #prefix#perfilrpg para ver o personagem e #prefix#carteira para ver o saldo.",
         options,
         title: "RPG", prefix, userName,
         sections: prepareMenuSections(sections, options),

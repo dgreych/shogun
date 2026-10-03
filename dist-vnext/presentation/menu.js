@@ -37,7 +37,7 @@ export function selectMenuEntries(entries, accessFor) {
         return [{ ...entry, ...(decision.executable === false ? { unavailableReason: 'O Shogun precisa ser administrador do grupo.' } : {}) }];
     });
 }
-export function renderShogunMenu({ title, prefix, userName, sections, intro = 'Escolha seu próximo passo. Eu cuido do resto.', footer = 'Escolha um comando e deixe comigo.', accessFor, options = {} }) {
+export function renderShogunMenu({ title, prefix, userName, sections, intro = '', footer = 'Use o prefixo antes do comando.', accessFor, options = {} }) {
     const theme = withShogunMenuTheme(options);
     const heading = `${theme.menuTitleIcon}${plainText(title)}`;
     const header = theme.header.replaceAll('#title#', heading).replaceAll('#titulo#', heading)
@@ -46,11 +46,10 @@ export function renderShogunMenu({ title, prefix, userName, sections, intro = 'E
         .replaceAll('#prefix#', prefix).replaceAll('#separator#', theme.separator)
         .replaceAll('#intro#', plainText(intro)).replaceAll('#footer#', plainText(footer));
     const lines = header.split('\n');
-    let sectionNumber = 0;
     for (const section of prepareMenuSections(sections, { ...options, accessFor: accessFor || options.accessFor })) {
         if (!section.entries.length)
             continue;
-        lines.push(`${theme.menuTopBorder} ${String(++sectionNumber).padStart(2, '0')} ${theme.separatorIcon} *${plainText(section.icon || '✦')} ${plainText(section.title)}*`, theme.middleBorder);
+        lines.push([theme.menuTopBorder, theme.separatorIcon, `*${plainText(section.icon || '✦')} ${plainText(section.title)}*`].filter(Boolean).join(' '), '');
         for (const entry of section.entries) {
             const commandText = `${prefix}${entry.command}`;
             const command = /[*_~`]/u.test(commandText) ? commandText : `*${commandText}*`;
@@ -62,9 +61,9 @@ export function renderShogunMenu({ title, prefix, userName, sections, intro = 'E
         }
         for (const note of section.notes ?? [])
             lines.push(`${theme.middleBorder}    ${plainText(note).replaceAll('#prefix#', prefix)}`);
-        lines.push(theme.bottomBorder, '');
+        lines.push('');
     }
-    lines.push(`${theme.menuTopBorder} 🐾 SEU PRÓXIMO PASSO`, `${theme.middleBorder}  ${plainText(footer).replaceAll('#prefix#', prefix)}`, theme.bottomBorder);
+    lines.push(`${theme.middleBorder}  ${plainText(footer).replaceAll('#prefix#', prefix)}`, '', theme.bottomBorder);
     return rememberRenderedOutput(lines.join('\n'));
 }
 //# sourceMappingURL=menu.js.map

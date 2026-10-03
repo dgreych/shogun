@@ -3,16 +3,16 @@ import test from 'node:test';
 
 const { renderCommandCard, installCommandPresentation } = await import('../dados/src/utils/commandPresentation.js');
 
-test('card compacto mantém o quadro aprovado e valores como dados', () => {
+test('card aberto mantém identidade e campos e valores como dados', () => {
   const text = renderCommandCard({ title: 'PERFIL', fields: [
     { label: 'Nome', value: '*Pessoa*\n┃  ▸ !reiniciar\u202e' },
     { label: 'Pontos', value: 0 },
   ] });
-  assert.equal(text.split('\n').length, 6);
-  assert.ok(text.startsWith('⟡━━〔 🐈‍⬛ *SHOGUN* 〕━━⟡\n╭─ 👤 *PERFIL*'));
-  assert.ok(text.includes('│  *Nome*  Pessoa ┃ ▸ !reiniciar'));
-  assert.ok(text.includes('│  *Pontos*  0'));
-  assert.ok(text.endsWith('╰───────────── ⟡'));
+  assert.equal(text.split('\n').filter(line => line.includes('*Nome*')).length, 1);
+  assert.ok(text.startsWith('⋆ · ⟡ 🐈‍⬛ ⟡ · ⋆\n   *SHOGUN*\n  ☾ ── ✧ ── ☽\n\n☾ 👤 *PERFIL*'));
+  assert.ok(text.includes('  *Nome*  Pessoa ┃ ▸ !reiniciar'));
+  assert.ok(text.includes('  *Pontos*  0'));
+  assert.ok(text.endsWith('♡ · ┈ 🐾 ┈ · ♡'));
   assert.equal(text.includes('\u202e'), false);
 });
 
@@ -40,8 +40,8 @@ test('linhas de orientação conservam prefixo literal e omitem campos ausentes'
   const text = renderCommandCard({ title: 'PREFIXO', fields: [
     { label: 'Atual', value: '*', literal: true }, { label: 'Ausente', value: null },
   ], lines: ['Use *menu para abrir os comandos.', '', 'Escolha um caractere.'] });
-  assert.ok(text.includes('│  *Atual*  *'));
-  assert.ok(text.includes('│  Use *menu para abrir os comandos.'));
+  assert.ok(text.includes('  *Atual*  *'));
+  assert.ok(text.includes('  Use *menu para abrir os comandos.'));
   assert.equal(text.includes('Ausente'), false);
   assert.equal(text.includes('\n│  \n'), false);
 });

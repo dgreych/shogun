@@ -28,74 +28,74 @@ export const STICKER_MENU_DEFINITION = Object.freeze({
             "entries": [
                 {
                     "command": "emojimix",
-                    "description": "Dois emojis, uma combinação."
+                    "description": "Combinar dois emojis em uma figurinha."
                 },
                 {
                     "command": "ttp",
-                    "description": "Seu texto vira figurinha."
+                    "description": "Criar uma figurinha de texto."
                 },
                 {
                     "command": "attp",
-                    "description": "Texto com movimento."
+                    "description": "Criar uma figurinha de texto animado."
                 },
                 {
                     "command": "sticker",
-                    "description": "Foto ou vídeo viram figurinha."
+                    "description": "Converter uma imagem ou um vídeo em figurinha."
                 },
                 {
                     "command": "sticker2",
-                    "description": "Outra opção para criar sua figurinha."
+                    "description": "Converter imagem ou vídeo de até 9,9 segundos em figurinha."
                 },
                 {
                     "command": "sbg",
-                    "description": "Uma figurinha sem fundo."
+                    "description": "Remover o fundo da imagem e enviar como figurinha."
                 },
                 {
                     "command": "sfundo",
-                    "description": "Remova o fundo da sua mídia."
+                    "description": "Remover o fundo da imagem e enviar como figurinha."
                 },
                 {
                     "command": "qc",
-                    "description": "Uma mensagem com cara de figurinha."
+                    "description": "Criar uma figurinha de mensagem."
                 },
                 {
                     "command": "brat",
-                    "description": "Seu texto no estilo brat."
+                    "description": "Criar uma figurinha de texto no estilo brat."
                 },
                 {
                     "command": "bratvid",
-                    "description": "Seu texto brat em movimento."
+                    "description": "Criar uma figurinha animada de texto no estilo brat."
                 }
             ]
         },
         {
             "id": "management",
-            "title": "GERENCIAMENTO",
+            "title": "ACERVO, CRÉDITOS & CONVERSÃO",
             "icon": "⚙️",
             "entries": [
                 {
                     "command": "figualeatoria",
-                    "description": "Uma surpresa do acervo."
+                    "description": "Enviar uma figurinha aleatória do acervo."
                 },
                 {
                     "command": "figurinhas",
-                    "description": "Explore seu acervo."
+                    "description": "Enviar de 1 a 15 figurinhas; em grupos, a entrega é no privado."
                 },
                 {
                     "command": "rename",
-                    "description": "Troque os créditos da figurinha."
+                    "description": "Alterar autor e pacote da figurinha respondida."
                 },
                 {
                     "command": "rgtake",
-                    "description": "Defina seus créditos preferidos."
+                    "description": "Salvar autor e pacote no formato Autor/Pack."
                 },
                 {
                     "command": "take",
-                    "description": "Assine uma figurinha."
+                    "description": "Aplicar os créditos salvos à figurinha respondida."
                 },
                 {
                     "command": "toimg",
-                    "description": "Volte da figurinha para a imagem."
+                    "description": "Converter uma figurinha em imagem."
                 }
             ]
         }
@@ -145,27 +145,27 @@ export const DOWNLOAD_MENU_DEFINITION = Object.freeze({
                 {
                     "command": "google",
                     "arguments": "<pesquisa>",
-                    "description": "Encontre o que você procura na web."
+                    "description": "Pesquisar na web."
                 },
                 {
                     "command": "noticias",
                     "arguments": "[assunto]",
-                    "description": "As notícias do tema que você escolher."
+                    "description": "Consultar notícias gerais ou sobre um assunto."
                 },
                 {
                     "command": "apps",
                     "arguments": "<nome>",
-                    "description": "Busque um aplicativo."
+                    "description": "Pesquisar aplicativos pelo nome."
                 },
                 {
                     "command": "dicionario",
                     "arguments": "<palavra>",
-                    "description": "Uma palavra, seus significados."
+                    "description": "Consultar o significado da palavra."
                 },
                 {
                     "command": "wikipedia",
                     "arguments": "<assunto>",
-                    "description": "Conheça o assunto sem sair do chat."
+                    "description": "Consultar um artigo sobre o assunto."
                 }
             ]
         },
@@ -177,110 +177,110 @@ export const DOWNLOAD_MENU_DEFINITION = Object.freeze({
                 {
                     "command": "letra",
                     "arguments": "<música>",
-                    "description": "A letra para acompanhar o som."
+                    "description": "Consultar a letra da música."
                 },
                 {
                     "command": "play",
                     "arguments": "<nome ou link>",
-                    "description": "Sua música em áudio."
+                    "description": "Buscar uma música e enviar o áudio."
                 },
                 {
                     "command": "play2",
                     "arguments": "<nome ou link>",
-                    "description": "Outra opção para buscar sua música."
+                    "description": "Buscar uma música e enviar o áudio por outro comando."
                 },
                 {
                     "command": "spotify",
                     "arguments": "<link>",
-                    "description": "Traga uma faixa do Spotify."
+                    "description": "Baixar o áudio de uma faixa pelo link do Spotify."
                 },
                 {
                     "command": "soundcloud",
                     "arguments": "<link>",
-                    "description": "Sua faixa do SoundCloud no chat."
+                    "description": "Baixar o áudio pelo link do SoundCloud."
                 }
             ]
         },
         {
             "id": "video",
-            "title": "VÍDEOS & STREAMING",
+            "title": "BUSCA DE VÍDEOS",
             "icon": "🎬",
             "entries": [
                 {
                     "command": "playvid",
                     "arguments": "<nome ou link>",
-                    "description": "O vídeo da sua busca."
+                    "description": "Buscar e enviar um vídeo."
                 }
             ]
         },
         {
             "id": "downloads",
-            "title": "DOWNLOADS",
+            "title": "DOWNLOADS POR LINK",
             "icon": "📥",
             "entries": [
                 {
                     "command": "tiktok",
                     "arguments": "<link>",
-                    "description": "Traga o vídeo para a conversa."
+                    "description": "Baixar o vídeo pelo link do TikTok."
                 },
                 {
                     "command": "instagram",
                     "arguments": "<link>",
-                    "description": "Fotos, Reels e carrosséis."
+                    "description": "Baixar fotos, Reels ou carrosséis pelo link."
                 },
                 {
                     "command": "kwai",
                     "arguments": "<link>",
-                    "description": "Baixe o vídeo que você encontrou."
+                    "description": "Baixar o vídeo pelo link do Kwai."
                 },
                 {
                     "command": "igstory",
                     "arguments": "<link>",
-                    "description": "Stories disponíveis no Instagram."
+                    "description": "Solicitar o download de um story disponível pelo link."
                 },
                 {
                     "command": "facebook",
                     "arguments": "<link>",
-                    "description": "Um vídeo do Facebook, aqui no chat."
+                    "description": "Baixar o vídeo pelo link do Facebook."
                 },
                 {
                     "command": "gdrive",
                     "arguments": "<link>",
-                    "description": "Receba um arquivo público do Drive."
+                    "description": "Baixar um arquivo público pelo link do Drive."
                 },
                 {
                     "command": "mediafire",
                     "arguments": "<link>",
-                    "description": "Receba um arquivo do MediaFire."
+                    "description": "Baixar um arquivo pelo link do MediaFire."
                 },
                 {
                     "command": "twitter",
                     "arguments": "<link>",
-                    "description": "Traga a mídia de uma publicação."
+                    "description": "Baixar a mídia de uma publicação pelo link."
                 }
             ]
         },
         {
             "id": "media",
-            "title": "MÍDIAS SOCIAIS",
+            "title": "BUSCA DE IMAGENS",
             "icon": "🎨",
             "entries": [
                 {
                     "command": "pinterest",
                     "arguments": "<pesquisa>",
-                    "description": "Ideias visuais para sua busca."
+                    "description": "Pesquisar imagens no Pinterest."
                 }
             ]
         },
         {
             "id": "games",
-            "title": "GAMING & APPS",
+            "title": "PLUGINS DE MINECRAFT",
             "icon": "✨",
             "entries": [
                 {
                     "command": "mcplugin",
                     "arguments": "<nome>",
-                    "description": "Encontre plugins de Minecraft."
+                    "description": "Pesquisar plugins de Minecraft."
                 }
             ]
         }

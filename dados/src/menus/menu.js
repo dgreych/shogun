@@ -1,32 +1,34 @@
 import { prepareMenuSections, renderShogunMenu } from "./presentation.js";
 
 const sections = [
-    { title: "MÍDIA & CRIAÇÃO", icon: "🎨", entries: [
-        {"command": "menudown", "description": "Músicas, vídeos e redes sociais."},
-        {"command": "menufig", "description": "Transforme mídia em figurinha."},
-        {"command": "menulogos", "description": "Seu nome com outra presença."},
-        {"command": "alteradores", "description": "Efeitos para áudio, vídeo e imagem."},
+    { title: "FIGURINHAS & EDIÇÃO", icon: "🎨", entries: [
+        {"command": "menufig", "description": "Criar figurinhas, remover fundos e editar créditos."},
+        {"command": "menulogos", "description": "Gerar logos com um ou dois textos."},
+        {"command": "alteradores", "description": "Cortar mídia e aplicar efeitos de áudio, vídeo e imagem."},
     ] },
-    { title: "JOGOS & INTERAÇÕES", icon: "🎲", entries: [
-        {"command": "menubn", "description": "Jogos, desafios e interações."},
-        {"command": "menumemb", "description": "Seu perfil, conquistas e rankings."},
-        {"command": "menurpg", "description": "Aventuras, economia e batalhas."},
+    { title: "DOWNLOADS", icon: "📥", entries: [
+        {"command": "menudown", "description": "Buscar músicas e baixar mídia ou arquivos por link."},
     ] },
-    { title: "RECURSOS", icon: "💭", entries: [
-        {"command": "ferramentas", "description": "Atalhos úteis para o dia a dia."},
-        {"command": "menunexo", "description": "Nexo · Crônicas da Ruptura."},
-        {"command": "menushogun", "description": "Converse, crie e explore ideias."},
+    { title: "JOGOS & RPG", icon: "🎲", entries: [
+        {"command": "menubn", "description": "Jogos, brincadeiras e interações entre membros."},
+        {"command": "menurpg", "description": "Personagens, economia, equipamentos e batalhas."},
+        {"command": "menunexo", "description": "Ativar o Nexo, criar personagem e jogar o tutorial."},
+        {"command": "menumemb", "description": "Perfil, atividade, conquistas e rankings dos membros."},
     ] },
-    { title: "ADMINISTRAÇÃO & GESTÃO", icon: "🛡️", entries: [
-        {"command": "menuadm", "description": "Proteção e cuidado com o grupo."},
-        {"command": "menudono", "description": "Ajustes e identidade do seu bot."},
+    { title: "IA & FERRAMENTAS", icon: "💭", entries: [
+        {"command": "menushogun", "description": "Resumir, explicar, revisar textos e escolher o modelo de IA."},
+        {"command": "ferramentas", "description": "Calculadora, tradução, notas, QR codes e lembretes."},
+    ] },
+    { title: "ADMINISTRAÇÃO", icon: "🛡️", entries: [
+        {"command": "menuadm", "description": "Moderação, proteções e configurações do grupo."},
+        {"command": "menudono", "description": "Configuração do bot, automações e controle da instância."},
     ] },
 ];
 
 export default async function menu(prefix, _botName = "SHOGUN", userName = "Usuário", options = {}) {
     return renderShogunMenu({
-        intro: "Seu atalho para tudo que o Shogun faz.",
-        footer: "Escolha sua rota. O resto é comigo.",
+        intro: "Abra uma categoria para consultar os comandos e seus usos.",
+        footer: "Digite o comando com o prefixo mostrado neste menu.",
         options,
         title: "MENU PRINCIPAL", prefix, userName,
         sections: prepareMenuSections(sections, options),
