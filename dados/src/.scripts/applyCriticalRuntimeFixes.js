@@ -38,6 +38,25 @@ function replacePatternRequired(source, pattern, replacement, description) {
   return updated;
 }
 
+export function ensureVisibleAssistantFailure(source) {
+  const modernBegin = source.indexOf('ASSISTANT_CONVERSATION_BEGIN');
+  if (modernBegin !== -1) {
+    const modernEnd = source.indexOf('ASSISTANT_CONVERSATION_END', modernBegin);
+    const assistantFlow = modernEnd === -1 ? '' : source.slice(modernBegin, modernEnd);
+    const conversationFallback = /else if \(!sentConversation && respAssist\?\.message\) await reply\(respAssist\.message\);/u;
+    const gatewayFailureFallback = /assistantTurn\.kind === 'failed'[\s\S]{0,400}?await reply\(/u;
+    if (conversationFallback.test(assistantFlow) && gatewayFailureFallback.test(assistantFlow)) return source;
+    throw new Error('Correção crítica não encontrada: resposta visível quando o gateway de conversa falhar');
+  }
+
+  return replaceRequired(
+    source,
+    `    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa. respAssist.resp:\`, respAssist.resp);\n    }`,
+    `    } else if (respAssist?.message) {\n      console.warn(\`⚠️ [\${personality}] A conversa falhou sem respostas válidas:\`, respAssist.erro || 'erro desconhecido');\n      reply(respAssist.message);\n    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa\`, {\n        responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,\n        responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0\n      });\n    }`,
+    'resposta visível quando o gateway de conversa falhar'
+  );
+}
+
 function patchRuntimeIndex(source) {
   let output = source;
 
@@ -65,12 +84,7 @@ function patchRuntimeIndex(source) {
     'prioridade dos aliases oficiais'
   );
 
-  output = replaceRequired(
-    output,
-    `    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa. respAssist.resp:\`, respAssist.resp);\n    }`,
-    `    } else if (respAssist?.message) {\n      console.warn(\`⚠️ [\${personality}] A conversa falhou sem respostas válidas:\`, respAssist.erro || 'erro desconhecido');\n      reply(respAssist.message);\n    } else {\n      console.warn(\`⚠️ [\${personality}] Nenhuma resposta válida retornada pela conversa\`, {\n        responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,\n        responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0\n      });\n    }`,
-    'resposta visível quando a NVIDIA falhar'
-  );
+  output = ensureVisibleAssistantFailure(output);
 
   output = replacePatternRequired(
     output,

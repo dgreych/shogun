@@ -81,6 +81,8 @@ test('patch insere seam exatamente uma vez depois do bridge e antes do switch pr
   assert.match(rootContext, /ai:\s*assistant,/);
   assert.equal(/\n\s*ai,\s*\n/.test(rootContext), false);
   assert.match(between, /buildMembersScope:\s*\(\)\s*=>\s*\(\{/);
+  assert.match(between, /\n\s*nazu:\s*socket,\s*\n/);
+  assert.doesNotMatch(between, /\n\s*nazu,\s*\n/);
   assert.match(between, /\n\s*q,\s*\n/);
   assert.match(between, /\n\s*timeLeft,\s*\n/);
   assert.match(between, /get i6\(\) \{ return i6; \}/);
@@ -100,7 +102,7 @@ test('dependências do contexto e do bridge existem antes do seam', () => {
     [/const\s+from\s*=/, 'from'],
     [/const\s+isGroup\s*=/, 'isGroup'],
     [/let\s+sender\s*;/, 'sender'],
-    [/const\s+menc_os2\s*=/, 'menc_os2'],
+    [/let\s+menc_os2\s*=/, 'menc_os2'],
     [/const\s+isModoBn\s*=/, 'isModoBn'],
     [/const\s+isModoLite\s*=/, 'isModoLite'],
     [/const\s+\[AllgroupMembers,/, 'AllgroupMembers'],

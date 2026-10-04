@@ -107,12 +107,18 @@ function patchIndexSource(source) {
 `;
 
   const botShortLine = "    const _botShort = (socket && socket.user && (socket.user.id || socket.user.lid)) ? String((socket.user.id || socket.user.lid).split(':')[0]) : '';";
+  if (output.includes('// ASSISTANT_PLANNING_BEGIN')) {
+    const conversationAnchor = '    // ASSISTANT_CONVERSATION_BEGIN';
+    output = replaceRequired(output, conversationAnchor, automationHook + conversationAnchor,
+      'gancho das automações antes da conversa planejada');
+  } else {
   output = replaceRequired(
     output,
     botShortLine,
     `${botShortLine}${automationHook}`,
     'gancho principal das automações'
   );
+  }
 
   const oldAssistantCondition = `if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {`;
   const newAssistantCondition = `const _quotedParticipantRaw = getQuotedContextInfo(info.message)?.participant || info.message?.extendedTextMessage?.contextInfo?.participant || '';
@@ -167,6 +173,7 @@ function patchIndexSource(source) {
 
     if (_assistantTriggered) {`;
 
+  if (!output.includes('// ASSISTANT_PLANNING_BEGIN')) {
   output = replaceRequired(output, oldAssistantCondition, newAssistantCondition, 'gatilho da conversa por resposta');
 
   output = replaceRequired(
@@ -182,6 +189,7 @@ function patchIndexSource(source) {
     `    try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_ASSISTANT', personality, tipoDaFuncao: typeof assistant.makeAssistentRequest, nomeDaFuncao: assistant.makeAssistentRequest && assistant.makeAssistentRequest.name, previewDaFuncao: assistant.makeAssistentRequest ? String(assistant.makeAssistentRequest).slice(0, 200) : null, assistantKeys: assistant ? Object.keys(assistant).slice(0, 30) : null }) + '\\n'); } catch (__diagErr) { try { fs.appendFileSync(__dirname + '/../logs/debug-trigger.log', JSON.stringify({ ts: new Date().toISOString(), marca: 'ANTES_DE_CHAMAR_IA_ERRO', erro: String(__diagErr && __diagErr.stack || __diagErr) }) + '\\n'); } catch {} }\n    assistant.makeAssistentRequest({\n    mensagens: [jSoNzIn],\n    model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined\n    }, socket, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {`,
     'checkpoint antes da chamada da conversa'
   );
+  }
 
   const commandCases = `case 't':
 case 'transc':

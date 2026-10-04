@@ -573,8 +573,9 @@ class UserContextDB {
   /**
    * Obtém um resumo formatado do contexto do usuário
    */
-  getUserContextSummary(userId) {
-    const context = this.getUserContext(userId);
+  getUserContextSummary(userId, { create = true } = {}) {
+    const context = create ? this.getUserContext(userId)
+      : this.data[userId] || this.createNewUserContext(userId);
     
     const summary = {
       nome: context.nome || 'Desconhecido',

@@ -87,20 +87,39 @@ async function dispatchBan(context) {
     const targetId = await requireTarget(context, 'ban');
     if (!targetId)
         return;
-    await socketOf(context).groupParticipantsUpdate(context.groupId, [targetId], 'remove');
+    if (!(await updateParticipantConfirmed(context, targetId, 'remove')))
+        return;
     const reason = context.query ? `\n📝 Motivo: ${context.query}` : '';
     await sendX9(context, `🚪 *X9 Report:* @${targetId.split('@')[0]} foi removido(a) do grupo por @${context.sender.split('@')[0]}.${reason}`, [targetId, context.sender]);
+    await context.reply(`✅ @${context.getUserName(targetId)} foi removido(a) do grupo.`, { mentions: [targetId] });
+}
+async function updateParticipantConfirmed(context, targetId, action) {
+    const result = await socketOf(context).groupParticipantsUpdate(context.groupId, [targetId], action);
+    const normalize = (value) => value.replace(/:\d+(?=@)/u, '');
+    const confirmed = Array.isArray(result) && result.some((entry) => {
+        if (!entry || typeof entry !== 'object')
+            return false;
+        const item = entry;
+        return String(item['status']) === '200' && typeof item['jid'] === 'string'
+            && normalize(item['jid']) === normalize(targetId);
+    });
+    if (!confirmed)
+        await context.reply('⚠️ Não consegui confirmar essa alteração no WhatsApp. Verifique a situação do membro antes de tentar novamente.');
+    return confirmed;
 }
 async function dispatchRoleChange(context, action) {
     const targetId = await requireTarget(context, action);
     if (!targetId)
         return;
-    await socketOf(context).groupParticipantsUpdate(context.groupId, [targetId], action);
+    if (!(await updateParticipantConfirmed(context, targetId, action)))
+        return;
     if (action === 'promote') {
         await sendX9(context, `⬆️ *X9 Report:* @${targetId.split('@')[0]} foi promovido(a) a ADM por @${context.sender.split('@')[0]}.`, [targetId, context.sender]);
+        await context.reply(`✅ @${context.getUserName(targetId)} foi promovido(a) a administrador.`, { mentions: [targetId] });
         return;
     }
     await sendX9(context, `⬇️ *X9 Report:* @${targetId.split('@')[0]} foi rebaixado(a) de ADM por @${context.sender.split('@')[0]}.`, [targetId, context.sender]);
+    await context.reply(`✅ @${context.getUserName(targetId)} foi rebaixado(a) de administrador.`, { mentions: [targetId] });
 }
 async function dispatchMute(context, bucket, action) {
     const targetId = await requireTarget(context, action);

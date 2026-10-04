@@ -44,6 +44,7 @@ import { PerformanceOptimizer, getPerformanceOptimizer } from './utils/performan
 import { recalcEquipmentBonuses } from './utils/equipment.js';
 import * as assistant from './funcs/private/assistant.js';
 import { getQuotedContextInfo, loadSafeCommandAliases, resolveCommandInput } from './utils/commandResolver.js';
+import { ASSISTANT_SINGLE_TARGET_COMMANDS, ASSISTANT_TRANSPORT_TARGET_COMMANDS, assistantTurnPlanner, buildAssistantCommandCatalog, buildAssistantCommandDescriptions, isAssistantEligible } from './utils/assistantIntent.js';
 import { NVIDIA_MODEL_CATALOG, isKnownNvidiaModel, DEFAULT_NVIDIA_MODEL } from './utils/nvidiaApi.js';
 import { buildSafeMessagePreview } from './utils/safeCommandLog.js';
 import { renderEventoFeed } from '../../dist-vnext/console/feed.js';
@@ -1045,12 +1046,12 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     }
   }
 
-  const numerodono = config.numerodono;
+  let numerodono = config.numerodono;
   const nomedono = config.nomedono;
   const nomebot = config.nomebot;
-  const prefixo = config.prefixo;
+  let prefixo = config.prefixo;
   const debug = config.debug;
-  const lidowner = config.lidowner;
+  let lidowner = config.lidowner;
 
   // Sistema de degradação automática de pets
   function applyPetDegradation(pets) {
@@ -1497,28 +1498,28 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
   // Otimização: Cache de dados estáticos com TTL
   const optimizer = getPerformanceOptimizer();
   
-  const antipvData = await optimizer.getCachedFile(
+  let antipvData = await optimizer.getCachedFile(
     DATABASE_DIR + '/antipv.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path)
   );
-  const premiumListaZinha = await optimizer.getCachedFile(
+  let premiumListaZinha = await optimizer.getCachedFile(
     DONO_DIR + '/premium.json',
     60000, // 1 minuto
     (path) => loadJsonFile(path)
   );
-  const banGpIds = await optimizer.getCachedFile(
+  let banGpIds = await optimizer.getCachedFile(
     DONO_DIR + '/bangp.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path)
   );
-  const antifloodData = await optimizer.getCachedFile(
+  let antifloodData = await optimizer.getCachedFile(
     DATABASE_DIR + '/antiflood.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path)
   );
   
-  const antiSpamGlobal = await optimizer.getCachedFile(
+  let antiSpamGlobal = await optimizer.getCachedFile(
     DATABASE_DIR + '/antispam.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path, {
@@ -1530,7 +1531,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
       blocks: {}
     })
   );
-  const globalBlocks = await optimizer.getCachedFile(
+  let globalBlocks = await optimizer.getCachedFile(
     DATABASE_DIR + '/globalBlocks.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path, {
@@ -1538,7 +1539,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
       users: {}
     })
   );
-  const botState = await optimizer.getCachedFile(
+  let botState = await optimizer.getCachedFile(
     DATABASE_DIR + '/botState.json',
     30000, // 30 segundos
     (path) => loadJsonFile(path, {
@@ -1587,10 +1588,10 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     
     const pushname = info.pushName || '';
     const isStatus = from?.endsWith('@broadcast') || false;
-    const nmrdn = buildUserId(numerodono, config);
-    const subDonoList = loadSubdonos();
-    const isSubOwner = isSubdono(sender) && !automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe);
-    const ownerJid = `${numerodono}@s.whatsapp.net`;
+    let nmrdn = buildUserId(numerodono, config);
+    let subDonoList = loadSubdonos();
+    let isSubOwner = isSubdono(sender) && !automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe);
+    let ownerJid = `${numerodono}@s.whatsapp.net`;
     const botId = getBotId(socket);
     const isBotSender = sender === botId || sender === socket.user?.id?.split(':')[0] + '@s.whatsapp.net' || sender === socket.user?.id?.split(':')[0] + '@lid';
     
@@ -1598,7 +1599,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     const ownerBase = String(numerodono);
     const lidOwnerBase = lidowner ? lidowner.split('@')[0] : null;
     
-    const isOwner = senderBase === ownerBase || 
+    let isOwner = senderBase === ownerBase ||
     sender === nmrdn || 
     sender === ownerJid || 
     (lidowner && sender === lidowner) || 
@@ -1606,7 +1607,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     info.key.fromMe || 
     isBotSender;
     
-    const isOwnerOrSub = isOwner || isSubOwner;
+    let isOwnerOrSub = isOwner || isSubOwner;
     
     // Debug: log das verificações de permissão
     debugLog('Verificações de permissão:', { 
@@ -1824,15 +1825,15 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
       
       return message.conversation || message.extendedTextMessage?.text || message.imageMessage?.caption || message.videoMessage?.caption || message.documentWithCaptionMessage?.message?.documentMessage?.caption || message.viewOnceMessage?.message?.imageMessage?.caption || message.viewOnceMessage?.message?.videoMessage?.caption || message.viewOnceMessageV2?.message?.imageMessage?.caption || message.viewOnceMessageV2?.message?.videoMessage?.caption || message.editedMessage?.message?.protocolMessage?.editedMessage?.extendedTextMessage?.text || message.editedMessage?.message?.protocolMessage?.editedMessage?.imageMessage?.caption || '';
     };
-    const body = getMessageText(info.message) || info?.text || '';
+    let body = getMessageText(info.message) || info?.text || '';
 
     let args = body.trim().split(/ +/).slice(1);
     let q = args.join(' ');
-    const budy2 = normalizar(body);
+    let budy2 = normalizar(body);
     const menc_prt = info.message?.extendedTextMessage?.contextInfo?.participant;
     const menc_jid2 = info.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-    const menc_os2 = (menc_jid2 && menc_jid2.length > 0) ? menc_jid2[0] : menc_prt;
-    const sender_ou_n = (menc_jid2 && menc_jid2.length > 0) ? menc_jid2[0] : menc_prt || sender;
+    let menc_os2 = (menc_jid2 && menc_jid2.length > 0) ? menc_jid2[0] : menc_prt;
+    let sender_ou_n = (menc_jid2 && menc_jid2.length > 0) ? menc_jid2[0] : menc_prt || sender;
   const groupFile = buildGroupFilePath(from);
     // Otimização: Carregar groupData com cache (TTL curto de 5 segundos)
     let groupData = {};
@@ -1960,8 +1961,8 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     console.error('Erro ao atualizar anúncio do rolê:', e);
       }
     }
-    const groupMetadata = !isGroup ? {} : await getCachedGroupMetadata(from).catch(() => ({}));
-    const groupName = groupMetadata?.subject || '';
+    let groupMetadata = !isGroup ? {} : await getCachedGroupMetadata(from).catch(() => ({}));
+    let groupName = groupMetadata?.subject || '';
     if (isGroup) {
       // Otimização: Verificar existência com cache
       const fileExists = await optimizer.fileExists(groupFile);
@@ -2104,11 +2105,110 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
       }
       return removed;
     };
-    const groupPrefix = groupData.customPrefix || prefixo;
-    var isCmd = body.trim().startsWith(groupPrefix);
+    // ASSISTANT_PLANNING_BEGIN — mesma invocação, antes do parser e dos gates.
+    let groupPrefix = groupData.customPrefix || prefixo;
+    let assistantTurn = { kind: 'ignored' };
+    let assistantCommandBody = null;
+    let assistantBlockedByFilters = false;
+    const assistantOriginalBody = body;
+    const normalizeAssistantJid = value => typeof value === 'string' ? value.replace(/:\d+(?=@)/u, '') : '';
+    const assistantBotIds = new Set([getBotId(socket), socket.user?.id, socket.user?.lid]
+      .map(normalizeAssistantJid).filter(Boolean));
+    let assistantContent = info.message || {};
+    for (let depth = 0; depth < 5; depth++) {
+      const wrapped = assistantContent.ephemeralMessage?.message || assistantContent.viewOnceMessage?.message
+        || assistantContent.viewOnceMessageV2?.message || assistantContent.viewOnceMessageV2Extension?.message
+        || assistantContent.documentWithCaptionMessage?.message;
+      if (!wrapped) break;
+      assistantContent = wrapped;
+    }
+    const assistantContext = getQuotedContextInfo(info.message)
+      || Object.values(assistantContent).find(value => value?.contextInfo)?.contextInfo || {};
+    const assistantMentions = [...new Set((assistantContext.mentionedJid || [])
+      .filter(value => typeof value === 'string' && /^\d+(?::\d+)?@(s\.whatsapp\.net|lid)$/u.test(value))
+      .map(normalizeAssistantJid).filter(value => !assistantBotIds.has(value)))];
+    const assistantQuotedTarget = normalizeAssistantJid(assistantContext.participant);
+    const assistantTargets = [...new Set([...assistantMentions,
+      ...(assistantQuotedTarget && !assistantBotIds.has(assistantQuotedTarget) ? [assistantQuotedTarget] : [])])];
+    const assistantQuoted = automacoesV9.getQuotedMessageContent(info.message) || {};
+    const assistantMediaType = content => ['image', 'video', 'audio', 'sticker', 'document']
+      .find(type => content?.[`${type}Message`]) || null;
+    const assistantEligible = isAssistantEligible({ text: body, prefix: groupPrefix,
+      enabled: groupData.assistente !== false, fromMe: Boolean(info.key.fromMe), fromPro: Boolean(info._fromPro), isGroup,
+      botMentioned: (assistantContext.mentionedJid || []).some(value => assistantBotIds.has(normalizeAssistantJid(value))),
+      repliedToBot: assistantBotIds.has(normalizeAssistantJid(assistantContext.participant)) });
+    if (assistantEligible) {
+      let assistantAliases = loadSafeCommandAliases();
+      const assistantCatalog = buildAssistantCommandCatalog({ aliases: assistantAliases, customCommands: loadCustomCommands() });
+      const readAssistantPolicy = (file, fallback = {}) => fs.existsSync(file)
+        ? JSON.parse(fs.readFileSync(file, 'utf8')) : fallback;
+      assistantTurn = await assistantTurnPlanner.plan({ key: `${from}:${sender}:${info.key.id || ''}`,
+        text: assistantOriginalBody.replace(/@\d+/gu, token => (assistantContext.mentionedJid || []).some(jid => assistantBotIds.has(normalizeAssistantJid(jid)) && token === '@' + normalizeAssistantJid(jid).split('@')[0]) ? '' : token).trim(), prefix: groupPrefix, catalog: assistantCatalog, eligible: true,
+        transportTargets: assistantTargets,
+        transportTargetCommands: ASSISTANT_TRANSPORT_TARGET_COMMANDS,
+        resolve: token => resolveCommandInput(token, assistantAliases),
+        request: () => assistant.makeAssistentRequest({ commandCatalog: assistantCatalog,
+          commandDescriptions: buildAssistantCommandDescriptions(assistantCatalog), deferEffects: true,
+          mensagens: [{ texto: assistantOriginalBody, id_enviou: sender, nome_enviou: pushname,
+            id_grupo: isGroup ? from : '', nome_grupo: isGroup ? groupName : '',
+            tem_midia: Boolean(assistantMediaType(assistantContent)), tipo_midia: assistantMediaType(assistantContent),
+            marcou_mensagem: Boolean(assistantContext.quotedMessage),
+            marcou_sua_mensagem: assistantBotIds.has(normalizeAssistantJid(assistantContext.participant)),
+            mensagem_marcada: automacoesV9.getQuotedText(info.message), id_enviou_marcada: assistantContext.participant || null,
+            tem_midia_marcada: Boolean(assistantMediaType(assistantQuoted)), tipo_midia_marcada: assistantMediaType(assistantQuoted),
+            mencoes: assistantMentions, id_mensagem: info.key.id }],
+          model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined
+        }, socket, nmrdn, 'shogun', isGroup && groupData.modoAdulto === true),
+        refresh: async signal => {
+          // Leitura direta: o await do modelo pode atravessar alterações de cargos,
+          // bloqueios, antiPV ou configuração. Não reutilizar snapshots em cache.
+          const freshMetadata = isGroup ? await socket.groupMetadata(from) : groupMetadata;
+          if (signal.aborted) return false;
+          config = readAssistantPolicy(CONFIG_FILE);
+          numerodono = config.numerodono; prefixo = config.prefixo; lidowner = config.lidowner;
+          nmrdn = buildUserId(numerodono, config); ownerJid = `${numerodono}@s.whatsapp.net`;
+          subDonoList = loadSubdonos();
+          isOwner = senderBase === String(numerodono) || sender === nmrdn || sender === ownerJid
+            || Boolean(lidowner && (sender === lidowner || senderBase === lidowner.split('@')[0]))
+            || Boolean(info.key.fromMe) || isBotSender || automacoesV9.isAdditionalOwner(sender);
+          isSubOwner = isSubdono(sender) && !automacoesV9.isPrimaryOwner(sender, numerodono, lidowner, info.key.fromMe);
+          isOwnerOrSub = isOwner || isSubOwner;
+          antipvData = readAssistantPolicy(DATABASE_DIR + '/antipv.json');
+          premiumListaZinha = readAssistantPolicy(DONO_DIR + '/premium.json');
+          banGpIds = readAssistantPolicy(DONO_DIR + '/bangp.json');
+          antifloodData = readAssistantPolicy(DATABASE_DIR + '/antiflood.json');
+          antiSpamGlobal = readAssistantPolicy(DATABASE_DIR + '/antispam.json');
+          globalBlocks = readAssistantPolicy(DATABASE_DIR + '/globalBlocks.json', { commands: {}, users: {} });
+          botState = readAssistantPolicy(DATABASE_DIR + '/botState.json', { status: 'on' });
+          modoLiteGlobal = readAssistantPolicy(DATABASE_DIR + '/modolite.json', { status: false });
+          if (isGroup) {
+            groupData = readAssistantPolicy(groupFile);
+            groupMetadata = freshMetadata;
+            groupName = groupMetadata?.subject || '';
+          }
+          groupPrefix = groupData.customPrefix || prefixo;
+          assistantAliases = loadSafeCommandAliases();
+          assistantCatalog.splice(0, assistantCatalog.length, ...buildAssistantCommandCatalog({ aliases: assistantAliases, customCommands: loadCustomCommands() }));
+          return groupData.assistente !== false;
+        }
+      });
+      if (assistantTurn.kind === 'action') {
+        const targets = assistantTargets;
+        const singleTargetCommands = new Set(ASSISTANT_SINGLE_TARGET_COMMANDS);
+        if (singleTargetCommands.has(assistantTurn.action.command) && targets.length > 1) {
+          assistantTurn = { kind: 'conversation', response: { resp: [{ resp: 'Qual pessoa você quer usar como alvo? Marque ou responda somente uma.', react: '' }] } };
+        } else {
+          if (targets.length === 1) { menc_os2 = targets[0]; sender_ou_n = targets[0]; }
+          assistantCommandBody = groupPrefix + assistantTurn.action.token + (assistantTurn.action.args.length ? ' ' + assistantTurn.action.args.join(' ') : '');
+          args = assistantTurn.action.args.slice(); q = args.join(' ');
+        }
+      }
+    }
+    // ASSISTANT_PLANNING_END
+    var isCmd = (assistantCommandBody || body).trim().startsWith(groupPrefix);
     
     // Suporte para "! comando" (com espaço após o prefixo)
-    const bodyWithoutPrefix = body.trim().slice(groupPrefix.length).trimStart();
+    const bodyWithoutPrefix = (assistantCommandBody || body).trim().slice(groupPrefix.length).trimStart();
     
     const aliases = loadSafeCommandAliases();
     const rawCommandToken = bodyWithoutPrefix.split(/ +/).shift().trim();
@@ -2786,7 +2886,8 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
     const {
     mentions = [],
     noForward = false,
-    noQuote = false
+    noQuote = false,
+    requireFullDelivery = false
     } = options;
     const messageContent = {
     text: text.trim(),
@@ -2832,6 +2933,7 @@ async function shogunExec(socket, info, store, messagesCache, rentalExpirationMa
           };
           if (attempt === 2) {
     console.error('[FEEDBACK] Falha ao enviar resposta apos retentativa:', feedbackLogContext);
+    if (requireFullDelivery) return null;
     try {
       return await socket.sendMessage(from, {
         text: '⚠️ Não consegui enviar a resposta completa. Tente o comando novamente em instantes.'
@@ -4535,166 +4637,6 @@ Código: *${roleCode}*`,
     }
     if (budy2.match(/^(\d+)d(\d+)$/)) reply(+budy2.match(/^(\d+)d(\d+)$/)[1] > 50 || +budy2.match(/^(\d+)d(\d+)$/)[2] > 100 ? "❌ Limite: max 50 dados e 100 lados" : "🎲 Rolando " + budy2.match(/^(\d+)d(\d+)$/)[1] + "d" + budy2.match(/^(\d+)d(\d+)$/)[2] + "...\n🎯 Resultados: " + (r = [...Array(+budy2.match(/^(\d+)d(\d+)$/)[1])].map(_ => 1 + Math.floor(Math.random() * +budy2.match(/^(\d+)d(\d+)$/)[2]))).join(", ") + "\n📊 Total: " + r.reduce((a, b) => a + b, 0));
 
-    const _botShort = (socket && socket.user && (socket.user.id || socket.user.lid)) ? String((socket.user.id || socket.user.lid).split(':')[0]) : '';
-    // Não processar pela assistente se a mensagem veio do PRO (evita loop infinito)
-    if (!info.key.fromMe && isAssistente && !isCmd && !info._fromPro && ((_botShort && budy2.includes(_botShort)) || (menc_os2 && menc_os2 == botNumber))) {
-      if (budy2.replaceAll('@' + _botShort, '').length > 2) {
-    // Detectar tipo de mídia da mensagem atual
-    const tipoMidiaAtual = info.message?.imageMessage ? 'imagem' : 
-    info.message?.videoMessage ? 'video' : 
-    info.message?.audioMessage ? 'audio' : 
-    info.message?.stickerMessage ? 'sticker' : 
-    info.message?.documentMessage ? 'documento' : null;
-    
-    // Detectar tipo de mídia marcada
-    // Checar também pttMessage (mensagem de voz) que pode vir separado
-    const tipoMidiaMarcada = quotedMessageContent?.imageMessage ? 'imagem' : 
-       quotedMessageContent?.videoMessage ? 'video' : 
-       quotedMessageContent?.audioMessage ? 'audio' : 
-       quotedMessageContent?.pttMessage ? 'audio' :
-       quotedMessageContent?.stickerMessage ? 'sticker' : 
-       quotedMessageContent?.documentMessage ? 'documento' : null;
-    
-    // Detectar menções na mensagem
-    const mencoesNaMensagem = info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    
-    // Obter todos os possíveis identificadores do bot para filtrar
-    const botLid = socket.user?.lid ? socket.user.lid.split(':')[0] : null;
-    const botJid = socket.user?.id ? socket.user.id.split(':')[0] : null;
-    const botIdentifiers = [_botShort, botLid, botJid, botNumber].filter(Boolean);
-    
-    
-    // Filtrar menção do bot das menções (usando todos os identificadores possíveis)
-    const mencoesFiltradas = mencoesNaMensagem.filter(m => {
-    const mNumber = m.split('@')[0].split(':')[0]; // Pega só o número
-    return !botIdentifiers.some(id => {
-      const idNumber = id.split('@')[0].split(':')[0];
-      return mNumber === idNumber;
-    });
-    });
-    
-    const primeiraMencao = mencoesFiltradas.length > 0 ? mencoesFiltradas[0] : null;
-    
-    const jSoNzIn = {
-    texto: budy2.replaceAll('@' + _botShort, '').trim(),
-    id_enviou: sender,
-    nome_enviou: pushname,
-    id_grupo: isGroup ? from : false,
-    nome_grupo: isGroup ? groupName : false,
-    tem_midia: isMedia,
-    tipo_midia: tipoMidiaAtual,
-    marcou_mensagem: false,
-    marcou_sua_mensagem: false,
-    mensagem_marcada: false,
-    id_enviou_marcada: false,
-    tem_midia_marcada: !!tipoMidiaMarcada,
-    tipo_midia_marcada: tipoMidiaMarcada,
-    mencoes: mencoesFiltradas,
-    primeira_mencao: primeiraMencao,
-    tem_mencao: mencoesFiltradas.length > 0,
-    id_mensagem: info.key.id,
-    data_atual: new Date().toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo'
-    }),
-    data_mensagem: new Date(info.messageTimestamp * 1000).toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo'
-    })
-    };
-    let {
-    participant,
-    quotedMessage
-    } = info.message?.extendedTextMessage?.contextInfo || {};
-    let jsonO = {
-    participant,
-    quotedMessage,
-    texto: quotedMessage?.conversation || quotedMessage?.extendedTextMessage?.text || quotedMessage?.imageMessage?.caption || quotedMessage?.videoMessage?.caption || quotedMessage?.documentMessage?.caption || ""
-    };
-    if  (jsonO && jsonO.participant && jsonO.texto && jsonO.texto.length > 0) {
-    jSoNzIn.marcou_mensagem = true;
-    jSoNzIn.mensagem_marcada = jsonO.texto;
-    jSoNzIn.id_enviou_marcada = jsonO.participant;
-    jSoNzIn.marcou_sua_mensagem = jsonO.participant == getBotId(socket);
-    }
-    // Se marcou mensagem com mídia mas sem texto, ainda assim é marcou_mensagem
-    if  (jsonO && jsonO.participant && tipoMidiaMarcada && !jSoNzIn.marcou_mensagem) {
-    jSoNzIn.marcou_mensagem = true;
-    jSoNzIn.id_enviou_marcada = jsonO.participant;
-    }
-    
-    // Verifica se o objeto assistant existe antes de usar
-    if  (!assistant || typeof assistant.makeAssistentRequest !== 'function') {
-    console.warn('[conversa] makeAssistentRequest not available');
-    reply('A conversa com Shogun está indisponível agora. Tente novamente em alguns minutos.');
-    return;
-    }
-    
-    const personality = 'shogun';
-
-    assistant.makeAssistentRequest({
-    mensagens: [jSoNzIn],
-    model: isKnownNvidiaModel(groupData.conversationModel) ? groupData.conversationModel : undefined
-    }, socket, nmrdn, personality, isGroup && groupData.modoAdulto === true).then((respAssist) => {
-      if  (respAssist.erro === 'Sistema de conversa temporariamente desativado') {
-      return;
-    }
-    
-      if  (respAssist.resp && Array.isArray(respAssist.resp) && respAssist.resp.length > 0) {
-      const _mentionCandidateJids = [sender, menc_os2, primeiraMencao].filter(Boolean);
-      const resolveMentionsInText = (texto) => {
-    const numerosNoTexto = (texto.match(/@(\d{5,})/g) || []).map(m => m.slice(1));
-    if  (numerosNoTexto.length === 0) return [];
-    return _mentionCandidateJids.filter(jid => {
-    const numeroDoJid = String(jid).split('@')[0].split(':')[0];
-    return numerosNoTexto.includes(numeroDoJid);
-    });
-      };
-      const processResponses = (index) => {
-    if  (index >= respAssist.resp.length) return;
-    const msgza = respAssist.resp[index];
-    const processNext = () => processResponses(index + 1);
-
-    if  (msgza && msgza.react) {
-      reagir(msgza.react.replaceAll(' ', '').replaceAll('\n', ''), {
-    key: info.key
-      }).then(() => {
-    if  (msgza.resp && typeof msgza.resp === 'string' && msgza.resp.length > 0) {
-    reply(msgza.resp, { mentions: resolveMentionsInText(msgza.resp) }).then(processNext);
-    } else {
-    processNext();
-    }
-      }).catch(err => {
-    console.error('Erro ao reagir:', err);
-    if  (msgza.resp && typeof msgza.resp === 'string' && msgza.resp.length > 0) {
-    reply(msgza.resp, { mentions: resolveMentionsInText(msgza.resp) }).then(processNext);
-    } else {
-    processNext();
-    }
-      });
-    } else if (msgza && msgza.resp && typeof msgza.resp === 'string' && msgza.resp.length > 0) {
-      reply(msgza.resp, { mentions: resolveMentionsInText(msgza.resp) }).then(processNext);
-    } else {
-      console.warn(`⚠️ [${personality}] Resposta inválida no índice ${index}`, {
-        valueType: Array.isArray(msgza) ? 'array' : typeof msgza
-      });
-      processNext();
-    }
-      };
-      processResponses(0);
-    } else if (respAssist?.message) {
-      console.warn(`⚠️ [${personality}] A conversa falhou sem respostas válidas:`, respAssist.erro || 'erro desconhecido');
-      reply(respAssist.message);
-    } else {
-      console.warn(`⚠️ [${personality}] Nenhuma resposta válida retornada pela conversa`, {
-        responseType: Array.isArray(respAssist?.resp) ? 'array' : typeof respAssist?.resp,
-        responseCount: Array.isArray(respAssist?.resp) ? respAssist.resp.length : 0
-      });
-    }
-    }).catch((assistentError) => {
-    console.error('Erro no assistente virtual:', assistentError.message);
-    reply('🤖 Erro técnico no assistente virtual. Tente novamente em alguns minutos.');
-    });
-      }
-    }
     //ANTI FLOOD DE MENSAGENS
     if (isGroup && groupData.messageLimit?.enabled && !isGroupAdmin && !isOwnerOrSub && !info.key.fromMe) {
       try {
@@ -4712,6 +4654,7 @@ Código: *${roleCode}*`,
     userData.count++;
     groupData.messageLimit.users[sender] = userData;
     if  (userData.count > groupData.messageLimit.limit) {
+      assistantBlockedByFilters = true;
       if  (groupData.messageLimit.action === 'ban' && isBotAdmin) {
       await socket.groupParticipantsUpdate(from, [sender], 'remove');
       await reply(`🚨 @${getUserName(sender)} foi banido por exceder o limite de ${groupData.messageLimit.limit} mensagens em ${groupData.messageLimit.interval}s!`, {
@@ -4755,6 +4698,7 @@ Código: *${roleCode}*`,
     await socket.sendMessage(from, {
       delete: info.key
     });
+    assistantBlockedByFilters = true;
     await reply(`@${getUserName(sender)}, você atingiu o limite de ${partnerData.limit} links de grupos.`, {
       mentions: [sender]
     });
@@ -4763,6 +4707,7 @@ Código: *${roleCode}*`,
     await socket.sendMessage(from, {
     delete: info.key
     });
+    assistantBlockedByFilters = true;
     await reply(`@${getUserName(sender)}, você não é um parceiro e não pode enviar links de grupos.`, {
     mentions: [sender]
     });
@@ -4771,6 +4716,7 @@ Código: *${roleCode}*`,
     //ANTI FIGURINHAS
     if (isGroup && groupData.antifig && groupData.antifig.enabled && type === "stickerMessage" && !isGroupAdmin && !info.key.fromMe) {
       if (!isUserWhitelisted(sender, 'antifig')) {
+  assistantBlockedByFilters = true;
   try  {
     await socket.sendMessage(from, {
       delete: {
@@ -4812,6 +4758,33 @@ Código: *${roleCode}*`,
     }
       }
     }
+    if (assistantEligible && assistantBlockedByFilters) return;
+    if (assistantCommandBody) { body = assistantCommandBody; budy2 = normalizar(body); }
+    // ASSISTANT_CONVERSATION_BEGIN — resposta já planejada; não chamar o modelo novamente.
+    if (!isCmd && isAssistente && assistantTurn.kind === 'conversation') {
+      const respAssist = assistantTurn.response;
+      const validResponses = Array.isArray(respAssist?.resp) ? respAssist.resp.slice(0, 4) : [];
+      let responseChars = 0;
+      let sentConversation = false;
+      let allConversationDelivered = true;
+      for (const item of validResponses) {
+        if (typeof item?.resp !== 'string' || !item.resp.trim()) continue;
+        const text = item.resp.slice(0, Math.min(3000, 9000 - responseChars));
+        if (!text) break;
+        responseChars += text.length;
+        const originalCandidates = [sender, ...assistantMentions];
+        const mentions = originalCandidates.filter(jid => text.includes('@' + String(jid).split('@')[0]));
+        const delivered = await reply(text, { mentions, requireFullDelivery: true });
+        if (!delivered?.key?.id) { allConversationDelivered = false; continue; }
+        sentConversation = true;
+        if (typeof item.react === 'string' && item.react.trim()) await reagir(item.react, { key: info.key }).catch(() => {});
+      }
+      if (sentConversation && allConversationDelivered && typeof respAssist.commitConversation === 'function') respAssist.commitConversation();
+      else if (!sentConversation && respAssist?.message) await reply(respAssist.message);
+    } else if (!isCmd && isAssistente && assistantTurn.kind === 'failed') {
+      await reply('A conversa com Shogun está indisponível agora. Tente novamente em instantes.');
+    }
+    // ASSISTANT_CONVERSATION_END
     if (!isCmd) {
       // Se modo soadm ativo e não é admin, ignorar comandos sem prefixo silenciosamente
       if (isGroup && isOnlyAdmin && !isGroupAdmin && !isOwner) {

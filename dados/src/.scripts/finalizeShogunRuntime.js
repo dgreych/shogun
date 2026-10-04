@@ -123,6 +123,8 @@ function buildMembersScopeFactorySource() {
     if (writeBindings.has(name)) {
       lines.push(`            get ${name}() { return ${name}; },`);
       lines.push(`            set ${name}(__value) { ${name} = __value; },`);
+    } else if (name === 'nazu') {
+      lines.push('            nazu: socket,');
     } else {
       lines.push(`            ${name},`);
     }
