@@ -5232,6 +5232,7 @@ Código: *${roleCode}*`,
       }
       await handleNexoCommand({
         socket: socket,
+        quoted: info,
         raw: {
           messageId: info.key?.id || `${sender}:${Date.now()}`,
           chatId: from,
@@ -5253,6 +5254,7 @@ Código: *${roleCode}*`,
     ) {
       await handleNexoPlayerCommand({
         socket: socket,
+        quoted: info,
         raw: {
           messageId: info.key?.id || `${sender}:${Date.now()}`,
           chatId: from,
@@ -5304,7 +5306,7 @@ case 'listaroles': {
     const listText = `🪩 *Rolês ativos*\n\n${listLines.join('\n\n')}\n\n🙋 Reaja com ${ROLE_GOING_BASE} ou use ${groupPrefix}role.vou CODIGO\n🤷 Reaja com ${ROLE_NOT_GOING_BASE} ou use ${groupPrefix}role.nvou CODIGO`;
 
     try  {
-      await socket.sendMessage(sendTarget, { text: listText });
+      await socket.sendMessage(sendTarget, { text: listText }, sendTarget === info?.key?.remoteJid ? { quoted: info } : undefined);
     if  (sendInPv && sendTarget !== from) {
     await reply('📬 Enviei a lista de rolês no seu privado!', { mentions: [sender] });
       }

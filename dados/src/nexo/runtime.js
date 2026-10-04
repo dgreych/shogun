@@ -62,7 +62,7 @@ async function shouldHandleNexoNumericReply({ command, chatId, senderAddress }) 
   return Boolean(pending);
 }
 
-async function buildContextAndTransport({ socket, raw, runtime, actorExtras = {} }) {
+async function buildContextAndTransport({ socket, raw, runtime, actorExtras = {}, quoted = null }) {
   const incoming = await normalizeIncomingMessage({ raw, identityService: runtime.identityService });
   const context = createCommandContext({
     correlationId: incoming.messageId,
@@ -74,7 +74,8 @@ async function buildContextAndTransport({ socket, raw, runtime, actorExtras = {}
   const transport = new NexoWhatsAppTransport({
     socket,
     chatId: incoming.chatId,
-    privateChatId: incoming.sender.addressingId
+    privateChatId: incoming.sender.addressingId,
+    quoted
   });
   return { incoming, context, transport };
 }
@@ -88,6 +89,7 @@ async function sendViewModel({ transport, viewModel, repository, incoming, image
   } catch {}
 
   const rendered = renderNexoViewModel(viewModel);
+  const responseText = viewModel.kind === 'ERROR' ? `⚠️ ${rendered.text}` : rendered.text;
   const preferPrivate = viewModel.privacy !== 'GROUP' && Boolean(player?.privateOptIn);
   if (imageBuffer) {
     // Achado real de GPT-NEXO-007 (severidade ALTA): o render podia ter
@@ -97,11 +99,11 @@ async function sendViewModel({ transport, viewModel, repository, incoming, image
     // (seção 17 do PDF: "capacidades ricas são opcionais"); agora uma
     // falha aqui cai no mesmo sendText que já funcionava sem imagem.
     try {
-      await transport.sendImage(imageBuffer, { caption: rendered.text, mentions: rendered.mentions, preferPrivate });
+      await transport.sendImage(imageBuffer, { caption: responseText, mentions: rendered.mentions, preferPrivate });
       return;
     } catch {}
   }
-  await transport.sendText(rendered.text, { mentions: rendered.mentions, preferPrivate });
+  await transport.sendText(responseText, { mentions: rendered.mentions, preferPrivate });
 }
 
 /**
@@ -140,12 +142,13 @@ async function renderOptionalImage({ command, repository, incoming, actor, env, 
  * verificar admin por metadata FRESCA, não pelo cache padrão da mensagem
  * (seção 16 do PDF, nota de implementação de `!nexo ativar`).
  */
-async function handleNexoCommand({ socket, raw, args = [], isGroupAdmin = false }) {
+async function handleNexoCommand({ socket, raw, args = [], isGroupAdmin = false, quoted = null }) {
   const runtime = await getNexoRuntime();
   const { incoming, context, transport } = await buildContextAndTransport({
     socket,
     raw,
     runtime,
+    quoted,
     actorExtras: { isGroupAdmin }
   });
 
@@ -166,9 +169,9 @@ async function handleNexoCommand({ socket, raw, args = [], isGroupAdmin = false 
  * `!ficha`, `!privado`, `!tutorial`, `!continuar`, `!cancelar`) e para
  * respostas numéricas contextuais de onboarding.
  */
-async function handleNexoPlayerCommand({ socket, raw, command, args = [], bunnyfyEnv, bunnyfyClientFactory }) {
+async function handleNexoPlayerCommand({ socket, raw, command, args = [], bunnyfyEnv, bunnyfyClientFactory, quoted = null }) {
   const runtime = await getNexoRuntime();
-  const { incoming, context, transport } = await buildContextAndTransport({ socket, raw, runtime });
+  const { incoming, context, transport } = await buildContextAndTransport({ socket, raw, runtime, quoted });
 
   const isNumericReply = /^\d+$/.test(String(command || '').trim());
   const viewModel = isNumericReply

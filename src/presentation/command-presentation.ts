@@ -106,16 +106,47 @@ export function renderCommandCard({ title, fields = [], lines = [], theme: optio
     return rememberRenderedOutput([header, ...bodyLines(content, theme.middleBorder), theme.bottomBorder].filter(part => part !== '').join('\n'), { body: content.join('\n') });
 }
 function unframe(value: string) {
-    if (!/^[\s\u200e]*[╭┌┏╔]/u.test(value)) return clean(value).split('\n');
+    const lines = clean(value).split('\n');
+    let start = lines.findIndex(line => line.trim());
+    if (start < 0) return lines;
+    // Só aceitamos um preâmbulo de estado. Texto personalizado antes de um
+    // desenho não transforma esse desenho em moldura do produto.
+    if (/^[⚠❌⛔🚫]/u.test(lines[start]!.trim())) {
+        start = lines.findIndex((line, index) => index > start && Boolean(line.trim()));
+    }
+    if (start < 0 || !/^[╭┌┏╔]/u.test(lines[start]!.trim())) return lines;
     let code = false;
-    return clean(value).split('\n').map(line => {
-        const stripped = line.replace(/^[╭╮╰╯┌┐└┘┏┓┗┛╔╗╚╝├┤┣┫┊│┃─━═]+ ?/u, '')
-            .replace(/[╮╯┐┘┓┛╗╝─━═]+\s*$/u, '');
-        const fence = /^\s*```/.test(stripped);
-        const result = code && !fence ? stripped : stripped.trim();
-        if (fence) code = !code;
-        return result;
-    }).filter((line, i, all) => line || (i > 0 && i < all.length - 1));
+    let end = -1;
+    for (let index = start + 1; index < lines.length; index++) {
+        const line = lines[index]!;
+        const body = line.replace(/^[│┃] ?/u, '');
+        if (/^\s*```/u.test(body)) { code = !code; continue; }
+        if (!code && /^[╰└┗╚][─━═]/u.test(line.trim())) { end = index; break; }
+    }
+    if (end < 0) return lines;
+    const frame = lines.slice(start, end + 1);
+    if (!/\p{L}/u.test(frame[0]!) && !frame.some(line => /^[│┃]\s*[^\p{L}]*\*\p{L}/u.test(line))) return lines;
+    code = false;
+    for (const line of frame) {
+        const body = line.replace(/^[│┃] ?/u, '');
+        if (/^\s*```/u.test(body)) { code = !code; continue; }
+        if (!code && (/[┬┼┴]/u.test(line) || /^[│┃].*[│┃]/u.test(line))) return lines;
+    }
+    let codeHasSide = false;
+    code = false;
+    return lines.map((line, index) => {
+        if (index < start || index > end) return line;
+        const body = line.replace(/^[│┃] ?/u, '');
+        const fence = /^\s*```/u.test(body);
+        if (code && !fence) return codeHasSide ? body : line;
+        if (fence) {
+            if (!code) codeHasSide = /^[│┃]/u.test(line);
+            code = !code;
+            return body.trim();
+        }
+        return line.replace(/^[╭╮╰╯┌┐└┘┏┓┗┛╔╗╚╝├┤┣┫┊│┃─━═]+ ?/u, '')
+            .replace(/[╮╯┐┘┓┛╗╝─━═]+\s*$/u, '').trim();
+    });
 }
 export function formatCommandResponse<T>(value: T, command?: string, theme: unknown = {}): T | string {
     if (typeof value !== 'string' || !value.trim() || isRendered(value)) return value;
@@ -130,7 +161,7 @@ function outputStatus(content: PresentationContent) {
     const first = text.split('\n').map(line => line.trim()).find(Boolean) || '';
     const plain = first.replace(/^[^\p{L}\p{N}`]+/u, '');
     if (/^(?:Buscando|Procurando|Criando|Baixando|Preparando|Processando|Trabalhando|Resolvendo|Aguarde|Um instante|Já estou|Gerando|Convertendo|Aplicando|Pesquisando|Traduzindo|Transcrevendo|Carregando|Enviando)\b/iu.test(plain)) return null;
-    if (/^(?:❌|⚠️|⛔|🚫)/u.test(first) || /^(?:Não (?:consegui|foi|posso|é possível)|Erro\b|Falha\b|Este ajuste está disponível somente|Este comando é (?:apenas|exclusivo))/iu.test(plain)) return '⚠️';
+    if (/^(?:❌|⚠️|⛔|🚫)/u.test(first) || /^(?:Não (?:consegui|foi|posso|é possível)|Erro\b|Falha\b|Ocorreu um erro\b|Este ajuste está disponível somente|Este comando é (?:apenas|exclusivo|restrito)|Este comando (?:só|somente) (?:pode ser usado|funciona)|Use este comando em um grupo\b|(?:Somente|Apenas) (?:o |a |os |as )?(?:donos?|administradores?|admins?|adms?|subdonos?|moderadores?|criador)\b)/iu.test(plain)) return '⚠️';
     return ['text', 'caption', 'audio', 'image', 'video', 'document', 'sticker', 'contacts', 'location'].some(key => content[key] != null) ? '✅' : null;
 }
 function contextKey(chat: string | undefined, id: string | undefined) { return JSON.stringify([chat || '', id]); }

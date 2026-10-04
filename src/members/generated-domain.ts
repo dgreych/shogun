@@ -12,7 +12,7 @@ type MembersGeneratedHandler = (scope: MembersGeneratedScope) => Promise<unknown
 
 async function member_001_roles(scope: MembersGeneratedScope): Promise<unknown> {
   const command = String(scope.command || "").trim().toLowerCase();
-  let { ROLE_GOING_BASE, ROLE_NOT_GOING_BASE, args, formatRoleSummary, from, groupData, groupPrefix, isGroup, isGroupAdmin, socket, normalizar, reply, sender } = scope;
+  let { ROLE_GOING_BASE, ROLE_NOT_GOING_BASE, args, formatRoleSummary, from, groupData, groupPrefix, info, isGroup, isGroupAdmin, normalizar, reply, sender, socket } = scope;
   try {
     switch (command) {
       case 'roles':
@@ -37,7 +37,7 @@ async function member_001_roles(scope: MembersGeneratedScope): Promise<unknown> 
           const listText = `🪩 *Rolês ativos*\n\n${listLines.join('\n\n')}\n\n🙋 Reaja com ${ROLE_GOING_BASE} ou use ${groupPrefix}role.vou CODIGO\n🤷 Reaja com ${ROLE_NOT_GOING_BASE} ou use ${groupPrefix}role.nvou CODIGO`;
       
           try  {
-            await socket.sendMessage(sendTarget, { text: listText });
+            await socket.sendMessage(sendTarget, { text: listText }, sendTarget === info?.key?.remoteJid ? { quoted: info } : undefined);
           if  (sendInPv && sendTarget !== from) {
           await reply('📬 Enviei a lista de rolês no seu privado!', { mentions: [sender] });
             }

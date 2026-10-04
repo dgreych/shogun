@@ -1,5 +1,6 @@
 import { createShogunMenuTheme, withShogunMenuTheme } from '../menus/theme.js';
 import { sanitizeMenuDisplayName } from '../menus/presentation.js';
+import { renderCommandCard } from './commandPresentation.js';
 import fs from 'fs';
 import pathz from 'path';
 import crypto from 'crypto';
@@ -2364,16 +2365,16 @@ function checkLevelUp(userId, userData, levelingData, socket, from) {
       // Usa salvamento seguro
       saveLevelingSafe(levelingData);
       
-      let levelUpText = `╭━━━⊱ ⭐ *LEVEL UP!* ⭐ ⊱━━━╮\n`;
-      levelUpText += `│\n`;
-      levelUpText += `│ 👤 @${getUserName(userId)}\n`;
-      levelUpText += `│\n`;
-      levelUpText += `│ 📊 *Nível Atual:* ${userData.level}\n`;
-      levelUpText += `│ ✨ *XP:* ${userData.xp}/${calculateNextLevelXp(userData.level)}\n`;
-      levelUpText += `│ 🎖️ *Patente:* ${userData.patent}\n`;
-      levelUpText += `│\n`;
-      levelUpText += `╰━━━━━━━━━━━━━━━━━━━━━━╯\n`;
-      levelUpText += `\n🎊 *Parabéns pelo progresso!* 🎊`;
+      const levelUpText = renderCommandCard({
+        theme: loadMenuDesign(),
+        title: 'SUBIU DE NÍVEL', icon: '⭐',
+        fields: [
+          { label: 'Jogador', value: `@${getUserName(userId)}` },
+          { label: 'Nível Atual', value: userData.level },
+          { label: 'XP', value: `${userData.xp}/${calculateNextLevelXp(userData.level)}` },
+          { label: 'Patente', value: userData.patent },
+        ],
+      });
       
       if (socket && from) {
         socket.sendMessage(from, {

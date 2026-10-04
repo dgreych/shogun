@@ -14,7 +14,7 @@
     "config": "node dados/src/.scripts/config-panel.js",
     "config:legacy": "node dados/src/.scripts/config.js",
     "test:config": "node --test test/instance-config-store.test.mjs",
-    "test:menus": "node --test test/menu-*.test.mjs test/command-presentation.test.mjs test/output-presentation.test.mjs test/shogun-editorial.test.mjs test/shogun-lua-gato-delivery.test.mjs test/primary-owner-access.test.mjs",
+    "test:menus": "node --test test/menu-*.test.mjs test/command-presentation.test.mjs test/output-presentation.test.mjs test/output-followup.test.mjs test/shogun-editorial.test.mjs test/shogun-lua-gato-delivery.test.mjs test/primary-owner-access.test.mjs",
     "test:assistant": "node --test test/assistant-*.test.mjs test/single-shogun-*.test.mjs",
     "typecheck:vnext": "npx --yes --package=typescript@5.9.3 tsc -p tsconfig.vnext.json --noEmit",
     "build:vnext": "npx --yes --package=typescript@5.9.3 tsc -p tsconfig.vnext.json",

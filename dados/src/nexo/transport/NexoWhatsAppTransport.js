@@ -15,14 +15,14 @@ class NexoWhatsAppTransport {
   sendText(text, { mentions = [], preferPrivate = false } = {}) {
     const usePrivate = preferPrivate && this.privateChatId;
     const target = usePrivate ? this.privateChatId : this.chatId;
-    const options = !usePrivate && this.quoted ? { quoted: this.quoted } : undefined;
+    const options = !usePrivate && this.quoted?.key?.remoteJid === target ? { quoted: this.quoted } : undefined;
     return this.socket.sendMessage(target, { text, mentions }, options);
   }
 
   sendImage(buffer, { caption = '', mentions = [], preferPrivate = false } = {}) {
     const usePrivate = preferPrivate && this.privateChatId;
     const target = usePrivate ? this.privateChatId : this.chatId;
-    const options = !usePrivate && this.quoted ? { quoted: this.quoted } : undefined;
+    const options = !usePrivate && this.quoted?.key?.remoteJid === target ? { quoted: this.quoted } : undefined;
     return this.socket.sendMessage(target, { image: buffer, caption, mentions }, options);
   }
 }
