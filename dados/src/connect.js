@@ -25,6 +25,7 @@ import { createWhatsAppDeliveryLogger } from './utils/whatsappDeliveryLogger.js'
 import { loadMsgBotOn, loadMenuDesign } from './utils/database.js';
 import { installBotPresentation } from './utils/commandPresentation.js';
 import { buildUserId } from './utils/helpers.js';
+import { syncProfilePictureIfChanged } from './utils/profilePictureSync.js';
 import { initCaptchaIndex } from './utils/captchaIndex.js';
 import { gerarWelcomeCard } from './funcs/downloads/canvas.js';
 import { renderConnectionPanel } from '../../dist-vnext/console/shogunPanel.js';
@@ -1161,6 +1162,15 @@ async function createBotSocket(authDir) {
     await initializeOptimizedCaches();
     
     await updateOwnerLid(ShogunSock);
+    try {
+        const profileSync = await syncProfilePictureIfChanged(ShogunSock, {
+        assetPath: path.join(__dirname, '..', '..', 'assets', 'brand', 'shogun-profile.png'),
+        statePath: path.join(__dirname, '..', 'database', 'dono', 'profile-picture-state.json')
+        });
+        if (profileSync.status === 'updated') console.log('✅ Foto de perfil SHOGUN sincronizada');
+    } catch (profileError) {
+        console.warn(`⚠️ Foto de perfil mantida; sincronização será tentada no próximo boot: ${profileError.message}`);
+    }
     await performMigration(ShogunSock);
     
     rentalExpirationManager.socket = ShogunSock;
