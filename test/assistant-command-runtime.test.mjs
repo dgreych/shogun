@@ -15,7 +15,8 @@ function prepareIndexSource(input) {
 const generated = prepareIndexSource(source);
 function planningHarness({ text = 'Shogun execute ping', action = { command: 'ping', args: [] },
   group = false, metadataAfter = { participants: [] }, groupAfter = {}, aliasEntries = [], quoted = null,
-  mentions = [], configAfter = {}, response, duringRequest, extraCode = '', policyAfter = {}, initialOwner = false, additionalOwnerAfter = false } = {}) {
+  mentions = [], configAfter = {}, response, duringRequest, extraCode = '', policyAfter = {}, initialOwner = false,
+  additionalOwnerAfter = false, validCommands = ['ping', 'ban', 'grupo'] } = {}) {
   const source = prepareIndexSource(fs.readFileSync('dados/src/index.js', 'utf8'));
   const start = source.indexOf('// ASSISTANT_PLANNING_BEGIN');
   const end = source.indexOf('// Verificação de captcha', start);
@@ -27,13 +28,14 @@ function planningHarness({ text = 'Shogun execute ping', action = { command: 'pi
   const config = { numerodono: '999', prefixo: '!', ...configAfter };
   const files = { '/cfg': config, '/group': groupAfter, '/db/antipv.json': { mode: 'off' }, ...policyAfter };
   const bindings = {
-    info, from: info.key.remoteJid, sender: '123@lid', pushname: 'Pessoa', isGroup: group,
+    info, from: info.key.remoteJid, sender: '123@lid', pushname: 'Pessoa', isGroup: group, effects,
     socket: { user: { id: '999:1@s.whatsapp.net', lid: '888@lid' },
       sendMessage: async (...args) => { sent.push(args); return { key: { id: 'sent' } }; },
       groupMetadata: async () => { reads.push('metadata'); return metadataAfter; },
       groupParticipantsUpdate: async (...args) => { effects.push(['participants', ...args]); },
       groupSettingUpdate: async (...args) => { effects.push(['setting', ...args]); },
-      groupUpdateSubject: async (...args) => { effects.push(['subject', ...args]); } },
+      groupUpdateSubject: async (...args) => { effects.push(['subject', ...args]); },
+      groupUpdateDescription: async (...args) => { effects.push(['description', ...args]); } },
     assistant: { makeAssistentRequest: async data => { calls.push(data); await duringRequest?.(); return response || { actions: [action], resp: [{ resp: 'executado!' }] }; } },
     assistantTurnPlanner: createAssistantTurnPlanner(), ASSISTANT_SINGLE_TARGET_COMMANDS, ASSISTANT_TRANSPORT_TARGET_COMMANDS, isAssistantEligible,
     buildAssistantCommandCatalog, buildAssistantCommandDescriptions,
@@ -46,7 +48,7 @@ function planningHarness({ text = 'Shogun execute ping', action = { command: 'pi
     automacoesV9: { isPrimaryOwner: () => false, isAdditionalOwner: () => additionalOwnerAfter, getQuotedMessageContent: message => getQuotedContextInfo(message)?.quotedMessage || {},
       getQuotedText: message => getQuotedContextInfo(message)?.quotedMessage?.conversation || '' },
     reply: async text => { replies.push(text); }, formatUptime: () => 'uptime', process,
-    getValidCommandSet: () => new Set(['ping', 'ban', 'grupo']),
+    getValidCommandSet: () => new Set(validCommands),
   };
   const initialization = `let body=${JSON.stringify(text)},budy2=normalizar(body),args=[],q='',groupData={};
     const groupFile='/group'; let groupMetadata={},groupName='',config={},numerodono='999',prefixo='!',lidowner=null,
@@ -112,6 +114,44 @@ test('ponte transforma fechamento natural em operação imediata mesmo se o mode
   assert.deepEqual(result.args, ['fechar']);
 });
 
+test('bateria natural ampla atravessa planejador, revalidação e parser principal', async t => {
+  const target = '5511999999999@s.whatsapp.net';
+  const scenarios = [
+    ['QR code', 'Shogun, cria um QR code com https://example.com', { command: 'qrcode', args: ['https://example.com'] }, 'qrcode', 'https://example.com'],
+    ['pesquisa', 'Shogun, pesquisa por melhores filmes de samurai', { command: 'pesquisar', args: ['melhores filmes de samurai'] }, 'pesquisar', 'melhores filmes de samurai'],
+    ['pesquisa de imagem', 'Shogun, busca uma imagem de um gato preto', { command: 'pinterest', args: ['um gato preto'] }, 'pinterest', 'um gato preto'],
+    ['geração de imagem', 'Shogun, gera uma imagem de um gato samurai', { command: 'imagem', args: ['um gato samurai'] }, 'imagem', 'um gato samurai'],
+    ['perfil', 'Shogun, mostra meu perfil', { command: 'perfil', args: [] }, 'perfil', ''],
+    ['carteira', 'Shogun, consulta minha carteira', { command: 'carteira', args: [] }, 'carteira', ''],
+    ['regras', 'Shogun, mostra as regras', { command: 'regras', args: [] }, 'regras', '', true],
+    ['aviso geral', 'Shogun, avisa todo mundo que a reunião começou', { command: 'hidetag', args: ['a reunião começou'] }, 'hidetag', 'a reunião começou', true],
+    ['descrição do grupo', 'Shogun, altera a descrição do grupo para Base dos Samurais', { command: 'setdesc', args: ['Base dos Samurais'] }, 'setdesc', 'Base dos Samurais', true],
+    ['advertência', 'Shogun, adverte o @5511999999999 por spam', { command: 'adv', args: [target, 'spam'] }, 'adv', 'spam', true, true],
+    ['transferência', 'Shogun, transfere 100 moedas para @5511999999999', { command: 'pix', args: [target, '100'] }, 'pix', '100', true, true],
+    ['recompensa diária', 'Shogun, pega minha recompensa diária', { command: 'daily', args: [] }, 'daily', '', true],
+    ['loja', 'Shogun, abre a loja', { command: 'loja', args: [] }, 'loja', '', true],
+    ['inventário', 'Shogun, lista meu inventário', { command: 'inventario', args: [] }, 'inventario', '', true],
+    ['mineração', 'Shogun, minera agora', { command: 'minerar', args: [] }, 'minerar', '', true],
+    ['dados', 'Shogun, rola dados apostando 100 moedas', { command: 'dados', args: ['100'] }, 'dados', '100', true],
+    ['lembrete', 'Shogun, cria um lembrete em 30m para beber água', { command: 'lembrete', args: ['em 30m para beber água'] }, 'lembrete', 'em 30m para beber água'],
+    ['nota', 'Shogun, salva uma nota comprar café', { command: 'nota', args: ['comprar café'] }, 'nota', 'add comprar café'],
+    ['lista de notas', 'Shogun, lista minhas notas', { command: 'notas', args: [] }, 'notas', ''],
+  ];
+  for (const [name, text, action, expectedCommand, expectedQ, group = false, targeted = false] of scenarios) {
+    await t.test(name, async () => {
+      const probe = planningHarness({ text, action, group, mentions: targeted ? [target] : [],
+        metadataAfter: { participants: targeted ? [{ id: target, admin: null }] : [] },
+        validCommands: [expectedCommand] });
+      const result = await probe.run();
+      assert.equal(result.isCmd, true);
+      assert.equal(result.command, expectedCommand);
+      assert.equal(result.q, expectedQ);
+      assert.equal(probe.calls.length, 1);
+      assert.equal(result.pendingCommandReaction, '⏳');
+    });
+  }
+});
+
 function actualHandlerCases(startMarker, endMarker) {
   const start = generated.indexOf(startMarker);
   const end = generated.indexOf(endMarker, start);
@@ -126,12 +166,17 @@ const realHandlers = {
   setname: actualHandlerCases("case 'setname':", "case 'setdesc':"),
   group: actualHandlerCases("case 'grupo':", "case 'opengp':"),
   ping: actualHandlerCases("case 'ping':", "case 'toimg':"),
+  qrcode: actualHandlerCases("case 'qrcode':", "case 'wikipedia':"),
+  setdesc: actualHandlerCases("case 'setdesc':", "case 'setfoto':"),
+  rules: actualHandlerCases("case 'regras':", "case 'addregra':"),
+  note: actualHandlerCases("case 'nota':", "case 'notas':"),
 };
 
-function executeRealHandler(handler, { admin = true } = {}) {
+function executeRealHandler(handler, { admin = true, prelude = '' } = {}) {
   return `
     const isRealGroupAdmin=${admin},isGroupAdmin=${admin},isBotAdmin=true;
     const validateModerationTarget=async()=>({allowed:true,targetId:menc_os2});
+    ${prelude}
     switch(command){${handler}}
   `;
 }
@@ -164,6 +209,46 @@ test('matriz ponta a ponta chega aos handlers reais e produz cada efeito solicit
     assert.equal(probe.sent.length, 1);
     assert.match(probe.sent[0][1].text, /STATUS DA CONEXÃO/);
     assert.equal(probe.sent[0][2].quoted, probe.info);
+  });
+});
+
+test('utilidades e organização natural chegam a mais handlers reais', async t => {
+  await t.test('QR code envia mídia com o conteúdo solicitado', async () => {
+    const probe = planningHarness({ text: 'Shogun, cria um QR code com https://example.com',
+      action: { command: 'qrcode', args: ['https://example.com'] }, validCommands: ['qrcode'],
+      extraCode: executeRealHandler(realHandlers.qrcode, { prelude: "const pickLoadingMessage=()=> 'carregando';" }) });
+    await probe.run();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(probe.sent.length, 1);
+    assert.match(probe.sent[0][1].image.url, /api\.qrserver\.com/);
+    assert.match(probe.sent[0][1].caption, /https:\/\/example\.com/);
+  });
+
+  await t.test('descrição do grupo produz a mutação autenticada', async () => {
+    const probe = planningHarness({ group: true, text: 'Shogun, altera a descrição do grupo para Base dos Samurais',
+      action: { command: 'setdesc', args: ['Base dos Samurais'] }, validCommands: ['setdesc'],
+      extraCode: executeRealHandler(realHandlers.setdesc) });
+    await probe.run();
+    assert.deepEqual(probe.effects, [['description', 'group@g.us', 'Base dos Samurais']]);
+  });
+
+  await t.test('regras consulta os dados frescos do grupo', async () => {
+    const probe = planningHarness({ group: true, text: 'Shogun, mostra as regras',
+      action: { command: 'regras', args: [] }, validCommands: ['regras'], groupAfter: { rules: ['Sem spam', 'Respeite os membros'] },
+      metadataAfter: { subject: 'Dojo', participants: [] }, extraCode: executeRealHandler(realHandlers.rules) });
+    await probe.run();
+    assert.match(probe.replies.at(-1), /1\. Sem spam/);
+    assert.match(probe.replies.at(-1), /2\. Respeite os membros/);
+  });
+
+  await t.test('nota natural injeta add e grava somente o texto informado', async () => {
+    const probe = planningHarness({ text: 'Shogun, salva uma nota comprar café',
+      action: { command: 'nota', args: ['add', 'comprar café'] }, validCommands: ['nota'],
+      extraCode: executeRealHandler(realHandlers.note, { prelude: `const prefix='!'; const notes={
+        addNote:(...values)=>{effects.push(['note',...values]);return {message:'nota salva'};}};` }) });
+    await probe.run();
+    assert.deepEqual(probe.effects, [['note', '123@lid', 'comprar café', null, '!']]);
+    assert.equal(probe.replies.at(-1), 'nota salva');
   });
 });
 

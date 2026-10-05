@@ -229,3 +229,28 @@ test('delete usa chave da mensagem citada e não exige admin real', async () => 
     fx.cleanup();
   }
 });
+
+test('ban e troca de cargo confirmam efeito do alvo mesmo sem X9; status rejeitado nunca vira sucesso', async () => {
+  for (const command of ['ban', 'promover', 'rebaixar']) {
+    for (const status of ['200', '403', undefined]) {
+      const fx = fixture();
+      try {
+        fx.context.socket.groupParticipantsUpdate = async (_jid, participants) => [{ jid: participants[0], status }];
+        assert.equal(await new ModerationDomainDispatchTarget().dispatch(command, fx.context), true);
+        assert.equal(fx.replies.length, 1, `${command}:${status} deve ter resultado claro`);
+        assert.match(fx.replies[0].text, status === '200' ? /removid|promovid|rebaixad/i : /não consegui confirmar/i);
+        assert.equal(fx.sent.length, 0);
+      } finally { fx.cleanup(); }
+    }
+  }
+});
+
+test('status200 de outro alvo não prova efeito e não anuncia X9', async () => {
+  const fx = fixture({ groupData: { x9: true } });
+  try {
+    fx.context.socket.groupParticipantsUpdate = async () => [{ jid: 'outro@lid', status: '200' }];
+    await new ModerationDomainDispatchTarget().dispatch('ban', fx.context);
+    assert.match(fx.replies[0].text, /não consegui confirmar/i);
+    assert.equal(fx.sent.length, 0);
+  } finally { fx.cleanup(); }
+});

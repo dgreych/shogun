@@ -158,9 +158,11 @@ test('grounding não aceita frações de números/contatos nem duplica span usad
 
 test('presença de token em pergunta ou relato não é pedido positivo atual', () => {
   for (const text of ['Shogun, você sabe o que é ban?', 'Shogun, qual é a função de ban?',
-    'Shogun, minha amiga mencionou ban ontem', 'Shogun ban é perigoso?', 'Shogun você acha ping bom?']) {
-    const command = text.includes('ping') ? 'ping' : 'ban';
-    assert.equal(runtime.validateAssistantAction([{ command, args: [] }], text, ['ban', 'ping'], token => ({ command: token })), null);
+    'Shogun, minha amiga mencionou ban ontem', 'Shogun ban é perigoso?', 'Shogun você acha ping bom?',
+    'Shogun, veja se ban funciona', 'Shogun, diz se pix é perigoso',
+    'Shogun, consulte se promover funciona', 'Shogun, crie uma explicação sobre pix']) {
+    const command = text.includes('ping') ? 'ping' : text.includes('pix') ? 'pix' : text.includes('promover') ? 'promover' : 'ban';
+    assert.equal(runtime.validateAssistantAction([{ command, args: [] }], text, ['ban', 'ping', 'pix', 'promover'], token => ({ command: token })), null);
   }
 });
 
@@ -255,6 +257,86 @@ test('todo token executável do catálogo aceita solicitação explícita pelo m
   }
 });
 
+test('pedidos naturais cobrem utilidades, grupo, perfil, economia e organização pessoal', () => {
+  const tokens = ['qrcode', 'pesquisar', 'pinterest', 'imagem', 'perfil', 'carteira', 'regras', 'hidetag', 'setdesc',
+    'adv', 'pix', 'daily', 'loja', 'inventario', 'minerar', 'dados', 'lembrete', 'nota', 'notas'];
+  const resolver = token => ({ command: token });
+  const target = '5511999999999@s.whatsapp.net';
+  const scenarios = [
+    ['Shogun, cria um QR code com https://example.com', 'qrcode', ['https://example.com']],
+    ['Shogun, pesquisa por melhores filmes de samurai', 'pesquisar', ['melhores filmes de samurai']],
+    ['Shogun, busca uma imagem de um gato preto', 'pinterest', ['um gato preto']],
+    ['Shogun, gera uma imagem de um gato samurai', 'imagem', ['um gato samurai']],
+    ['Shogun, mostra meu perfil', 'perfil', []],
+    ['Shogun, consulta minha carteira', 'carteira', []],
+    ['Shogun, mostra as regras', 'regras', []],
+    ['Shogun, avisa todo mundo que a reunião começou', 'hidetag', ['a reunião começou']],
+    ['Shogun, altera a descrição do grupo para Base dos Samurais', 'setdesc', ['Base dos Samurais']],
+    ['Shogun, adverte o @5511999999999 por spam', 'adv', ['spam']],
+    ['Shogun, transfere 100 moedas para @5511999999999', 'pix', ['100']],
+    ['Shogun, pega minha recompensa diária', 'daily', []],
+    ['Shogun, abre a loja', 'loja', []],
+    ['Shogun, lista meu inventário', 'inventario', []],
+    ['Shogun, minera agora', 'minerar', []],
+    ['Shogun, rola dados apostando 100 moedas', 'dados', ['100']],
+    ['Shogun, cria um lembrete em 30m para beber água', 'lembrete', ['em 30m para beber água']],
+    ['Shogun, salva uma nota comprar café', 'nota', ['comprar café']],
+    ['Shogun, lista minhas notas', 'notas', []],
+  ];
+  for (const [text, command, args] of scenarios) {
+    const result = runtime.validateAssistantAction([{ command, args }], text, tokens, resolver, {
+      transportTargets: text.includes('@5511999999999') ? [target] : [],
+      transportTargetCommands: ['perfil', 'adv', 'pix'],
+    });
+    assert.equal(result?.command, command, text);
+    assert.deepEqual(result?.args, command === 'nota' ? ['add', ...args] : args, text);
+  }
+});
+
+test('corrige escolhas reais da BunnyFy e adapta subcomandos naturais ao contrato dos handlers', () => {
+  const tokens = ['google', 'pinterest', 'imagem', 'play', 'lembrete', 'lembrar', 'nota'];
+  const resolver = token => ({ command: token });
+  const cases = [
+    ['Shogun, busca uma imagem de um gato preto', { command: 'google', args: ['gato preto imagem'] }, 'pinterest', ['um gato preto']],
+    ['Shogun, procure uma imagem de um gato preto', { command: 'google', args: ['gato preto imagem'] }, 'pinterest', ['um gato preto']],
+    ['Shogun, pesquisa uma imagem de um gato preto', { command: 'google', args: ['gato preto imagem'] }, 'pinterest', ['um gato preto']],
+    ['Shogun, toca Evidências pra mim', { command: 'play', args: ['Evidências'] }, 'play', ['Evidências']],
+    ['Shogun, cria um lembrete em 30m para beber água', { command: 'lembrar', args: ['30m', 'beber água'] }, 'lembrar', ['em 30m para beber água']],
+    ['Shogun, salva uma nota comprar café', { command: 'lembrar', args: ['comprar café'] }, 'nota', ['add', 'comprar café']],
+  ];
+  for (const [text, action, command, args] of cases) {
+    const result = runtime.validateAssistantAction([action], text, tokens, resolver);
+    assert.equal(result?.command, command, text);
+    assert.deepEqual(result?.args, args, text);
+  }
+});
+
+test('cancelamento final revoga nota e lembrete naturais antes de qualquer efeito', () => {
+  const resolver = token => ({ command: token });
+  for (const [text, action] of [
+    ['Shogun, salva uma nota comprar café, não salva a nota', { command: 'nota', args: ['comprar café'] }],
+    ['Shogun, cria um lembrete em 30m para beber água, não cria o lembrete', { command: 'lembrete', args: ['30m', 'beber água'] }],
+  ]) assert.equal(runtime.validateAssistantAction([action], text, ['nota', 'lembrete'], resolver), null);
+});
+
+test('síntese natural ignora texto citado e nunca substitui subcomando explícito', () => {
+  const resolver = token => ({ command: token });
+  assert.equal(runtime.validateAssistantAction([{ command: 'nota', args: ['comprar café'] }],
+    'Shogun, execute nota buscar "crie uma nota comprar café"', ['nota'], resolver), null);
+  assert.deepEqual(runtime.validateAssistantAction([{ command: 'nota', args: ['buscar', 'crie uma nota comprar café'] }],
+    'Shogun, execute nota buscar "crie uma nota comprar café"', ['nota'], resolver)?.args,
+  ['buscar', 'crie uma nota comprar café']);
+  assert.deepEqual(runtime.validateAssistantAction([{ command: 'pinterest', args: ['a imagem de um gato'] }],
+    'Shogun, execute pinterest "a imagem de um gato"', ['pinterest'], resolver)?.args,
+  ['a imagem de um gato']);
+});
+
+test('duas operações em frases separadas exigem esclarecimento', () => {
+  const resolver = token => ({ command: token });
+  assert.equal(runtime.validateAssistantAction([{ command: 'imagem', args: ['gato'] }],
+    'Shogun, crie uma imagem de gato. Transfira 100 moedas', ['imagem', 'pix'], resolver), null);
+});
+
 test('todas as famílias que consomem alvo descartam somente a identidade autenticada e preservam motivo', async () => {
   const { ASSISTANT_TRANSPORT_TARGET_COMMANDS, buildAssistantCommandCatalog } = await import('../dist-vnext/assistant/runtime-catalog.js');
   const catalog = buildAssistantCommandCatalog();
@@ -273,7 +355,7 @@ test('menção não remove números de comandos que não usam alvo de transporte
   const { ASSISTANT_TRANSPORT_TARGET_COMMANDS } = await import('../dist-vnext/assistant/runtime-catalog.js');
   const target = '5511999999999@s.whatsapp.net';
   const result = runtime.validateAssistantAction([{ command: 'calculadora', args: ['5511999999999'] }],
-    'Shogun, execute calculadora 5511999999999 e avise @5511999999999', ['calculadora'], token => ({ command: token }),
+    'Shogun, execute calculadora 5511999999999 com referência a @5511999999999', ['calculadora'], token => ({ command: token }),
     { transportTargets: [target], transportTargetCommands: ASSISTANT_TRANSPORT_TARGET_COMMANDS });
   assert.deepEqual(result?.args, ['5511999999999']);
 });

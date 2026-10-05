@@ -1,6 +1,13 @@
 const normalize = (text) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 const tokenPattern = /^[\p{L}\p{N}_.-]{1,64}$/u;
-const positiveRequest = /^(?:(?:por favor|pfv)\s+)?(?:(?:voce|vc)\s+)?(?:(?:pode|poderia|consegue|quero|queria|gostaria de)\s+)?(?:me\s+)?(?:da|de|execute|executa|executar|rode|roda|rodar|use|usa|usar|mande|manda|mandar|envie|envia|enviar|mostre|mostra|mostrar|faca|faz|fazer|transforme|transforma|converta|converte|bane|bana|banir|expulse|expulsa|remova|remove|promove|promova|rebaixa|rebaixe|muta|mute|silencia|silencie|desmuta|dessilencia|dessilencie|deleta|delete|exclui|apague|apaga|toque|toca|baixe|traduza|traduz|calcule|calcula|abra|abre|feche|fecha)\b/u;
+const positiveRequest = /^(?:(?:por favor|pfv)\s+)?(?:(?:voce|vc)\s+)?(?:(?:pode|poderia|consegue|quero|queria|gostaria de)\s+)?(?:me\s+)?(?:da|de|diz|diga|execute|executa|executar|rode|roda|rodar|use|usa|usar|mande|manda|mandar|envie|envia|enviar|mostre|mostra|mostrar|veja|ver|faca|faz|fazer|crie|cria|criar|gere|gera|gerar|transforme|transforma|converta|converte|pesquise|pesquisa|pesquisar|procure|procura|procurar|busque|busca|buscar|consulte|consulta|consultar|liste|lista|listar|avise|avisa|avisar|anuncie|anuncia|anunciar|altere|altera|alterar|mude|muda|mudar|advirta|adverte|advertir|transfira|transfere|transferir|passe|passa|passar|pegue|pega|pegar|receba|recebe|receber|salve|salva|salvar|anote|anota|anotar|lembre|lembra|lembrar|bane|bana|banir|expulse|expulsa|remova|remove|promove|promova|rebaixa|rebaixe|muta|mute|silencia|silencie|desmuta|dessilencia|dessilencie|deleta|delete|exclui|apague|apaga|toque|toca|baixe|traduza|traduz|calcule|calcula|abra|abre|feche|fecha|minere|minera|minerar|role|rola|rolar|lance|lanca|lancar)\b/u;
+function hasNegativeRequest(text) {
+    for (const negation of text.matchAll(/\b(?:nao|nunca|nem)\b\s*/gu)) {
+        if (positiveRequest.test(text.slice(negation.index + negation[0].length).trim()))
+            return true;
+    }
+    return false;
+}
 function instructionText(text) {
     // Mantém offsets para segmentar o texto original sem cortar títulos citados.
     return text.replace(/```[\s\S]*?```|`[^`]*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/gu, value => ' '.repeat(value.length));
@@ -16,6 +23,14 @@ function currentRequestSegment(text) {
             start = next;
             break;
         }
+    }
+    for (const separator of masked.matchAll(/[.!?]\s+/gu)) {
+        if (separator.index < start)
+            continue;
+        const tail = normalize(masked.slice(separator.index + separator[0].length))
+            .replace(/^\s*(?:@?shogun\b[\s,:]*)?/u, '').trim();
+        if (positiveRequest.test(tail))
+            return null;
     }
     const remaining = normalize(masked.slice(start));
     // Duas operações atuais exigem esclarecimento, em vez de mover operandos.
@@ -34,7 +49,7 @@ function currentRequestSegment(text) {
 // sem ramificação por command. Não derivar equivalência das macrofamílias.
 const verifiedOperationAliases = [
     ['ban', 'banir', 'b', 'kick'], ['s', 'st', 'stk', 'sticker'],
-    ['calculadora', 'calc', 'calcular'], ['tradutor', 'translator'],
+    ['calculadora', 'calc', 'calcular'], ['tradutor', 'translator'], ['lembrete', 'lembrar'],
 ];
 export function isAssistantEligible(input) {
     if (!input.enabled || input.fromMe || input.fromPro || !input.text.trim()
@@ -49,11 +64,24 @@ const naturalOperations = [
     ['s', /\b(?:figurinha|sticker|adesivo)\b/u], ['ban', /\b(?:bane|bana|banir|expulse|expulsa|expulsar)\b|\b(?:remova|remove)\b.*\b(?:pessoa|membro)\b/u],
     ['promover', /\b(?:promove|promova|promover|torne administrador)\b/u], ['rebaixar', /\b(?:rebaixa|rebaixe|rebaixar|retire o cargo de administrador)\b/u],
     ['mute', /\b(?:muta|mute|silencie|silencia|silenciar|mutar)\b/u], ['desmute', /\b(?:desmuta|dessilencia|dessilencie|desmutar|retire o silenciamento)\b/u],
-    ['delete', /\b(?:delete|deleta|deletar|exclui|apague|apaga)\b.*\b(?:mensagem|isso)\b/u], ['play', /\b(?:toque|toca|baixe)\b.*\b(?:musica|audio)\b/u],
+    ['delete', /\b(?:delete|deleta|deletar|exclui|apague|apaga)\b.*\b(?:mensagem|isso)\b/u],
+    ['play', /\b(?:toque|toca)\b|\bbaixe\b.*\b(?:musica|audio)\b/u],
     ['playvid', /\b(?:baixe|manda|envie)\b.*\bvideo\b/u], ['tradutor', /\b(?:traduza|traduz|traduzir)\b/u],
     ['clima', /\b(?:clima|previsao do tempo)\b/u], ['calculadora', /\b(?:calcule|calcula|calculadora)\b/u],
     ['criador', /\b(?:mostre|mostra|mande|manda)\b.*\bcriador\b/u],
     ['grupo', /\b(?:abra|abre|abrir|feche|fecha|fechar)\s+(?:o\s+)?grupo\b/u],
+    ['qrcode', /\bqr\s*code\b/u],
+    ['pesquisar', /\b(?:pesquise|pesquisa|pesquisar|procure|procura|procurar)\b(?![^.!?;]{0,80}\b(?:imagem|foto)\b)/u],
+    ['pinterest', /\b(?:pesquise|pesquisa|pesquisar|busque|busca|buscar|procure|procura|procurar)\b[^.!?;]{0,80}\b(?:imagem|foto)\b/u],
+    ['imagem', /\b(?:gere|gera|gerar|crie|cria|criar)\b[^.!?;]{0,80}\b(?:imagem|foto)\b/u],
+    ['carteira', /\b(?:saldo|carteira)\b/u], ['hidetag', /\b(?:avise|avisa|anuncie|anuncia)\s+(?:a\s+)?(?:todo mundo|todos)\b/u],
+    ['setdesc', /\b(?:altere|altera|mude|muda)\s+(?:a\s+)?descricao(?:\s+do\s+grupo)?\b/u],
+    ['adv', /\b(?:advirta|adverte|advertir|advertencia)\b/u],
+    ['pix', /\b(?:transfira|transfere|transferir|envie|envia|mandar|mande|passe|passa)\b[^.!?;]{0,80}\b(?:moedas?|gold|dinheiro)\b/u],
+    ['daily', /\b(?:recompensa|premio)\s+diari[oa]\b/u], ['minerar', /\b(?:minere|minera|minerar)\b/u],
+    ['lembrete', /\b(?:crie|cria|criar|agende|agenda|agendar)\s+(?:um\s+)?lembrete\b/u],
+    ['nota', /\b(?:salve|salva|salvar|anote|anota|anotar|crie|cria|criar)\s+(?:uma\s+)?nota\b/u],
+    ['dados', /\b(?:role|rola|lance|lanca)\s+(?:um\s+)?dad[oa]s?\b/u],
 ];
 function catalogCommand(value, catalog, resolve) {
     const resolved = resolve(value).command;
@@ -93,9 +121,14 @@ function currentInstruction(text, token, catalog, resolve) {
         .replace(/(?:^|\s|@)shogun\b[\s,:]*/gu, ' ').trim();
     if (/^(?:como|o que|por que|quem|quando|explique|explica)\b|^qual\b.*\bcomando\b|\b(?:o que|como)\b.*\b(?:faz|funciona|significa)\b/u.test(current))
         return false;
+    if (/\bse\b[^.!?;]{0,160}\b(?:funciona|faz|serve|e perigoso|e seguro)\b/u.test(current)
+        || /\b(?:explicacao|explicacoes|tutorial|passo a passo)\b[^.!?;]{0,80}\b(?:sobre|do|da|de)\b/u.test(current))
+        return false;
     if (/\b(?:ignore|ignora|desconsidere|burle)\b.*\b(?:regras|sistema|instrucoes|permissoes)\b/u.test(current))
         return false;
     if (/\b(?:como usar|como executar|sintaxe|simulacao|simular|exemplo|perguntando|passo a passo|tutorial sobre|instrucoes sobre)\b/u.test(current))
+        return false;
+    if (hasNegativeRequest(current))
         return false;
     if (/\b(?:nao|nunca|nem)\s+(?:(?:me|o|a)\s+)?(?:execute|faca|faz|bana|banir|abra|abre|feche|fecha|promova|rebaixe|apague|remova|isso)\b/u.test(current))
         return false;
@@ -115,8 +148,8 @@ function currentInstruction(text, token, catalog, resolve) {
     // O nome de uma operação em uma fala sobre ela não é uma solicitação.
     // Verbos só comprovam pedido atual; a operação continua vinculada abaixo.
     const request = positiveRequest.test(current);
-    if (/^(?:(?:voce|vc)\s+)?(?:(?:pode|poderia|consegue)\s+)?(?:me\s+)?(?:mostre|mostra|mostrar)\b/u.test(current)
-        && !['ping', 'menu', 'clima', 'criador', 'perfilrpg', 'loja'].includes(resolve(token).command))
+    if (/^(?:(?:voce|vc)\s+)?(?:(?:pode|poderia|consegue)\s+)?(?:me\s+)?(?:mostre|mostra|mostrar|veja|ver|diz|diga)\b/u.test(current)
+        && !['ping', 'menu', 'clima', 'criador', 'perfil', 'perfilrpg', 'carteira', 'regras', 'loja', 'inventario', 'notas'].includes(resolve(token).command))
         return false;
     const latencyQuery = /^qual\b.*\b(?:latencia|tempo de resposta)\b/u.test(current);
     const direct = explicit?.index === 0 && !/\b(?:e|era|faz|funciona|significa|perigoso|seguro|ontem|mencionou|acha)\b/u.test(current)
@@ -215,6 +248,7 @@ export function validateAssistantAction(actions, text, catalog, resolve, context
     // a segmentação de operandos não pode escondê-los.
     const instruction = normalize(instructionText(text));
     if (/\b(?:como usar|como executar|sintaxe|simulacao|simular|exemplo|perguntando|passo a passo|tutorial sobre|instrucoes sobre)\b/u.test(instruction)
+        || hasNegativeRequest(instruction)
         || /\b(?:nao|nunca|nem)\s+(?:(?:me|o|a)\s+)?(?:execute|faca|faz|bana|banir|abra|abre|feche|fecha|promova|rebaixe|apague|remova|isso)\b/u.test(instruction))
         return null;
     const currentText = currentRequestSegment(text);
@@ -228,6 +262,13 @@ export function validateAssistantAction(actions, text, catalog, resolve, context
     if (!currentInstruction(currentText, token, catalog, resolve))
         return null;
     const current = normalize(currentText.replace(/```[\s\S]*?```|`[^`]*`|"[^"]*"|'[^']*'/gu, '')).split(/\bexemplo\b/u)[0];
+    const maskedCurrentText = instructionText(currentText);
+    const explicitCurrent = [...maskedCurrentText.matchAll(/[\p{L}\p{N}_.-]+/gu)]
+        .find(word => catalog.includes(resolve(normalize(word[0])).command));
+    const naturalCurrent = deterministicNaturalOperation(currentText, catalog, resolve);
+    const leadsExplicit = (match) => Boolean(match
+        && (!explicitCurrent || match.index < explicitCurrent.index
+            || (naturalCurrent && operationSignature(naturalCurrent, catalog, resolve) === operationSignature(canonical, catalog, resolve))));
     const groupRequests = [...current.matchAll(/\b(abra|abre|abrir|feche|fecha|fechar)\s+(?:o\s+)?grupo\b/gu)];
     if (canonical === 'grupo' && groupRequests.length > 1)
         return null;
@@ -238,11 +279,44 @@ export function validateAssistantAction(actions, text, catalog, resolve, context
             return null;
         return { command: canonical, args: [groupOperand], token };
     }
+    const reminderRequest = ['lembrete', 'lembrar'].includes(canonical)
+        ? /\b(?:crie|cria|criar|agende|agenda|agendar)\s+(?:um\s+)?lembrete\b/iu.exec(maskedCurrentText)
+        : null;
+    if (leadsExplicit(reminderRequest)) {
+        const payload = currentText.slice(reminderRequest.index + reminderRequest[0].length).trim()
+            .replace(/^(?:para|de)\s+/iu, '');
+        if (!payload)
+            return null;
+        return { command: canonical, args: [payload], token };
+    }
+    const imageRequest = ['imagem', 'pinterest'].includes(canonical)
+        ? /\b(?:imagem|foto)\s+(?:de\s+)?(.+)$/iu.exec(maskedCurrentText)
+        : null;
+    if (leadsExplicit(imageRequest)) {
+        const payload = imageRequest[1]?.trim();
+        if (payload) {
+            const payloadStart = imageRequest.index + imageRequest[0].length - imageRequest[1].length;
+            return { command: canonical, args: [currentText.slice(payloadStart).trim()], token };
+        }
+    }
+    // O handler de notas exige o subcomando `add`, embora a fala natural não o
+    // contenha. Só o sintetizamos quando o próprio pedido atual diz salvar uma
+    // nota; o conteúdo ainda precisa estar literalmente presente na mensagem.
+    const noteAdd = canonical === 'nota'
+        ? /\b(?:salve|salva|salvar|anote|anota|anotar|crie|cria|criar)\s+(?:uma\s+)?nota\b/iu.exec(maskedCurrentText)
+        : null;
+    if (leadsExplicit(noteAdd)) {
+        const values = item['args'].filter((value, index) => index !== 0
+            || typeof value !== 'string' || !/^(?:add|criar)$/iu.test(value.trim()));
+        const noteArgs = groundedArguments(values, currentText.slice(noteAdd.index + noteAdd[0].length));
+        if (!noteArgs?.length)
+            return null;
+        return { command: canonical, args: ['add', ...noteArgs], token };
+    }
     // Para tokens explícitos, o modelo não pode pular o primeiro operando e
     // escolher outra subação. O trecho pertence ao parser comum do comando.
-    const masked = instructionText(currentText);
-    const explicit = [...masked.matchAll(/[\p{L}\p{N}_.-]+/gu)]
-        .find(word => catalog.includes(resolve(normalize(word[0])).command));
+    const masked = maskedCurrentText;
+    const explicit = explicitCurrent;
     const naturalIndex = Math.min(...naturalOperations.filter(([command]) => catalog.includes(command))
         .map(([, pattern]) => pattern.exec(normalize(masked))?.index ?? Infinity));
     const explicitOperands = explicit && explicit.index <= naturalIndex;
