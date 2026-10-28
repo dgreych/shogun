@@ -1,3 +1,47 @@
+<p align="center"><img alt="SHOGUN • capa do projeto" src=".github/readme-hero.svg" width="100%"></p>
+
+<h1 align="center">SHOGUN</h1>
+<p align="center"><strong>O bot é seu. As regras também.</strong><br>Administração, mídia e automações para grupos de WhatsApp, com uma instalação que você controla.</p>
+<p align="center"><code>Código público · instância própria</code> &nbsp;·&nbsp; <code>whatsapp / node.js</code></p>
+<p align="center"><a href="https://shogun-dimeo.dgreych-domo.workers.dev/"><strong>Site oficial</strong></a> &nbsp; · &nbsp; <a href="docs/primeiros-passos.md"><strong>Começar</strong></a> &nbsp; · &nbsp; <a href="docs/instalacao/termux.md"><strong>Instalar no celular</strong></a></p>
+
+---
+
+## Em poucas palavras
+
+Administração, mídia e automações para grupos de WhatsApp, com uma instalação que você controla.
+
+## O produto em três pontos
+
+| Frente | O que você encontra |
+| :-- | :-- |
+| **Grupos** | Regras, boas-vindas, menus e comandos administrativos com permissões. |
+| **Mídia** | Figurinhas, utilitários e integração com processamento externo. |
+| **Autonomia** | Você utiliza seu próprio número compatível e infraestrutura. |
+
+<p align="center"><img alt="SHOGUN: referência visual do projeto" src="assets/brand/shogun-cat-hero.png" width="86%"></p>
+
+## Começar
+
+```bash
+npm start
+```
+
+> [!NOTE]
+> A **BunnyFy é opcional**. Ela processa determinadas tarefas externas de mídia e IA; o bot continua tendo funções locais sem contratar a API. Quem já tem número compatível não precisa comprar outro. Este projeto é independente do WhatsApp.
+
+## Leitura recomendada
+
+- [Windows](docs/instalacao/windows.md)
+- [Linux](docs/instalacao/linux.md)
+- [macOS](docs/instalacao/macos.md)
+- [Android/Termux](docs/instalacao/termux.md)
+
+<details>
+<summary><strong>Abrir a documentação técnica anterior</strong> · comandos, decisões, créditos e detalhes de implantação</summary>
+
+---
+
 # SHOGUN
 
 [Conheça o Shogun](https://dgreych.github.io/DOMO-BJI/shogun/)
@@ -69,3 +113,5 @@ A camada de apresentação completa (menus, cards e transporte) e a fila de mens
 O cache de reenvio também usa uma implementação única em TypeScript e respeita o limite de bytes ao restaurar mensagens. O encerramento do otimizador cancela seus monitores e fecha os caches; o limiar configurado de pressão de memória é aplicado. Os contratos do núcleo e da apresentação são exercitados no CI em Windows e Linux, nas versões Node.js da matriz suportada.
 
 O gerenciador de caches também foi portado para TypeScript. A expiração e a limpeza removem metadados de LRU/acesso, as contagens são isoladas por cache e escritas recusadas não deixam metadados órfãos. TTL zero é respeitado. A compressão conserva Buffer e tipos nativos aninhados; valores de classes próprias permanecem sem compressão para conservar seus métodos. Desativar novas compressões mantém entradas anteriores legíveis.
+
+</details>
